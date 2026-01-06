@@ -295,19 +295,14 @@
     <script src="js/api-client.js"></script>
     <script src="js/auth.js"></script>
     <script>
-        // Prevent redirect loops
-        let redirecting = false;
-        
-        // Check if already logged in - if so, redirect away from signup page
-        // Signup page is ONLY for new users who haven't created an account yet
-        if (authService.isAuthenticated()) {
-            if (!redirecting) {
-                redirecting = true;
-                // User is already logged in - redirect to login page (which will then redirect to projects/board)
-                // Don't go directly to project selector from signup page
-                window.location.href = 'milo-login.html';
-            }
-        }
+        // Clear any existing auth state on signup page load
+        // Signup should always start fresh - no authentication
+        localStorage.removeItem('milo_auth_token');
+        localStorage.removeItem('milo_user');
+        sessionStorage.removeItem('milo_auth_token');
+        sessionStorage.removeItem('milo_user');
+        localStorage.removeItem('milo_current_project');
+        sessionStorage.removeItem('milo_current_project');
 
         function showError(message) {
             const errorDiv = document.getElementById('errorMessage');
@@ -358,11 +353,9 @@
                     // User must login with temporary password first
                     // Always redirect to login - NEVER to project selector
                     setTimeout(() => {
-                        // Ensure no auth state is set (signup doesn't log you in)
-                        localStorage.removeItem('milo_auth_token');
-                        localStorage.removeItem('milo_user');
-                        sessionStorage.removeItem('milo_auth_token');
-                        sessionStorage.removeItem('milo_user');
+                        // Clear ALL auth state to ensure clean login
+                        localStorage.clear();
+                        sessionStorage.clear();
                         // Redirect to login page only
                         window.location.href = 'milo-login.html';
                     }, 3000);
