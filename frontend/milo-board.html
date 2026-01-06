@@ -426,6 +426,19 @@
     <script src="js/api-client.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/board.js"></script>
+    <script>
+        // Check authentication and password change requirement
+        if (!authService.isAuthenticated()) {
+            window.location.href = 'milo-login.html';
+        } else if (authService.requiresPasswordChange()) {
+            const user = authService.getCurrentUser();
+            if (user && user.email) {
+                window.location.href = `milo-change-password.html?email=${encodeURIComponent(user.email)}`;
+            } else {
+                window.location.href = 'milo-login.html';
+            }
+        }
+    </script>
 </body>
 </html>
 
