@@ -93,20 +93,30 @@ function createTaskCard(task) {
     const card = document.createElement('div');
     card.className = 'task-card';
     card.draggable = true;
+    card.dataset.taskId = task.id;
     
     card.innerHTML = `
-        <div class="task-title">${task.title}</div>
-        <div class="task-meta">
-            <span class="task-label ${task.label}">${task.label.toUpperCase()}</span>
-            <span class="task-id">${task.id}</span>
+        <div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
+            <div class="task-type-icon"></div>
+            <div style="flex: 1;">
+                <div class="task-title">${task.title}</div>
+                <div class="task-meta">
+                    <span class="task-label ${task.label}">${task.label.toUpperCase()}</span>
+                    <span class="task-id">${task.id}</span>
+                </div>
+            </div>
         </div>
         <div class="task-footer">
-            <div class="task-assignee">${task.assignee}</div>
-            <div class="task-icons">
-                <svg class="task-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <div class="task-icons-left">
+                ${task.subtasks ? `<span style="font-size: 11px; color: #6B778C;">${task.subtasks}</span>` : ''}
+                <svg class="task-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"></path>
                 </svg>
+                <svg class="task-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
             </div>
+            <div class="task-assignee">${task.assignee}</div>
         </div>
     `;
 
