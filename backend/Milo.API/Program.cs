@@ -10,14 +10,29 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:3000",
-                "https://www.codingeverest.com",
-                "https://codingeverest.com",
-                "http://www.codingeverest.com",
-                "http://codingeverest.com",
-                "https://*.amplifyapp.com"
-              )
+        policy.SetIsOriginAllowed(origin => 
+              {
+                  // Production-only: Allow specific production domains
+                  if (string.IsNullOrEmpty(origin)) return false;
+                  
+                  // Production domains
+                  var allowedOrigins = new[]
+                  {
+                      "https://www.codingeverest.com",
+                      "https://codingeverest.com",
+                      "http://www.codingeverest.com",
+                      "http://codingeverest.com"
+                  };
+                  
+                  if (allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
+                      return true;
+                  
+                  // Allow any Amplify app domain (for frontend hosting)
+                  if (origin.Contains("amplifyapp.com", StringComparison.OrdinalIgnoreCase))
+                      return true;
+                  
+                  return false;
+              })
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
@@ -26,14 +41,13 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Configure the HTTP request pipeline for production
+// Swagger disabled in production for security
+// HTTPS redirection handled by reverse proxy (if configured)
 
-app.UseHttpsRedirection();
+// Add error handling middleware
+app.UseExceptionHandler("/api/error");
+
 app.UseCors("AllowFrontend");
 app.UseAuthorization();
 app.MapControllers();

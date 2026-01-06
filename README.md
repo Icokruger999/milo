@@ -10,36 +10,47 @@ A modern project management application built with C#, JavaScript, HTML, and CSS
 - `frontend/` - HTML, CSS, JavaScript client
 - `amplify.yml` - AWS Amplify build configuration
 
-## Getting Started
+## Production Deployment
 
 ### Prerequisites
-- .NET SDK 8.0 or later
-- Node.js (for build tools)
-- AWS CLI configured
-- Namecheap domain: `www.codingeverest.com`
+- **.NET SDK 8.0** (needed to BUILD the application - run `dotnet publish` to create deployable files)
+- **AWS CLI** configured
+- **EC2 Instance** with .NET Runtime 8.0 installed (needed to RUN the application on the server)
 
-### Setup
-1. Clone the repository
-2. Navigate to `backend/Milo.API/` and run `dotnet restore`
-3. Open `frontend/index.html` in a browser or use a local server
+### Why .NET is Needed
 
-### Local Development
-```bash
-# Frontend
-npm install
-npm start
-# Opens at http://localhost:3000
+**On your Windows machine (for building):**
+- `.NET SDK` is needed to compile the C# code into a deployable application
+- You run: `dotnet publish` which creates the files that get deployed
 
-# Backend
-cd backend/Milo.API
-dotnet run
-# API available at https://localhost:5001
-```
+**On EC2 server (for running):**
+- `.NET Runtime` is needed to execute the compiled application
+- The server runs: `dotnet Milo.API.dll` to start the API
+
+**Think of it like:**
+- SDK = Compiler (builds the app) - needed locally
+- Runtime = Engine (runs the app) - needed on EC2 server
 
 ## Deployment
 - **Frontend**: AWS Amplify hosting at `www.codingeverest.com`
 - **Backend**: EC2 instance (Coding Everest) for API
 - **Domain**: Namecheap DNS configuration (see `DOMAIN_SETUP.md`)
+
+## Quick Start - Deploy to Production
+
+**See `NEXT_STEPS.md` for complete deployment instructions.**
+
+Quick commands:
+```powershell
+# 1. Open port 5000
+.\add-port-5000.ps1
+
+# 2. Deploy backend
+.\deploy-to-ec2.ps1
+
+# 3. Test API
+curl http://34.246.3.141:5000/api/health
+```
 
 ## Domain Configuration
 The application is configured to work with:

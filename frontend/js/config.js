@@ -1,10 +1,7 @@
-// API Configuration
+// API Configuration - Production Only
 const API_CONFIG = {
-    // Production API URL - will be set based on environment
-    baseURL: window.location.hostname === 'www.codingeverest.com' || 
-             window.location.hostname === 'codingeverest.com'
-        ? 'https://www.codingeverest.com/api'
-        : 'http://localhost:5000/api',
+    // Production API URL
+    baseURL: 'https://www.codingeverest.com/api',
     
     // Timeout settings
     timeout: 30000,
