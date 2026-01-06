@@ -62,21 +62,30 @@ class ApiClient {
                 }
                 
                 // For 4xx errors (client errors), don't retry
+                // Don't read the body here - let the caller read it
                 if (response.status >= 400 && response.status < 500) {
-                    throw new ApiError(
-                        `Client error: ${response.status}`,
-                        response.status,
-                        await this.getErrorDetails(response)
-                    );
+                    // Return the response so caller can read the body
+                    return response;
                 }
                 
                 // For 5xx errors (server errors), retry
                 if (response.status >= 500) {
-                    lastError = new ApiError(
-                        `Server error: ${response.status}`,
-                        response.status,
-                        await this.getErrorDetails(response)
-                    );
+                    // Read error details for logging, but clone response first
+                    const responseClone = response.clone();
+                    try {
+                        const errorDetails = await this.getErrorDetails(responseClone);
+                        lastError = new ApiError(
+                            `Server error: ${response.status}`,
+                            response.status,
+                            errorDetails
+                        );
+                    } catch {
+                        lastError = new ApiError(
+                            `Server error: ${response.status}`,
+                            response.status,
+                            null
+                        );
+                    }
                     
                     // Wait before retrying (exponential backoff)
                     if (attempt < this.retryAttempts - 1) {

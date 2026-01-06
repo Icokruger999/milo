@@ -14,16 +14,28 @@ class AuthService {
                 email: email
             });
 
-            if (response.ok) {
+            // Check if response is ok
+            if (response && response.ok) {
+                // Read the response body only once
                 const data = await response.json();
                 
                 if (data.success) {
                     // Don't store token - user needs to log in with temp password first
                     return { success: true, message: data.message || 'Account created successfully' };
+                } else {
+                    return { success: false, message: data.message || 'Signup failed' };
+                }
+            } else if (response) {
+                // Response exists but not ok - read error body
+                try {
+                    const error = await response.json();
+                    return { success: false, message: error.message || 'Signup failed' };
+                } catch (e) {
+                    // If body already read or can't parse, use status text
+                    return { success: false, message: response.statusText || 'Signup failed' };
                 }
             } else {
-                const error = await response.json();
-                return { success: false, message: error.message || 'Signup failed' };
+                return { success: false, message: 'No response from server' };
             }
         } catch (error) {
             console.error('Signup error:', error);
