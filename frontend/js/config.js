@@ -1,13 +1,12 @@
 // API Configuration - Production Only
-// STABLE CONFIGURATION - DO NOT CHANGE UNLESS EC2 IP CHANGES
+// HTTPS endpoint configured - fixes mixed content error
 const API_CONFIG = {
-    // Production API URL - Milo backend runs on port 5001
-    // STABLE: Using direct EC2 IP - this works and should not be changed
+    // Production API URL - Milo backend runs on port 5001 via nginx with HTTPS
     get baseURL() {
         const hostname = window.location.hostname;
         if (hostname === 'www.codingeverest.com' || hostname === 'codingeverest.com') {
-            // STABLE CONFIG: Direct EC2 IP on port 5001 - DO NOT CHANGE
-            return 'http://34.246.3.141:5001/api';
+            // HTTPS endpoint - fixes mixed content error (HTTPS frontend calling HTTPS backend)
+            return 'https://api.codingeverest.com/api';
         }
         return 'http://localhost:5001/api';
     },
