@@ -196,16 +196,24 @@
     <script src="js/project-selector.js"></script>
     <script src="js/project-modals.js"></script>
     <script>
-        // Check authentication
+        // Check authentication - prevent redirect loops
+        let redirecting = false;
+        
         if (!authService.isAuthenticated()) {
-            window.location.href = 'milo-login.html';
-            exit;
+            if (!redirecting) {
+                redirecting = true;
+                window.location.href = 'milo-login.html';
+            }
+            return;
         }
 
         const user = authService.getCurrentUser();
         if (!user || !user.id) {
-            window.location.href = 'milo-login.html';
-            exit;
+            if (!redirecting) {
+                redirecting = true;
+                window.location.href = 'milo-login.html';
+            }
+            return;
         }
 
         // Load projects
