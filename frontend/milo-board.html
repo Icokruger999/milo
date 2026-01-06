@@ -957,6 +957,18 @@
 
         // Setup project selector
         setupProjectSelector();
+        
+        // Load project members for avatars
+        setTimeout(() => {
+            if (typeof loadProjectMembers === 'function') {
+                loadProjectMembers();
+            }
+        }, 1000);
+        
+        // Load tasks
+        if (typeof loadTasks === 'function') {
+            setTimeout(() => loadTasks(), 500);
+        }
     </script>
 </body>
 </html>
