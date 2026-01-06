@@ -276,8 +276,14 @@
                 const result = await authService.login(email, password, rememberMe);
                 
                 if (result.success) {
-                    // Success - redirect to board
-                    window.location.href = 'milo-board.html';
+                    // Check if password change is required
+                    if (result.requiresPasswordChange) {
+                        // Redirect to change password page
+                        window.location.href = `milo-change-password.html?email=${encodeURIComponent(email)}`;
+                    } else {
+                        // Success - redirect to board
+                        window.location.href = 'milo-board.html';
+                    }
                 } else {
                     // Show error
                     alert(result.message || 'Login failed. Please check your credentials.');

@@ -5,25 +5,21 @@ const AUTH_USER_KEY = 'milo_user';
 
 class AuthService {
     /**
-     * Sign up with name, email and password
+     * Sign up with name and email (temporary password will be emailed)
      */
-    async signup(name, email, password) {
+    async signup(name, email) {
         try {
             const response = await apiClient.post('/auth/signup', {
                 name: name,
-                email: email,
-                password: password
+                email: email
             });
 
             if (response.ok) {
                 const data = await response.json();
                 
-                if (data.success && data.token) {
-                    // Store token and user info
-                    sessionStorage.setItem(AUTH_STORAGE_KEY, data.token);
-                    sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(data.user));
-                    
-                    return { success: true, user: data.user };
+                if (data.success) {
+                    // Don't store token - user needs to log in with temp password first
+                    return { success: true, message: data.message || 'Account created successfully' };
                 }
             } else {
                 const error = await response.json();
@@ -50,12 +46,29 @@ class AuthService {
                 const data = await response.json();
                 
                 if (data.success && data.token) {
-                    // Store token and user info
+                    // Check if password change is required
+                    if (data.requiresPasswordChange) {
+                        // Store token temporarily for password change
+                        const storage = rememberMe ? localStorage : sessionStorage;
+                        storage.setItem(AUTH_STORAGE_KEY, data.token);
+                        storage.setItem(AUTH_USER_KEY, JSON.stringify(data.user));
+                        storage.setItem('milo_requires_password_change', 'true');
+                        
+                        return { 
+                            success: true, 
+                            requiresPasswordChange: true,
+                            user: data.user,
+                            message: data.message || 'Please change your password'
+                        };
+                    }
+                    
+                    // Normal login - store token and user info
                     const storage = rememberMe ? localStorage : sessionStorage;
                     storage.setItem(AUTH_STORAGE_KEY, data.token);
                     storage.setItem(AUTH_USER_KEY, JSON.stringify(data.user));
+                    storage.removeItem('milo_requires_password_change');
                     
-                    return { success: true, user: data.user };
+                    return { success: true, user: data.user, requiresPasswordChange: false };
                 }
             } else {
                 const error = await response.json();
@@ -138,6 +151,47 @@ class AuthService {
             return false;
         }
         return true;
+    }
+
+    /**
+     * Change password (for first login or password reset)
+     */
+    async changePassword(email, currentPassword, newPassword) {
+        try {
+            const response = await apiClient.post('/auth/change-password', {
+                email: email,
+                currentPassword: currentPassword,
+                newPassword: newPassword
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.success && data.token) {
+                    // Update stored token and clear password change flag
+                    const storage = localStorage.getItem(AUTH_STORAGE_KEY) ? localStorage : sessionStorage;
+                    storage.setItem(AUTH_STORAGE_KEY, data.token);
+                    storage.setItem(AUTH_USER_KEY, JSON.stringify(data.user));
+                    storage.removeItem('milo_requires_password_change');
+                    
+                    return { success: true, user: data.user, message: data.message || 'Password changed successfully' };
+                }
+            } else {
+                const error = await response.json();
+                return { success: false, message: error.message || 'Password change failed' };
+            }
+        } catch (error) {
+            console.error('Change password error:', error);
+            return { success: false, message: error.message || 'Network error. Please try again.' };
+        }
+    }
+
+    /**
+     * Check if password change is required
+     */
+    requiresPasswordChange() {
+        return localStorage.getItem('milo_requires_password_change') === 'true' ||
+               sessionStorage.getItem('milo_requires_password_change') === 'true';
     }
 }
 

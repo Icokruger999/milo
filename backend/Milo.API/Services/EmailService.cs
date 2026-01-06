@@ -111,5 +111,110 @@ The Milo Team
             return false;
         }
     }
+
+    public async Task<bool> SendTemporaryPasswordEmailAsync(string toEmail, string toName, string tempPassword)
+    {
+        try
+        {
+            var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
+            var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
+            var smtpUser = _configuration["Email:SmtpUser"];
+            var smtpPassword = _configuration["Email:SmtpPassword"];
+            var fromEmail = _configuration["Email:FromEmail"] ?? "noreply@codingeverest.com";
+            var fromName = _configuration["Email:FromName"] ?? "Milo - Coding Everest";
+
+            // If email is not configured, log and return false
+            if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPassword))
+            {
+                _logger.LogWarning("Email service not configured. Skipping email send.");
+                return false;
+            }
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(fromName, fromEmail));
+            message.To.Add(new MailboxAddress(toName, toEmail));
+            message.Subject = "Your Milo Account - Temporary Password";
+
+            var bodyBuilder = new BodyBuilder
+            {
+                HtmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background: #0052CC; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+        .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
+        .password-box {{ background: #fff; border: 2px solid #0052CC; border-radius: 4px; padding: 15px; margin: 20px 0; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 2px; color: #0052CC; }}
+        .button {{ display: inline-block; background: #0052CC; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 20px; }}
+        .warning {{ background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 20px 0; }}
+    </style>
+</head>
+<body>
+    <div class=""container"">
+        <div class=""header"">
+            <h1>Welcome to Milo!</h1>
+        </div>
+        <div class=""content"">
+            <p>Hi {toName},</p>
+            <p>Your Milo account has been created successfully!</p>
+            <p>Please use the temporary password below to log in. You will be required to create a new password on your first login.</p>
+            
+            <div class=""password-box"">
+                {tempPassword}
+            </div>
+            
+            <div class=""warning"">
+                <strong>Important:</strong> This is a temporary password. You must change it when you first log in.
+            </div>
+            
+            <p style=""text-align: center;"">
+                <a href=""https://www.codingeverest.com/milo-login.html"" class=""button"">Log in to Milo</a>
+            </p>
+            
+            <p>If you have any questions, feel free to reach out to our support team.</p>
+            <p>Best regards,<br>The Milo Team</p>
+        </div>
+    </div>
+</body>
+</html>",
+                TextBody = $@"
+Welcome to Milo!
+
+Hi {toName},
+
+Your Milo account has been created successfully!
+
+Your temporary password is: {tempPassword}
+
+IMPORTANT: This is a temporary password. You must change it when you first log in.
+
+Log in at: https://www.codingeverest.com/milo-login.html
+
+If you have any questions, feel free to reach out to our support team.
+
+Best regards,
+The Milo Team
+"
+            };
+
+            message.Body = bodyBuilder.ToMessageBody();
+
+            using var client = new SmtpClient();
+            await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
+            await client.AuthenticateAsync(smtpUser, smtpPassword);
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
+
+            _logger.LogInformation($"Temporary password email sent successfully to {toEmail}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Failed to send temporary password email to {toEmail}");
+            return false;
+        }
+    }
 }
 
