@@ -6,7 +6,8 @@ const API_CONFIG = {
     get baseURL() {
         const hostname = window.location.hostname;
         if (hostname === 'www.codingeverest.com' || hostname === 'codingeverest.com') {
-            return 'http://34.246.3.141:5001/api';
+            // Use HTTPS API subdomain (permanent fix for mixed content)
+            return 'https://api.codingeverest.com/api';
         }
         return 'http://localhost:5001/api';
     },
