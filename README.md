@@ -42,15 +42,19 @@ A modern project management application built with C#, JavaScript, HTML, and CSS
 
 Quick commands:
 ```powershell
-# 1. Open port 5000
-.\add-port-5000.ps1
+# 1. Open port 5001 for backend API
+.\add-port-5001.ps1
 
 # 2. Deploy backend
 .\deploy-to-ec2.ps1
 
-# 3. Test API
-curl http://34.246.3.141:5000/api/health
+# 3. Test API (backend runs on port 5001)
+curl http://34.246.3.141:5001/api/health
 ```
+
+**Port Configuration:**
+- **Frontend**: Port 5000 (hosted on AWS Amplify)
+- **Backend API**: Port 5001 (runs on EC2)
 
 ## Domain Configuration
 The application is configured to work with:
