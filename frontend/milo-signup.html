@@ -358,8 +358,8 @@
                 const result = await authService.signup(name, email);
                 
                 if (result.success) {
-                    showSuccess('Account created! Please check your email for your temporary password.');
-                    // Redirect to login after 3 seconds
+                    showSuccess('Account created! Please check your email for your temporary password. You will be redirected to login...');
+                    // Redirect to login after 3 seconds - user must login before accessing projects
                     setTimeout(() => {
                         window.location.href = 'milo-login.html';
                     }, 3000);

@@ -893,10 +893,15 @@
     <script src="js/board-filters.js"></script>
     <script src="js/board.js"></script>
     <script>
-        // Check authentication and password change requirement
+        // Check authentication - users must login before accessing board
         if (!authService.isAuthenticated()) {
+            // Redirect to login - user must authenticate first
             window.location.href = 'milo-login.html';
-        } else if (authService.requiresPasswordChange()) {
+            return;
+        }
+        
+        // Check password change requirement
+        if (authService.requiresPasswordChange()) {
             const user = authService.getCurrentUser();
             if (user && user.email) {
                 window.location.href = `milo-change-password.html?email=${encodeURIComponent(user.email)}`;

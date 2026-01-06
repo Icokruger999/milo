@@ -197,11 +197,13 @@
     <script src="js/project-modals.js"></script>
     <script>
         // Check authentication - prevent redirect loops
+        // Users MUST signup/login before accessing projects
         let redirecting = false;
         
         if (!authService.isAuthenticated()) {
             if (!redirecting) {
                 redirecting = true;
+                // Redirect to login - user must authenticate first
                 window.location.href = 'milo-login.html';
             }
             return;
@@ -211,6 +213,7 @@
         if (!user || !user.id) {
             if (!redirecting) {
                 redirecting = true;
+                // User not properly authenticated - redirect to login
                 window.location.href = 'milo-login.html';
             }
             return;
