@@ -294,23 +294,18 @@
     <script src="js/config.js"></script>
     <script src="js/api-client.js"></script>
     <script src="js/auth.js"></script>
-    <script src="js/project-selector.js"></script>
     <script>
         // Prevent redirect loops
         let redirecting = false;
         
-        // Check if already logged in - redirect appropriately
+        // Check if already logged in - if so, redirect away from signup page
+        // Signup page is ONLY for new users who haven't created an account yet
         if (authService.isAuthenticated()) {
             if (!redirecting) {
                 redirecting = true;
-                // Check if user has a project selected
-                const currentProject = projectSelector ? projectSelector.getCurrentProject() : null;
-                if (currentProject) {
-                    window.location.href = 'milo-board.html';
-                } else {
-                    // No project - go to project selector (not signup)
-                    window.location.href = 'milo-select-project.html';
-                }
+                // User is already logged in - redirect to login page (which will then redirect to projects/board)
+                // Don't go directly to project selector from signup page
+                window.location.href = 'milo-login.html';
             }
         }
 
