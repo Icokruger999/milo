@@ -108,11 +108,11 @@ function createTaskCard(task) {
         </div>
         <div class="task-footer">
             <div class="task-icons-left">
-                ${task.subtasks ? `<span style="font-size: 11px; color: #6B778C;">${task.subtasks}</span>` : ''}
-                <svg class="task-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                ${task.subtasks ? `<span style="font-size: 11px; color: #6B778C; margin-right: 4px;">${task.subtasks}</span>` : ''}
+                <svg class="task-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px; color: #6B778C;">
                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"></path>
                 </svg>
-                <svg class="task-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                <svg class="task-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px; color: #6B778C;">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                 </svg>
             </div>
@@ -373,7 +373,8 @@ async function loadTasksFromAPI() {
                     assigneeEmail: task.assignee ? task.assignee.email : null,
                     productId: task.productId,
                     priority: task.priority,
-                    dueDate: task.dueDate
+                    dueDate: task.dueDate,
+                    subtasks: Math.floor(Math.random() * 5) + 1 // Mock subtask count - replace with actual when available
                 };
                 
                 // Map API status to board columns

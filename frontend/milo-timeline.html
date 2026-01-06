@@ -519,7 +519,7 @@
                 <div class="sidebar-section">
                     <div class="sidebar-section-title">Planning</div>
                     <a href="milo-roadmap.html" class="sidebar-item">Roadmap</a>
-                    <a href="#" class="sidebar-item" id="backlogLink">Backlog</a>
+                    <a href="javascript:void(0)" class="sidebar-item" id="backlogLink" onclick="showBacklogView()">Backlog</a>
                     <a href="milo-board.html" class="sidebar-item">Board</a>
                     <a href="milo-timeline.html" class="sidebar-item active">Timeline</a>
                 </div>
@@ -592,10 +592,11 @@
             currentView = 'timeline';
             document.getElementById('timelineView').style.display = 'flex';
             document.getElementById('backlogView').style.display = 'none';
-            document.querySelectorAll('.timeline-toolbar button').forEach(btn => {
+            const buttons = document.querySelectorAll('.timeline-toolbar button');
+            buttons.forEach(btn => {
                 btn.classList.remove('active');
+                if (btn.textContent === 'Timeline') btn.classList.add('active');
             });
-            event.target.classList.add('active');
             loadTimeline();
         }
 
@@ -603,10 +604,11 @@
             currentView = 'backlog';
             document.getElementById('timelineView').style.display = 'none';
             document.getElementById('backlogView').style.display = 'block';
-            document.querySelectorAll('.timeline-toolbar button').forEach(btn => {
+            const buttons = document.querySelectorAll('.timeline-toolbar button');
+            buttons.forEach(btn => {
                 btn.classList.remove('active');
+                if (btn.textContent === 'Backlog') btn.classList.add('active');
             });
-            event.target.classList.add('active');
             loadBacklog();
         }
 
