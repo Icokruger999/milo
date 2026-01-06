@@ -5,6 +5,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Add email service
+builder.Services.AddScoped<Milo.API.Services.EmailService>();
+
 // Configure CORS for frontend
 builder.Services.AddCors(options =>
 {

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Concurrent;
+using Milo.API.Services;
 
 namespace Milo.API.Controllers;
 
@@ -14,6 +15,15 @@ public class AuthController : ControllerBase
 
     // In-memory user storage (temporary - replace with database)
     private static readonly ConcurrentDictionary<string, UserAccount> _users = new();
+    
+    private readonly EmailService _emailService;
+    private readonly ILogger<AuthController> _logger;
+
+    public AuthController(EmailService emailService, ILogger<AuthController> logger)
+    {
+        _emailService = emailService;
+        _logger = logger;
+    }
 
     [HttpPost("login")]
     public IActionResult Login([FromBody] LoginRequest request)
@@ -107,6 +117,20 @@ public class AuthController : ControllerBase
 
         // Generate token
         var token = Guid.NewGuid().ToString();
+
+        // Send welcome email (fire and forget - don't wait for it)
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _emailService.SendWelcomeEmailAsync(request.Email, request.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Failed to send welcome email to {request.Email}");
+                // Don't fail signup if email fails
+            }
+        });
 
         return Ok(new
         {
