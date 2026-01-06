@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Coding Everest Products - Milo Project Management and Insurance Loom">
+    <title>Products - Coding Everest</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <a href="index.html" style="text-decoration: none; display: flex; align-items: center; gap: 10px;">
+                    <div class="logo-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor"/>
+                            <path d="M2 17L12 22L22 17V12L12 17L2 12V17Z" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <span class="brand-text">Coding Everest</span>
+                </a>
+            </div>
+            <div class="nav-links">
+                <a href="index.html#solutions">Solutions</a>
+                <a href="products.html">Products</a>
+                <a href="index.html#resources">Resources</a>
+                <a href="index.html#contact">Contact</a>
+                <a href="milo-login.html" class="btn-primary">Login to Milo</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Products Section -->
+    <section class="products-section" style="padding: 100px 0; background: var(--bg-primary);">
+        <div class="container">
+            <div class="section-header" style="text-align: center; margin-bottom: 64px;">
+                <h1 style="font-size: 48px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary); letter-spacing: -0.02em;">Our Products</h1>
+                <p style="font-size: 20px; color: var(--text-secondary); max-width: 600px; margin: 0 auto;">Professional tools designed to help teams work better together</p>
+            </div>
+
+            <div class="products-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 32px; max-width: 1000px; margin: 0 auto;">
+                <!-- Milo Product Card -->
+                <div class="product-card" style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 40px; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; cursor: pointer;" onclick="window.location.href='milo-login.html'">
+                    <div class="product-icon" style="width: 64px; height: 64px; background: var(--primary-blue-light); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--primary-blue)" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="9" y1="3" x2="9" y2="21"></line>
+                            <line x1="3" y1="9" x2="21" y2="9"></line>
+                        </svg>
+                    </div>
+                    <h2 style="font-size: 28px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary); letter-spacing: -0.01em;">Milo</h2>
+                    <p style="font-size: 16px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px;">JIRA-style project management tool for agile teams. Organize tasks, track progress, and deliver projects faster with boards, sprints, and real-time collaboration.</p>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px;">
+                        <span style="padding: 4px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; font-weight: 500; color: var(--text-secondary);">Project Management</span>
+                        <span style="padding: 4px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; font-weight: 500; color: var(--text-secondary);">Agile Boards</span>
+                        <span style="padding: 4px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; font-weight: 500; color: var(--text-secondary);">Team Collaboration</span>
+                    </div>
+                    <a href="milo-login.html" class="btn-primary" style="display: inline-block; text-decoration: none;">Login to Milo →</a>
+                </div>
+
+                <!-- Insurance Loom Product Card -->
+                <div class="product-card" style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 40px; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; cursor: pointer;" onclick="window.open('https://www.insuranceloom.com', '_blank')">
+                    <div class="product-icon" style="width: 64px; height: 64px; background: var(--primary-blue-light); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--primary-blue)" stroke-width="2">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z"></path>
+                            <path d="M2 17L12 22L22 17V12L12 17L2 12V17Z"></path>
+                        </svg>
+                    </div>
+                    <h2 style="font-size: 28px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary); letter-spacing: -0.01em;">Insurance Loom</h2>
+                    <p style="font-size: 16px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px;">Comprehensive insurance management platform. Streamline insurance operations, manage policies, and provide better service to your clients.</p>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px;">
+                        <span style="padding: 4px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; font-weight: 500; color: var(--text-secondary);">Insurance Management</span>
+                        <span style="padding: 4px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; font-weight: 500; color: var(--text-secondary);">Policy Tracking</span>
+                        <span style="padding: 4px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; font-weight: 500; color: var(--text-secondary);">Client Portal</span>
+                    </div>
+                    <a href="https://www.insuranceloom.com" target="_blank" class="btn-primary" style="display: inline-block; text-decoration: none;">Visit Insurance Loom →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="logo-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor"/>
+                            <path d="M2 17L12 22L22 17V12L12 17L2 12V17Z" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <span>Coding Everest</span>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-column">
+                        <h4>Product</h4>
+                        <a href="products.html">Products</a>
+                        <a href="milo-login.html">Milo</a>
+                        <a href="https://www.insuranceloom.com" target="_blank">Insurance Loom</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Company</h4>
+                        <a href="index.html#about">About</a>
+                        <a href="index.html#careers">Careers</a>
+                        <a href="index.html#contact">Contact</a>
+                    </div>
+                    <div class="footer-column">
+                        <h4>Resources</h4>
+                        <a href="index.html#docs">Documentation</a>
+                        <a href="index.html#support">Support</a>
+                        <a href="index.html#community">Community</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Coding Everest. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
+
