@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Login to Milo - Project Management">
-    <title>Login to Milo - Coding Everest</title>
+    <meta name="description" content="Sign up for Milo - Project Management">
+    <title>Sign up for Milo - Coding Everest</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -80,6 +80,7 @@
             transition: border-color 0.15s ease;
             background: var(--bg-primary);
             color: var(--text-primary);
+            box-sizing: border-box;
         }
 
         .form-input:focus {
@@ -124,6 +125,11 @@
             background: var(--primary-blue-hover);
         }
 
+        .login-button:disabled {
+            background: var(--text-tertiary);
+            cursor: not-allowed;
+        }
+
         .login-footer {
             text-align: center;
             margin-top: 24px;
@@ -155,6 +161,36 @@
         .back-link:hover {
             color: var(--text-primary);
         }
+
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 12px;
+            border-radius: 3px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            background: #efe;
+            border: 1px solid #cfc;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 3px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -181,14 +217,14 @@
         </div>
     </nav>
 
-    <!-- Login Container -->
+    <!-- Signup Container -->
     <div class="login-container">
         <div style="width: 100%; max-width: 400px; padding: 0 24px;">
-            <a href="products.html" class="back-link">
+            <a href="milo-login.html" class="back-link">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M19 12H5M12 19l-7-7 7-7"/>
                 </svg>
-                Back to Products
+                Back to Login
             </a>
             
             <div class="login-box">
@@ -200,11 +236,27 @@
                             <line x1="3" y1="9" x2="21" y2="9"></line>
                         </svg>
                     </div>
-                    <h1>Login to Milo</h1>
-                    <p>Access your project management workspace</p>
+                    <h1>Sign up for Milo</h1>
+                    <p>Create your project management account</p>
                 </div>
 
-                <form id="loginForm" onsubmit="handleLogin(event)">
+                <div id="errorMessage" class="error-message"></div>
+                <div id="successMessage" class="success-message"></div>
+
+                <form id="signupForm" onsubmit="handleSignup(event)">
+                    <div class="form-group">
+                        <label class="form-label" for="name">Full Name</label>
+                        <input 
+                            type="text" 
+                            id="name" 
+                            name="name" 
+                            class="form-input" 
+                            placeholder="John Doe"
+                            required
+                            autocomplete="name"
+                        >
+                    </div>
+
                     <div class="form-group">
                         <label class="form-label" for="email">Email address</label>
                         <input 
@@ -225,27 +277,38 @@
                             id="password" 
                             name="password" 
                             class="form-input" 
-                            placeholder="Enter your password"
+                            placeholder="Create a password"
                             required
-                            autocomplete="current-password"
+                            autocomplete="new-password"
+                            minlength="6"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="confirmPassword">Confirm Password</label>
+                        <input 
+                            type="password" 
+                            id="confirmPassword" 
+                            name="confirmPassword" 
+                            class="form-input" 
+                            placeholder="Confirm your password"
+                            required
+                            autocomplete="new-password"
+                            minlength="6"
                         >
                     </div>
 
                     <div class="form-checkbox">
-                        <input type="checkbox" id="remember" name="remember">
-                        <label for="remember">Remember me</label>
+                        <input type="checkbox" id="terms" name="terms" required>
+                        <label for="terms">I agree to the Terms of Service and Privacy Policy</label>
                     </div>
 
-                    <button type="submit" class="login-button">Log in</button>
+                    <button type="submit" class="login-button" id="submitButton">Create Account</button>
                 </form>
 
                 <div class="login-footer">
-                    <a href="#forgot-password">Forgot your password?</a>
+                    <p>Already have an account? <a href="milo-login.html">Log in</a></p>
                 </div>
-            </div>
-
-            <div style="text-align: center; margin-top: 24px; color: var(--text-tertiary); font-size: 12px;">
-                <p>Don't have an account? <a href="milo-signup.html" style="color: var(--primary-blue); text-decoration: none;">Sign up</a></p>
             </div>
         </div>
     </div>
@@ -259,33 +322,70 @@
             window.location.href = 'milo-board.html';
         }
 
-        async function handleLogin(event) {
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            successDiv.classList.remove('show');
+        }
+
+        function showSuccess(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.classList.add('show');
+            errorDiv.classList.remove('show');
+        }
+
+        function hideMessages() {
+            document.getElementById('errorMessage').classList.remove('show');
+            document.getElementById('successMessage').classList.remove('show');
+        }
+
+        async function handleSignup(event) {
             event.preventDefault();
+            hideMessages();
             
-            const email = document.getElementById('email').value;
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
-            const rememberMe = document.getElementById('remember').checked;
-            const submitButton = event.target.querySelector('button[type="submit"]');
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const submitButton = document.getElementById('submitButton');
             const originalText = submitButton.textContent;
+            
+            // Validate passwords match
+            if (password !== confirmPassword) {
+                showError('Passwords do not match');
+                return;
+            }
+
+            // Validate password length
+            if (password.length < 6) {
+                showError('Password must be at least 6 characters long');
+                return;
+            }
             
             // Disable button and show loading
             submitButton.disabled = true;
-            submitButton.textContent = 'Logging in...';
+            submitButton.textContent = 'Creating account...';
             
             try {
-                const result = await authService.login(email, password, rememberMe);
+                const result = await authService.signup(name, email, password);
                 
                 if (result.success) {
-                    // Success - redirect to board
-                    window.location.href = 'milo-board.html';
+                    showSuccess('Account created successfully! Redirecting to login...');
+                    // Redirect to login after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = 'milo-login.html';
+                    }, 2000);
                 } else {
-                    // Show error
-                    alert(result.message || 'Login failed. Please check your credentials.');
+                    showError(result.message || 'Signup failed. Please try again.');
                     submitButton.disabled = false;
                     submitButton.textContent = originalText;
                 }
             } catch (error) {
-                alert('An error occurred. Please try again.');
+                showError('An error occurred. Please try again.');
                 submitButton.disabled = false;
                 submitButton.textContent = originalText;
             }

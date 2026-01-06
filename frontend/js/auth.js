@@ -5,6 +5,37 @@ const AUTH_USER_KEY = 'milo_user';
 
 class AuthService {
     /**
+     * Sign up with name, email and password
+     */
+    async signup(name, email, password) {
+        try {
+            const response = await apiClient.post('/auth/signup', {
+                name: name,
+                email: email,
+                password: password
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                
+                if (data.success && data.token) {
+                    // Store token and user info
+                    sessionStorage.setItem(AUTH_STORAGE_KEY, data.token);
+                    sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(data.user));
+                    
+                    return { success: true, user: data.user };
+                }
+            } else {
+                const error = await response.json();
+                return { success: false, message: error.message || 'Signup failed' };
+            }
+        } catch (error) {
+            console.error('Signup error:', error);
+            return { success: false, message: error.message || 'Network error. Please try again.' };
+        }
+    }
+
+    /**
      * Login with email and password
      */
     async login(email, password, rememberMe = false) {
