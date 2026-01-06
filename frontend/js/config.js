@@ -6,8 +6,9 @@ const API_CONFIG = {
     get baseURL() {
         const hostname = window.location.hostname;
         if (hostname === 'www.codingeverest.com' || hostname === 'codingeverest.com') {
-            // Use HTTPS API subdomain (permanent fix for mixed content)
-            return 'https://api.codingeverest.com/api';
+            // Use EC2 IP directly for now (until api.codingeverest.com subdomain is configured)
+            // Backend runs on port 5001
+            return 'http://34.246.3.141:5001/api';
         }
         return 'http://localhost:5001/api';
     },
