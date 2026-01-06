@@ -274,6 +274,12 @@
             submitButton.textContent = 'Logging in...';
             
             try {
+                // Clear any stale auth state before login attempt
+                localStorage.removeItem('milo_auth_token');
+                localStorage.removeItem('milo_user');
+                sessionStorage.removeItem('milo_auth_token');
+                sessionStorage.removeItem('milo_user');
+                
                 const result = await authService.login(email, password, rememberMe);
                 
                 if (result.success) {
@@ -282,9 +288,8 @@
                         // Redirect to change password page
                         window.location.href = `milo-change-password.html?email=${encodeURIComponent(email)}`;
                     } else {
-                        // User successfully logged in
-                        // Now they can access projects - redirect to project selector
-                        // Project selector will show create/join options
+                        // User successfully logged in - NOW redirect to project selector
+                        // This is the ONLY place we redirect to project selector after login
                         const projects = result.projects || [];
                         if (projects.length === 0) {
                             // No projects yet - go to project selector where they can create or join
