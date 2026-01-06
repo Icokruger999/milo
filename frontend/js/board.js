@@ -376,9 +376,15 @@ async function loadTasksFromAPI() {
                     dueDate: task.dueDate
                 };
                 
-                const status = task.status || 'todo';
-                if (tasks[status]) {
-                    tasks[status].push(taskObj);
+                // Map API status to board columns
+                let boardStatus = 'todo';
+                if (task.status === 'progress' || task.status === 'in-progress') boardStatus = 'progress';
+                else if (task.status === 'review' || task.status === 'in-review') boardStatus = 'review';
+                else if (task.status === 'done' || task.status === 'completed') boardStatus = 'done';
+                else boardStatus = 'todo';
+                
+                if (tasks[boardStatus]) {
+                    tasks[boardStatus].push(taskObj);
                 } else {
                     tasks.todo.push(taskObj);
                 }
@@ -403,46 +409,84 @@ function handleDragEnd(e) {
     draggedElement = null;
 }
 
-// Add drop zones
-document.addEventListener('DOMContentLoaded', function() {
+// Add drop zones - wait for DOM to be ready
+function setupDragAndDrop() {
     const columns = ['todoItems', 'progressItems', 'reviewItems', 'doneItems'];
     
     columns.forEach(columnId => {
         const column = document.getElementById(columnId);
-        column.addEventListener('dragover', handleDragOver);
-        column.addEventListener('drop', handleDrop);
+        if (column) {
+            column.addEventListener('dragover', handleDragOver);
+            column.addEventListener('drop', handleDrop);
+        }
     });
-});
+}
+
+// Setup drag and drop when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupDragAndDrop);
+} else {
+    setupDragAndDrop();
+}
 
 function handleDragOver(e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
 }
 
-function handleDrop(e) {
+async function handleDrop(e) {
     e.preventDefault();
     
     if (!draggedElement) return;
 
-    const taskId = draggedElement.querySelector('.task-id').textContent;
-    const taskTitle = draggedElement.querySelector('.task-title').textContent;
-    const taskLabel = draggedElement.querySelector('.task-label').textContent.toLowerCase();
-    const taskAssignee = draggedElement.querySelector('.task-assignee').textContent;
+    const taskId = draggedElement.dataset.taskId;
+    if (!taskId) return;
 
-    // Remove from old column
-    const oldColumn = draggedElement.closest('.column-items').id.replace('Items', '');
-    tasks[oldColumn] = tasks[oldColumn].filter(t => t.id !== taskId);
+    // Get new status from column
+    const newColumnId = e.currentTarget.id;
+    let newStatus = 'todo';
+    if (newColumnId === 'progressItems') newStatus = 'progress';
+    else if (newColumnId === 'reviewItems') newStatus = 'review';
+    else if (newColumnId === 'doneItems') newStatus = 'done';
 
-    // Add to new column
-    const newColumn = e.currentTarget.id.replace('Items', '');
-    tasks[newColumn].push({
-        id: taskId,
-        title: taskTitle,
-        label: taskLabel,
-        assignee: taskAssignee
-    });
+    // Find task in current tasks
+    let task = null;
+    for (const status in tasks) {
+        task = tasks[status].find(t => (t.id === taskId || t.taskId === taskId));
+        if (task) break;
+    }
 
-    renderBoard();
+    if (!task) return;
+
+    // Update task status via API
+    try {
+        // Extract numeric ID from taskId (e.g., "NUC-344" -> find task with that taskId)
+        const response = await apiClient.get('/tasks');
+        if (response.ok) {
+            const allTasks = await response.json();
+            const apiTask = allTasks.find(t => t.taskId === taskId || t.id.toString() === taskId.replace('TASK-', ''));
+            
+            if (apiTask) {
+                const updateResponse = await apiClient.put(`/tasks/${apiTask.id}`, {
+                    status: newStatus
+                });
+
+                if (updateResponse.ok) {
+                    // Reload tasks from API
+                    await loadTasksFromAPI();
+                    renderBoard();
+                } else {
+                    console.error('Failed to update task status');
+                    // Revert visual change
+                    renderBoard();
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error updating task:', error);
+        // Revert visual change
+        renderBoard();
+    }
 }
 
 async function loadTasks() {
