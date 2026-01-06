@@ -104,8 +104,10 @@ try {
 
 # Create deployment directory on EC2
 Write-Host "`nSetting up deployment directory on EC2..." -ForegroundColor Yellow
-$setupCmd = "ssh -i `"$KeyPath`" -o StrictHostKeyChecking=no $Username@$PublicIp `"sudo mkdir -p /var/www/milo-api && sudo chown -R $Username:$Username /var/www/milo-api`""
-Invoke-Expression $setupCmd
+$setupCmd1 = "ssh -i `"$KeyPath`" -o StrictHostKeyChecking=no $Username@$PublicIp `"sudo mkdir -p /var/www/milo-api`""
+Invoke-Expression $setupCmd1
+$setupCmd2 = "ssh -i `"$KeyPath`" -o StrictHostKeyChecking=no $Username@$PublicIp `"sudo chown -R ${Username}:${Username} /var/www/milo-api`""
+Invoke-Expression $setupCmd2
 
 # Copy files to EC2
 Write-Host "Copying files to EC2..." -ForegroundColor Yellow
@@ -149,8 +151,15 @@ $scpServiceCmd = "scp -i `"$KeyPath`" -o StrictHostKeyChecking=no $tempServiceFi
 Invoke-Expression $scpServiceCmd
 
 # Move service file and reload systemd
-$serviceSetupCmd = "ssh -i `"$KeyPath`" -o StrictHostKeyChecking=no $Username@$PublicIp `"sudo mv /tmp/milo-api.service /etc/systemd/system/milo-api.service && sudo systemctl daemon-reload && sudo systemctl enable milo-api && sudo systemctl restart milo-api`""
-Invoke-Expression $serviceSetupCmd
+Write-Host "Installing and starting service..." -ForegroundColor Yellow
+$serviceCmd1 = "ssh -i `"$KeyPath`" -o StrictHostKeyChecking=no $Username@$PublicIp `"sudo mv /tmp/milo-api.service /etc/systemd/system/milo-api.service`""
+Invoke-Expression $serviceCmd1
+$serviceCmd2 = "ssh -i `"$KeyPath`" -o StrictHostKeyChecking=no $Username@$PublicIp `"sudo systemctl daemon-reload`""
+Invoke-Expression $serviceCmd2
+$serviceCmd3 = "ssh -i `"$KeyPath`" -o StrictHostKeyChecking=no $Username@$PublicIp `"sudo systemctl enable milo-api`""
+Invoke-Expression $serviceCmd3
+$serviceCmd4 = "ssh -i `"$KeyPath`" -o StrictHostKeyChecking=no $Username@$PublicIp `"sudo systemctl restart milo-api`""
+Invoke-Expression $serviceCmd4
 
 # Clean up temp file
 Remove-Item $tempServiceFile -ErrorAction SilentlyContinue
