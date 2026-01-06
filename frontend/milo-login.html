@@ -250,22 +250,45 @@
         </div>
     </div>
 
+    <script src="js/config.js"></script>
+    <script src="js/api-client.js"></script>
+    <script src="js/auth.js"></script>
     <script>
-        function handleLogin(event) {
+        // Check if already logged in
+        if (authService.isAuthenticated()) {
+            window.location.href = 'milo-board.html';
+        }
+
+        async function handleLogin(event) {
             event.preventDefault();
             
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const rememberMe = document.getElementById('remember').checked;
+            const submitButton = event.target.querySelector('button[type="submit"]');
+            const originalText = submitButton.textContent;
             
-            // TODO: Implement actual login logic
-            // For now, redirect to a placeholder board page
-            console.log('Login attempt:', { email });
+            // Disable button and show loading
+            submitButton.disabled = true;
+            submitButton.textContent = 'Logging in...';
             
-            // In the future, this will authenticate and redirect to the JIRA board
-            alert('Login functionality will be implemented when the Milo application is built. This will redirect to your JIRA-style board.');
-            
-            // Placeholder redirect (will be replaced with actual board URL)
-            // window.location.href = 'milo-board.html';
+            try {
+                const result = await authService.login(email, password, rememberMe);
+                
+                if (result.success) {
+                    // Success - redirect to board
+                    window.location.href = 'milo-board.html';
+                } else {
+                    // Show error
+                    alert(result.message || 'Login failed. Please check your credentials.');
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalText;
+                }
+            } catch (error) {
+                alert('An error occurred. Please try again.');
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+            }
         }
     </script>
 </body>

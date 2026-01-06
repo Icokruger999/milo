@@ -8,6 +8,16 @@ class ApiClient {
     }
 
     /**
+     * Get authentication token
+     */
+    getAuthToken() {
+        if (typeof authService !== 'undefined') {
+            return authService.getToken();
+        }
+        return localStorage.getItem('milo_auth_token') || sessionStorage.getItem('milo_auth_token');
+    }
+
+    /**
      * Make an API request with retry logic
      * @param {string} endpoint - API endpoint (e.g., '/health')
      * @param {object} options - Fetch options (method, body, headers, etc.)
@@ -18,14 +28,26 @@ class ApiClient {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
+        const token = this.getAuthToken();
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const defaultOptions = {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: headers,
             signal: controller.signal,
             ...options
         };
+        
+        // Merge headers properly
+        if (options.headers) {
+            defaultOptions.headers = { ...defaultOptions.headers, ...options.headers };
+        }
 
         let lastError;
         
