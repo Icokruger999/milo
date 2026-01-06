@@ -85,7 +85,7 @@ KillSignal=SIGINT
 SyslogIdentifier=milo-api
 User=ec2-user
 Environment=ASPNETCORE_ENVIRONMENT=Production
-Environment=ASPNETCORE_URLS=http://0.0.0.0:5000
+Environment=ASPNETCORE_URLS=http://0.0.0.0:5001
 
 [Install]
 WantedBy=multi-user.target
@@ -112,7 +112,7 @@ sudo systemctl status milo-api --no-pager
 echo ""
 echo "Testing API..."
 sleep 2
-curl http://localhost:5000/api/health
+curl http://localhost:5001/api/health
 
 echo ""
 echo ""
@@ -120,8 +120,8 @@ echo "========================================"
 echo "Deployment Complete!"
 echo "========================================"
 echo ""
-echo "API: http://34.246.3.141:5000/api/health"
-echo "Login: http://34.246.3.141:5000/api/auth/login"
+echo "API: http://34.246.3.141:5001/api/health"
+echo "Login: http://34.246.3.141:5001/api/auth/login"
 echo ""
 echo "To update in future, just run this script again!"
 

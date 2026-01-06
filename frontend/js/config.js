@@ -1,10 +1,10 @@
 // API Configuration - Production Only
 const API_CONFIG = {
-    // Production API URL - Use EC2 IP for now, will switch to domain later
+    // Production API URL - Milo backend runs on port 5001
     baseURL: window.location.hostname === 'www.codingeverest.com' || 
              window.location.hostname === 'codingeverest.com'
-        ? 'http://34.246.3.141:5000/api'
-        : 'http://localhost:5000/api',
+        ? 'http://34.246.3.141:5001/api'
+        : 'http://localhost:5001/api',
     
     // Timeout settings
     timeout: 30000,
