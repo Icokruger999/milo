@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Project - Milo</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #F4F5F7;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .project-selector-container {
+            width: 100%;
+            max-width: 600px;
+            padding: 24px;
+        }
+
+        .project-selector-box {
+            background: #FFFFFF;
+            border-radius: 8px;
+            padding: 32px;
+            box-shadow: 0 2px 8px rgba(9, 30, 66, 0.15);
+        }
+
+        .project-selector-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .project-selector-logo {
+            width: 48px;
+            height: 48px;
+            background: #0052CC;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin: 0 auto 16px;
+        }
+
+        .project-selector-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #172B4D;
+            margin-bottom: 8px;
+        }
+
+        .project-selector-subtitle {
+            font-size: 14px;
+            color: #6B778C;
+        }
+
+        .project-list {
+            margin-bottom: 24px;
+        }
+
+        .project-item {
+            background: #F4F5F7;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .project-item:hover {
+            background: #EBECF0;
+            border-color: #0052CC;
+        }
+
+        .project-item-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .project-item-icon {
+            width: 32px;
+            height: 32px;
+            background: #6554C0;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .project-item-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #172B4D;
+            flex: 1;
+        }
+
+        .project-item-key {
+            font-size: 12px;
+            color: #6B778C;
+            font-family: 'Courier New', monospace;
+        }
+
+        .project-item-description {
+            font-size: 14px;
+            color: #42526E;
+            margin-left: 44px;
+        }
+
+        .project-item-role {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #DEEBFF;
+            color: #0052CC;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-left: 44px;
+            margin-top: 4px;
+        }
+
+        .create-project-button {
+            width: 100%;
+            padding: 12px;
+            background: #0052CC;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .create-project-button:hover {
+            background: #0065FF;
+        }
+
+        .error-message {
+            background: #FFEBE6;
+            border: 1px solid #DE350B;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 16px;
+            color: #DE350B;
+            font-size: 14px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="project-selector-container">
+        <div class="project-selector-box">
+            <div class="project-selector-header">
+                <div class="project-selector-logo">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    </svg>
+                </div>
+                <h1 class="project-selector-title">Select a Project</h1>
+                <p class="project-selector-subtitle">Choose a project to continue</p>
+            </div>
+
+            <div id="errorMessage" class="error-message"></div>
+
+            <div id="projectList" class="project-list">
+                <p>Loading projects...</p>
+            </div>
+
+            <button class="create-project-button" onclick="showCreateProjectModal()">+ Create New Project</button>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/api-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/project-selector.js"></script>
+    <script>
+        // Check authentication
+        if (!authService.isAuthenticated()) {
+            window.location.href = 'milo-login.html';
+            exit;
+        }
+
+        const user = authService.getCurrentUser();
+        if (!user || !user.id) {
+            window.location.href = 'milo-login.html';
+            exit;
+        }
+
+        // Load projects
+        async function loadProjects() {
+            try {
+                const projects = await projectSelector.loadProjects();
+                const container = document.getElementById('projectList');
+
+                if (projects.length === 0) {
+                    container.innerHTML = `
+                        <p style="text-align: center; color: #6B778C; padding: 40px;">
+                            You don't have access to any projects yet.<br>
+                            Create a new project to get started.
+                        </p>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = projects.map(project => `
+                    <div class="project-item" onclick="selectProject(${project.id})">
+                        <div class="project-item-header">
+                            <div class="project-item-icon">${(project.key || project.name).substring(0, 1).toUpperCase()}</div>
+                            <div style="flex: 1;">
+                                <div class="project-item-name">${project.name}</div>
+                                ${project.key ? `<div class="project-item-key">${project.key}</div>` : ''}
+                            </div>
+                        </div>
+                        ${project.description ? `<div class="project-item-description">${project.description}</div>` : ''}
+                        ${project.role ? `<span class="project-item-role">${project.role.toUpperCase()}</span>` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load projects:', error);
+                document.getElementById('errorMessage').textContent = 'Failed to load projects. Please refresh the page.';
+                document.getElementById('errorMessage').style.display = 'block';
+            }
+        }
+
+        function selectProject(projectId) {
+            const project = projectSelector.getProjectById(projectId);
+            if (project) {
+                projectSelector.setCurrentProject(project);
+                window.location.href = 'milo-board.html';
+            }
+        }
+
+        function showCreateProjectModal() {
+            const name = prompt('Enter project name:');
+            if (!name || name.trim() === '') return;
+
+            const description = prompt('Enter project description (optional):') || '';
+            const key = prompt('Enter project key (optional, e.g., MILO):') || '';
+
+            createProject(name.trim(), description.trim(), key.trim());
+        }
+
+        async function createProject(name, description, key) {
+            try {
+                const user = authService.getCurrentUser();
+                const response = await apiClient.post('/projects', {
+                    name: name,
+                    description: description,
+                    key: key,
+                    ownerId: user.id
+                });
+
+                if (response.ok) {
+                    const project = await response.json();
+                    projectSelector.setCurrentProject(project);
+                    window.location.href = 'milo-board.html';
+                } else {
+                    const error = await response.json();
+                    alert(error.message || 'Failed to create project');
+                }
+            } catch (error) {
+                console.error('Failed to create project:', error);
+                alert('Failed to create project. Please try again.');
+            }
+        }
+
+        // Load projects on page load
+        loadProjects();
+    </script>
+</body>
+</html>
+

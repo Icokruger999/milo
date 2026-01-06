@@ -757,10 +757,15 @@
                 <!-- Board Header -->
                 <div class="board-header">
                     <div class="breadcrumb">
-                        <a href="#">Projects</a> / <span>Milo</span>
+                        <a href="milo-select-project.html">Projects</a> / <span id="currentProjectName">Loading...</span>
                     </div>
                     <div class="board-title-row">
-                        <div class="board-title">Board</div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="board-title">Board</div>
+                            <select id="projectSelector" style="padding: 6px 12px; border: 1px solid #DFE1E6; border-radius: 3px; background: white; font-size: 14px; color: #42526E; cursor: pointer;">
+                                <option>Loading projects...</option>
+                            </select>
+                        </div>
                         <div class="board-title-actions">
                             <div class="board-title-icon">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -861,6 +866,7 @@
     <script src="js/config.js"></script>
     <script src="js/api-client.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/project-selector.js"></script>
     <script src="js/board.js"></script>
     <script>
         // Check authentication and password change requirement
@@ -875,6 +881,46 @@
             }
         }
 
+        // Check if project is selected
+        const currentProject = projectSelector.getCurrentProject();
+        if (!currentProject) {
+            window.location.href = 'milo-select-project.html';
+        }
+
+        // Load projects and setup selector
+        async function setupProjectSelector() {
+            const projects = await projectSelector.loadProjects();
+            const selector = document.getElementById('projectSelector');
+            const currentProject = projectSelector.getCurrentProject();
+            
+            if (projects.length === 0) {
+                selector.innerHTML = '<option>No projects</option>';
+                window.location.href = 'milo-select-project.html';
+                return;
+            }
+
+            selector.innerHTML = projects.map(p => 
+                `<option value="${p.id}" ${currentProject && p.id === currentProject.id ? 'selected' : ''}>${p.name}${p.key ? ` (${p.key})` : ''}</option>`
+            ).join('');
+
+            // Update project name in breadcrumb
+            if (currentProject) {
+                document.getElementById('currentProjectName').textContent = currentProject.name;
+                // Update project sidebar
+                document.querySelector('.project-name').textContent = currentProject.name;
+                document.querySelector('.project-icon').textContent = (currentProject.key || currentProject.name).substring(0, 1).toUpperCase();
+            }
+
+            // Handle project change
+            selector.addEventListener('change', function() {
+                const selectedProject = projectSelector.getProjectById(parseInt(this.value));
+                if (selectedProject) {
+                    projectSelector.setCurrentProject(selectedProject);
+                    window.location.reload(); // Reload to show tasks for new project
+                }
+            });
+        }
+
         // Set user avatars
         const user = authService.getCurrentUser();
         if (user) {
@@ -884,6 +930,9 @@
             document.getElementById('globalUserAvatar').textContent = initials;
             document.getElementById('sidebarUserAvatar').textContent = initials;
         }
+
+        // Setup project selector
+        setupProjectSelector();
     </script>
 </body>
 </html>

@@ -319,6 +319,11 @@ async function handleTaskSubmit(event) {
             if (user && user.id) {
                 taskData.creatorId = user.id;
             }
+            // Add current project ID
+            const currentProject = projectSelector.getCurrentProject();
+            if (currentProject && currentProject.id) {
+                taskData.projectId = currentProject.id;
+            }
             response = await apiClient.post('/tasks', taskData);
         }
         
@@ -350,7 +355,16 @@ async function handleTaskSubmit(event) {
 
 async function loadTasksFromAPI() {
     try {
-        const response = await apiClient.get('/tasks');
+        // Get current project
+        const currentProject = projectSelector.getCurrentProject();
+        if (!currentProject) {
+            // No project selected - redirect to project selector
+            window.location.href = 'milo-select-project.html';
+            return;
+        }
+
+        // Load tasks filtered by project
+        const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
         if (response.ok) {
             const apiTasks = await response.json();
             

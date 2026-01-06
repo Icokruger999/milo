@@ -54,10 +54,16 @@ class AuthService {
                         storage.setItem(AUTH_USER_KEY, JSON.stringify(data.user));
                         storage.setItem('milo_requires_password_change', 'true');
                         
+                        // Store projects if available
+                        if (data.projects) {
+                            storage.setItem('milo_user_projects', JSON.stringify(data.projects));
+                        }
+                        
                         return { 
                             success: true, 
                             requiresPasswordChange: true,
                             user: data.user,
+                            projects: data.projects || [],
                             message: data.message || 'Please change your password'
                         };
                     }
@@ -68,7 +74,17 @@ class AuthService {
                     storage.setItem(AUTH_USER_KEY, JSON.stringify(data.user));
                     storage.removeItem('milo_requires_password_change');
                     
-                    return { success: true, user: data.user, requiresPasswordChange: false };
+                    // Store projects if available
+                    if (data.projects) {
+                        storage.setItem('milo_user_projects', JSON.stringify(data.projects));
+                    }
+                    
+                    return { 
+                        success: true, 
+                        user: data.user, 
+                        requiresPasswordChange: false,
+                        projects: data.projects || []
+                    };
                 }
             } else {
                 const error = await response.json();
