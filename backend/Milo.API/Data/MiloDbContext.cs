@@ -14,6 +14,9 @@ public class MiloDbContext : DbContext
     public DbSet<Product> Products { get; set; }
     public DbSet<RoadmapItem> RoadmapItems { get; set; }
     public DbSet<TimelineEvent> TimelineEvents { get; set; }
+    public DbSet<Project> Projects { get; set; }
+    public DbSet<ProjectInvitation> ProjectInvitations { get; set; }
+    public DbSet<ProjectMember> ProjectMembers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -72,6 +75,58 @@ public class MiloDbContext : DbContext
                 .WithMany(p => p.TimelineEvents)
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Project configuration
+        modelBuilder.Entity<Project>(entity =>
+        {
+            entity.HasIndex(e => e.Name);
+            entity.HasIndex(e => e.Key);
+            entity.HasOne(e => e.Owner)
+                .WithMany()
+                .HasForeignKey(e => e.OwnerId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ProjectInvitation configuration
+        modelBuilder.Entity<ProjectInvitation>(entity =>
+        {
+            entity.HasIndex(e => e.Email);
+            entity.HasIndex(e => e.Token).IsUnique();
+            entity.HasIndex(e => e.ProjectId);
+            entity.HasOne(e => e.Project)
+                .WithMany(p => p.Invitations)
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.InvitedBy)
+                .WithMany()
+                .HasForeignKey(e => e.InvitedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ProjectMember configuration
+        modelBuilder.Entity<ProjectMember>(entity =>
+        {
+            entity.HasIndex(e => e.ProjectId);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => new { e.ProjectId, e.UserId }).IsUnique();
+            entity.HasOne(e => e.Project)
+                .WithMany(p => p.Members)
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Task Project relationship
+        modelBuilder.Entity<Task>(entity =>
+        {
+            entity.HasOne(e => e.Project)
+                .WithMany(p => p.Tasks)
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

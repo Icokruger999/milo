@@ -69,6 +69,22 @@ public class AuthController : ControllerBase
                 {
                     var token = Guid.NewGuid().ToString();
                     
+                    // Get user's projects even if password change required
+                    var userProjects = await _context.Projects
+                        .Where(p => p.OwnerId == user.Id || 
+                                   p.Members.Any(m => m.UserId == user.Id))
+                        .Where(p => p.Status != "archived")
+                        .Select(p => new
+                        {
+                            id = p.Id,
+                            name = p.Name,
+                            key = p.Key,
+                            description = p.Description,
+                            role = p.OwnerId == user.Id ? "owner" : 
+                                   p.Members.FirstOrDefault(m => m.UserId == user.Id).Role
+                        })
+                        .ToListAsync();
+                    
                     return Ok(new
                     {
                         success = true,
@@ -80,11 +96,28 @@ public class AuthController : ControllerBase
                             email = user.Email,
                             name = user.Name
                         },
+                        projects = userProjects,
                         message = "Please change your password to continue"
                     });
                 }
 
                 var loginToken = Guid.NewGuid().ToString();
+                
+                // Get user's projects (owned or member of)
+                var userProjects = await _context.Projects
+                    .Where(p => p.OwnerId == user.Id || 
+                               p.Members.Any(m => m.UserId == user.Id))
+                    .Where(p => p.Status != "archived")
+                    .Select(p => new
+                    {
+                        id = p.Id,
+                        name = p.Name,
+                        key = p.Key,
+                        description = p.Description,
+                        role = p.OwnerId == user.Id ? "owner" : 
+                               p.Members.FirstOrDefault(m => m.UserId == user.Id).Role
+                    })
+                    .ToListAsync();
                 
                 return Ok(new
                 {
@@ -97,6 +130,7 @@ public class AuthController : ControllerBase
                         email = user.Email,
                         name = user.Name
                     },
+                    projects = userProjects,
                     message = "Login successful"
                 });
             }
@@ -221,6 +255,78 @@ public class AuthController : ControllerBase
 
         var token = Guid.NewGuid().ToString();
 
+        // Get user's projects
+        var userProjects = await _context.Projects
+            .Where(p => p.OwnerId == user.Id || 
+                       p.Members.Any(m => m.UserId == user.Id))
+            .Where(p => p.Status != "archived")
+            .Select(p => new
+            {
+                id = p.Id,
+                name = p.Name,
+                key = p.Key,
+                description = p.Description,
+                role = p.OwnerId == user.Id ? "owner" : 
+                       p.Members.FirstOrDefault(m => m.UserId == user.Id).Role
+            })
+            .ToListAsync();
+
+        // Check for pending invitations
+        var pendingInvitations = await _context.ProjectInvitations
+            .Include(i => i.Project)
+            .Where(i => i.Email.ToLower() == user.Email.ToLower() && 
+                       i.Status == "pending" && 
+                       (i.ExpiresAt == null || i.ExpiresAt > DateTime.UtcNow))
+            .Select(i => new
+            {
+                id = i.Id,
+                project = new
+                {
+                    id = i.Project.Id,
+                    name = i.Project.Name,
+                    key = i.Project.Key
+                },
+                token = i.Token
+            })
+            .ToListAsync();
+
+        // Auto-accept pending invitations
+        foreach (var invitation in pendingInvitations)
+        {
+            var member = new ProjectMember
+            {
+                ProjectId = invitation.project.id,
+                UserId = user.Id,
+                Role = "member",
+                JoinedAt = DateTime.UtcNow
+            };
+            _context.ProjectMembers.Add(member);
+
+            var inv = await _context.ProjectInvitations.FindAsync(invitation.id);
+            if (inv != null)
+            {
+                inv.Status = "accepted";
+                inv.AcceptedAt = DateTime.UtcNow;
+            }
+        }
+        await _context.SaveChangesAsync();
+
+        // Refresh projects list after accepting invitations
+        userProjects = await _context.Projects
+            .Where(p => p.OwnerId == user.Id || 
+                       p.Members.Any(m => m.UserId == user.Id))
+            .Where(p => p.Status != "archived")
+            .Select(p => new
+            {
+                id = p.Id,
+                name = p.Name,
+                key = p.Key,
+                description = p.Description,
+                role = p.OwnerId == user.Id ? "owner" : 
+                       p.Members.FirstOrDefault(m => m.UserId == user.Id).Role
+            })
+            .ToListAsync();
+
         return Ok(new
         {
             success = true,
@@ -231,6 +337,7 @@ public class AuthController : ControllerBase
                 email = user.Email,
                 name = user.Name
             },
+            projects = userProjects,
             message = "Password changed successfully"
         });
     }

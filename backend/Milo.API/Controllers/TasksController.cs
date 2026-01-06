@@ -24,13 +24,14 @@ public class TasksController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetTasks([FromQuery] string? status, [FromQuery] int? productId)
+    public async Task<IActionResult> GetTasks([FromQuery] string? status, [FromQuery] int? productId, [FromQuery] int? projectId)
     {
         var query = _context.Tasks
             .Where(t => !t.IsDeleted)
             .Include(t => t.Assignee)
             .Include(t => t.Creator)
             .Include(t => t.Product)
+            .Include(t => t.Project)
             .AsQueryable();
 
         if (!string.IsNullOrEmpty(status))
@@ -41,6 +42,11 @@ public class TasksController : ControllerBase
         if (productId.HasValue)
         {
             query = query.Where(t => t.ProductId == productId);
+        }
+
+        if (projectId.HasValue)
+        {
+            query = query.Where(t => t.ProjectId == projectId);
         }
 
         var tasks = await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
@@ -58,6 +64,8 @@ public class TasksController : ControllerBase
             creator = t.Creator != null ? new { id = t.Creator.Id, name = t.Creator.Name } : null,
             productId = t.ProductId,
             product = t.Product != null ? new { id = t.Product.Id, name = t.Product.Name } : null,
+            projectId = t.ProjectId,
+            project = t.Project != null ? new { id = t.Project.Id, name = t.Project.Name, key = t.Project.Key } : null,
             priority = t.Priority,
             dueDate = t.DueDate,
             createdAt = t.CreatedAt
@@ -136,6 +144,7 @@ public class TasksController : ControllerBase
             AssigneeId = request.AssigneeId,
             CreatorId = request.CreatorId,
             ProductId = request.ProductId,
+            ProjectId = request.ProjectId,
             Priority = request.Priority ?? 0,
             DueDate = request.DueDate,
             CreatedAt = DateTime.UtcNow
@@ -300,6 +309,7 @@ public class CreateTaskRequest
     public int? AssigneeId { get; set; }
     public int? CreatorId { get; set; }
     public int? ProductId { get; set; }
+    public int? ProjectId { get; set; }
     public int? Priority { get; set; }
     public DateTime? DueDate { get; set; }
 }

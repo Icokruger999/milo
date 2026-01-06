@@ -315,5 +315,110 @@ The Milo Team
             return false;
         }
     }
+
+    public async Task<bool> SendProjectInvitationEmailAsync(string toEmail, string toName, string projectName, string projectKey, string invitationToken)
+    {
+        try
+        {
+            var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
+            var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
+            var smtpUser = _configuration["Email:SmtpUser"];
+            var smtpPassword = _configuration["Email:SmtpPassword"];
+            var fromEmail = _configuration["Email:FromEmail"] ?? "noreply@codingeverest.com";
+            var fromName = _configuration["Email:FromName"] ?? "Milo - Coding Everest";
+
+            if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPassword))
+            {
+                _logger.LogWarning("Email service not configured. Skipping email send.");
+                return false;
+            }
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(fromName, fromEmail));
+            message.To.Add(new MailboxAddress(toName, toEmail));
+            message.Subject = $"You've been invited to join {projectName} on Milo";
+
+            var signupUrl = $"https://www.codingeverest.com/milo-signup.html?invite={invitationToken}";
+
+            var bodyBuilder = new BodyBuilder
+            {
+                HtmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background: #0052CC; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+        .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
+        .project-box {{ background: #fff; border-left: 4px solid #0052CC; padding: 15px; margin: 20px 0; }}
+        .button {{ display: inline-block; background: #0052CC; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 20px; }}
+    </style>
+</head>
+<body>
+    <div class=""container"">
+        <div class=""header"">
+            <h1>Project Invitation</h1>
+        </div>
+        <div class=""content"">
+            <p>Hi {toName},</p>
+            <p>You've been invited to join a project on Milo!</p>
+            
+            <div class=""project-box"">
+                <h3 style=""margin: 0 0 10px 0; color: #0052CC;"">{projectName}</h3>
+                <p style=""margin: 0; color: #666;"">Project Key: <strong>{projectKey}</strong></p>
+            </div>
+            
+            <p>To accept this invitation:</p>
+            <ol>
+                <li>Sign up for a Milo account (if you don't have one)</li>
+                <li>Log in and select this project from the project dropdown</li>
+            </ol>
+            
+            <p style=""text-align: center;"">
+                <a href=""{signupUrl}"" class=""button"">Accept Invitation</a>
+            </p>
+            
+            <p>If you have any questions, feel free to reach out to the project owner.</p>
+            <p>Best regards,<br>The Milo Team</p>
+        </div>
+    </div>
+</body>
+</html>",
+                TextBody = $@"
+Project Invitation
+
+Hi {toName},
+
+You've been invited to join {projectName} on Milo!
+
+Project Key: {projectKey}
+
+To accept this invitation, sign up at: {signupUrl}
+
+If you have any questions, feel free to reach out to the project owner.
+
+Best regards,
+The Milo Team
+"
+            };
+
+            message.Body = bodyBuilder.ToMessageBody();
+
+            using var client = new SmtpClient();
+            await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
+            await client.AuthenticateAsync(smtpUser, smtpPassword);
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
+
+            _logger.LogInformation($"Project invitation email sent successfully to {toEmail}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Failed to send project invitation email to {toEmail}");
+            return false;
+        }
+    }
 }
 
