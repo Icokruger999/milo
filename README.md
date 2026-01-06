@@ -1,4 +1,4 @@
-# Milo - Jira-Type Project Management Application
+# Milo - Project Management Application
 
 A modern project management application built with C#, JavaScript, HTML, and CSS.
 
