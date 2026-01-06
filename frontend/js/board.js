@@ -194,16 +194,6 @@ function handleDrop(e) {
 }
 
 async function loadTasks() {
-    // TODO: Load tasks from API when backend is ready
-    // try {
-    //     const response = await apiClient.get('/api/tasks');
-    //     if (response.ok) {
-    //         const data = await response.json();
-    //         tasks = data;
-    //         renderBoard();
-    //     }
-    // } catch (error) {
-    //     console.error('Failed to load tasks:', error);
-    // }
+    await loadTasksFromAPI();
 }
 

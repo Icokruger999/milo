@@ -1,5 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Concurrent;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
+using Milo.API.Data;
+using Milo.API.Models;
 using Milo.API.Services;
 
 namespace Milo.API.Controllers;
@@ -8,25 +12,23 @@ namespace Milo.API.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    // Temporary hardcoded user for development
-    // TODO: Replace with database authentication
-    private const string ValidEmail = "info@streamyo.com";
-    private const string ValidPassword = "Stacey@1122";
-
-    // In-memory user storage (temporary - replace with database)
-    private static readonly ConcurrentDictionary<string, UserAccount> _users = new();
-    
+    private readonly MiloDbContext _context;
     private readonly EmailService _emailService;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(EmailService emailService, ILogger<AuthController> logger)
+    // Temporary hardcoded user for development
+    private const string ValidEmail = "info@streamyo.com";
+    private const string ValidPassword = "Stacey@1122";
+
+    public AuthController(MiloDbContext context, EmailService emailService, ILogger<AuthController> logger)
     {
+        _context = context;
         _emailService = emailService;
         _logger = logger;
     }
 
     [HttpPost("login")]
-    public IActionResult Login([FromBody] LoginRequest request)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         if (request == null || string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
         {
@@ -37,7 +39,6 @@ public class AuthController : ControllerBase
         if (request.Email.Equals(ValidEmail, StringComparison.OrdinalIgnoreCase) && 
             request.Password == ValidPassword)
         {
-            // Generate a simple token (in production, use JWT)
             var token = Guid.NewGuid().ToString();
             
             return Ok(new
@@ -53,50 +54,59 @@ public class AuthController : ControllerBase
             });
         }
 
-        // Check registered users
-        var emailKey = request.Email.ToLowerInvariant();
-        if (_users.TryGetValue(emailKey, out var user) && user.Password == request.Password)
+        // Check database users
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower() && u.IsActive);
+
+        if (user != null)
         {
-            // Check if user needs to change password
-            if (user.RequiresPasswordChange)
+            // Simple password comparison (in production, use hashed passwords)
+            if (user.PasswordHash == request.Password || 
+                (user.RequiresPasswordChange && user.PasswordHash == request.Password))
             {
-                var token = Guid.NewGuid().ToString();
+                // Check if user needs to change password
+                if (user.RequiresPasswordChange)
+                {
+                    var token = Guid.NewGuid().ToString();
+                    
+                    return Ok(new
+                    {
+                        success = true,
+                        token = token,
+                        requiresPasswordChange = true,
+                        user = new
+                        {
+                            id = user.Id,
+                            email = user.Email,
+                            name = user.Name
+                        },
+                        message = "Please change your password to continue"
+                    });
+                }
+
+                var loginToken = Guid.NewGuid().ToString();
                 
                 return Ok(new
                 {
                     success = true,
-                    token = token,
-                    requiresPasswordChange = true,
+                    token = loginToken,
+                    requiresPasswordChange = false,
                     user = new
                     {
+                        id = user.Id,
                         email = user.Email,
                         name = user.Name
                     },
-                    message = "Please change your password to continue"
+                    message = "Login successful"
                 });
             }
-
-            var loginToken = Guid.NewGuid().ToString();
-            
-            return Ok(new
-            {
-                success = true,
-                token = loginToken,
-                requiresPasswordChange = false,
-                user = new
-                {
-                    email = user.Email,
-                    name = user.Name
-                },
-                message = "Login successful"
-            });
         }
 
         return Unauthorized(new { message = "Invalid email or password" });
     }
 
     [HttpPost("signup")]
-    public IActionResult Signup([FromBody] SignupRequest request)
+    public async Task<IActionResult> Signup([FromBody] SignupRequest request)
     {
         if (request == null || string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Name))
         {
@@ -110,30 +120,32 @@ public class AuthController : ControllerBase
         }
 
         // Check if user already exists
-        var emailKey = request.Email.ToLowerInvariant();
-        if (_users.ContainsKey(emailKey) || 
-            request.Email.Equals(ValidEmail, StringComparison.OrdinalIgnoreCase))
+        var existingUser = await _context.Users
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower());
+
+        if (existingUser != null || request.Email.Equals(ValidEmail, StringComparison.OrdinalIgnoreCase))
         {
             return Conflict(new { message = "An account with this email already exists" });
         }
 
-        // Generate temporary password (8 characters, alphanumeric)
+        // Generate temporary password
         var tempPassword = GenerateTemporaryPassword();
 
-        // Create new user account with temporary password
-        var newUser = new UserAccount
+        // Create new user account
+        var newUser = new User
         {
             Email = request.Email,
             Name = request.Name,
-            Password = tempPassword, // Temporary password - user must change on first login
-            RequiresPasswordChange = true, // Force password change on first login
-            CreatedAt = DateTime.UtcNow,
-            IsActive = true
+            PasswordHash = tempPassword, // In production, hash this!
+            RequiresPasswordChange = true,
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
         };
 
-        _users[emailKey] = newUser;
+        _context.Users.Add(newUser);
+        await _context.SaveChangesAsync();
 
-        // Send email with temporary password (fire and forget - don't wait for it)
+        // Send email with temporary password (fire and forget)
         _ = Task.Run(async () =>
         {
             try
@@ -143,7 +155,6 @@ public class AuthController : ControllerBase
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Failed to send temporary password email to {request.Email}");
-                // Don't fail signup if email fails
             }
         });
 
@@ -157,7 +168,6 @@ public class AuthController : ControllerBase
 
     private string GenerateTemporaryPassword()
     {
-        // Generate an 8-character temporary password
         const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
         var random = new Random();
         return new string(Enumerable.Repeat(chars, 8)
@@ -167,7 +177,6 @@ public class AuthController : ControllerBase
     [HttpPost("verify")]
     public IActionResult VerifyToken([FromBody] TokenRequest request)
     {
-        // Simple token verification (in production, use JWT validation)
         if (!string.IsNullOrEmpty(request.Token))
         {
             return Ok(new { valid = true });
@@ -177,7 +186,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("change-password")]
-    public IActionResult ChangePassword([FromBody] ChangePasswordRequest request)
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
         if (request == null || string.IsNullOrEmpty(request.Email) || 
             string.IsNullOrEmpty(request.CurrentPassword) || string.IsNullOrEmpty(request.NewPassword))
@@ -185,27 +194,30 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Email, current password, and new password are required" });
         }
 
-        // Validate new password length
         if (request.NewPassword.Length < 6)
         {
             return BadRequest(new { message = "New password must be at least 6 characters long" });
         }
 
-        var emailKey = request.Email.ToLowerInvariant();
-        if (!_users.TryGetValue(emailKey, out var user))
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower() && u.IsActive);
+
+        if (user == null)
         {
             return Unauthorized(new { message = "Invalid email or password" });
         }
 
         // Verify current password
-        if (user.Password != request.CurrentPassword)
+        if (user.PasswordHash != request.CurrentPassword)
         {
             return Unauthorized(new { message = "Current password is incorrect" });
         }
 
         // Update password and clear password change requirement
-        user.Password = request.NewPassword;
+        user.PasswordHash = request.NewPassword; // In production, hash this!
         user.RequiresPasswordChange = false;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
 
         var token = Guid.NewGuid().ToString();
 
@@ -215,11 +227,28 @@ public class AuthController : ControllerBase
             token = token,
             user = new
             {
+                id = user.Id,
                 email = user.Email,
                 name = user.Name
             },
             message = "Password changed successfully"
         });
+    }
+
+    [HttpGet("users")]
+    public async Task<IActionResult> GetUsers()
+    {
+        var users = await _context.Users
+            .Where(u => u.IsActive)
+            .Select(u => new
+            {
+                id = u.Id,
+                email = u.Email,
+                name = u.Name
+            })
+            .ToListAsync();
+
+        return Ok(users);
     }
 }
 
@@ -239,7 +268,6 @@ public class SignupRequest
 {
     public string Name { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
-    // Password no longer required - system generates temporary password
 }
 
 public class ChangePasswordRequest
@@ -248,14 +276,3 @@ public class ChangePasswordRequest
     public string CurrentPassword { get; set; } = string.Empty;
     public string NewPassword { get; set; } = string.Empty;
 }
-
-public class UserAccount
-{
-    public string Email { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-    public bool RequiresPasswordChange { get; set; } = false;
-    public DateTime CreatedAt { get; set; }
-    public bool IsActive { get; set; } = true;
-}
-

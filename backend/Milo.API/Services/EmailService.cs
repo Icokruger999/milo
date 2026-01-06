@@ -216,5 +216,104 @@ The Milo Team
             return false;
         }
     }
+
+    public async Task<bool> SendTaskAssignmentEmailAsync(string toEmail, string toName, string taskTitle, string taskId, string productName)
+    {
+        try
+        {
+            var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
+            var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
+            var smtpUser = _configuration["Email:SmtpUser"];
+            var smtpPassword = _configuration["Email:SmtpPassword"];
+            var fromEmail = _configuration["Email:FromEmail"] ?? "noreply@codingeverest.com";
+            var fromName = _configuration["Email:FromName"] ?? "Milo - Coding Everest";
+
+            // If email is not configured, log and return false
+            if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPassword))
+            {
+                _logger.LogWarning("Email service not configured. Skipping email send.");
+                return false;
+            }
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(fromName, fromEmail));
+            message.To.Add(new MailboxAddress(toName, toEmail));
+            message.Subject = $"New Task Assigned: {taskId} - {taskTitle}";
+
+            var bodyBuilder = new BodyBuilder
+            {
+                HtmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background: #0052CC; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
+        .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
+        .task-box {{ background: #fff; border-left: 4px solid #0052CC; padding: 15px; margin: 20px 0; }}
+        .task-id {{ font-size: 18px; font-weight: bold; color: #0052CC; }}
+        .button {{ display: inline-block; background: #0052CC; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 20px; }}
+    </style>
+</head>
+<body>
+    <div class=""container"">
+        <div class=""header"">
+            <h1>New Task Assigned</h1>
+        </div>
+        <div class=""content"">
+            <p>Hi {toName},</p>
+            <p>A new task has been assigned to you in Milo.</p>
+            
+            <div class=""task-box"">
+                <div class=""task-id"">{taskId}</div>
+                <h3 style=""margin: 10px 0;"">{taskTitle}</h3>
+                <p style=""color: #666; margin: 0;""><strong>Product:</strong> {productName}</p>
+            </div>
+            
+            <p style=""text-align: center;"">
+                <a href=""https://www.codingeverest.com/milo-board.html"" class=""button"">View Task</a>
+            </p>
+            
+            <p>Best regards,<br>The Milo Team</p>
+        </div>
+    </div>
+</body>
+</html>",
+                TextBody = $@"
+New Task Assigned
+
+Hi {toName},
+
+A new task has been assigned to you in Milo.
+
+Task ID: {taskId}
+Title: {taskTitle}
+Product: {productName}
+
+View the task: https://www.codingeverest.com/milo-board.html
+
+Best regards,
+The Milo Team
+"
+            };
+
+            message.Body = bodyBuilder.ToMessageBody();
+
+            using var client = new SmtpClient();
+            await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
+            await client.AuthenticateAsync(smtpUser, smtpPassword);
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
+
+            _logger.LogInformation($"Task assignment email sent successfully to {toEmail}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Failed to send task assignment email to {toEmail}");
+            return false;
+        }
+    }
 }
 

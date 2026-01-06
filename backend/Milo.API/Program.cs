@@ -1,9 +1,23 @@
+using Microsoft.EntityFrameworkCore;
+using Milo.API.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Configure Entity Framework with PostgreSQL
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrEmpty(connectionString))
+{
+    // Fallback for development
+    connectionString = "Host=localhost;Database=MiloDB;Username=postgres;Password=postgres";
+}
+
+builder.Services.AddDbContext<MiloDbContext>(options =>
+    options.UseNpgsql(connectionString));
 
 // Add email service
 builder.Services.AddScoped<Milo.API.Services.EmailService>();
@@ -43,6 +57,22 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Ensure database is created
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<MiloDbContext>();
+    try
+    {
+        dbContext.Database.EnsureCreated();
+    }
+    catch (Exception ex)
+    {
+        // Log error but don't fail startup - database might not be configured yet
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogWarning(ex, "Database initialization failed. Ensure RDS connection string is configured.");
+    }
+}
 
 // Configure the HTTP request pipeline for production
 // Swagger disabled in production for security

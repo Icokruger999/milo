@@ -36,5 +36,5 @@ foreach ($sg in $securityGroups) {
     }
 }
 
-Write-Host "`n✓ Ports 80 and 443 are now open!" -ForegroundColor Green
+Write-Host "`nPorts 80 and 443 are now open!" -ForegroundColor Green
 
