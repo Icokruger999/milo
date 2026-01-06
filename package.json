@@ -1,0 +1,20 @@
+{
+  "name": "milo",
+  "version": "1.0.0",
+  "description": "Jira-type project management application",
+  "scripts": {
+    "start": "npx http-server frontend -p 3000 -o",
+    "build": "echo 'No build step required for static files'"
+  },
+  "keywords": [
+    "project-management",
+    "jira",
+    "task-tracking"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
+

@@ -1,0 +1,41 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+*.log
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# AWS
+.aws/
+amplify/
+
+# Environment
+.env
+.env.local
+*.env
+
+# Build
+dist/
+build/
+*.zip
+

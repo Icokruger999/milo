@@ -1,0 +1,21 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - echo "Installing dependencies if needed"
+    build:
+      commands:
+        - echo "Building frontend"
+        - echo "No build step required for static HTML/CSS/JS"
+    postBuild:
+      commands:
+        - echo "Build completed"
+  artifacts:
+    baseDirectory: frontend
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+
