@@ -87,7 +87,7 @@ public class InvitationsController : ControllerBase
         await _context.SaveChangesAsync();
 
         // Send invitation email (fire and forget)
-        _ = Task.Run(async () =>
+        _ = System.Threading.Tasks.Task.Run(async () =>
         {
             try
             {

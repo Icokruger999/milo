@@ -134,7 +134,7 @@ public class TasksController : ControllerBase
             taskId = $"NUC-{nextNumber}";
         }
 
-        var task = new Task
+        var task = new Models.Task
         {
             Title = request.Title,
             Description = request.Description,
@@ -163,7 +163,7 @@ public class TasksController : ControllerBase
             if (task.Assignee != null)
             {
                 // Send email notification (fire and forget)
-                _ = Task.Run(async () =>
+                _ = System.Threading.Tasks.Task.Run(async () =>
                 {
                     try
                     {
@@ -237,7 +237,7 @@ public class TasksController : ControllerBase
                 
                 if (task.Assignee != null)
                 {
-                    _ = Task.Run(async () =>
+                    _ = System.Threading.Tasks.Task.Run(async () =>
                     {
                         try
                         {

@@ -104,7 +104,7 @@ public class AuthController : ControllerBase
                 var loginToken = Guid.NewGuid().ToString();
                 
                 // Get user's projects (owned or member of)
-                var userProjects = await _context.Projects
+                var userProjectsList = await _context.Projects
                     .Where(p => p.OwnerId == user.Id || 
                                p.Members.Any(m => m.UserId == user.Id))
                     .Where(p => p.Status != "archived")
@@ -130,7 +130,7 @@ public class AuthController : ControllerBase
                         email = user.Email,
                         name = user.Name
                     },
-                    projects = userProjects,
+                    projects = userProjectsList,
                     message = "Login successful"
                 });
             }
