@@ -123,8 +123,92 @@ function createTaskCard(task) {
     // Add drag and drop
     card.addEventListener('dragstart', handleDragStart);
     card.addEventListener('dragend', handleDragEnd);
+    
+    // Make card clickable to view/edit
+    card.addEventListener('click', function() {
+        viewTask(task);
+    });
 
     return card;
+}
+
+// View/Edit Task Modal
+function viewTask(task) {
+    // Find the actual task object with full details
+    let fullTask = null;
+    for (const status in tasks) {
+        fullTask = tasks[status].find(t => t.id === task.id || t.taskId === task.id);
+        if (fullTask) break;
+    }
+    
+    if (!fullTask) {
+        console.error('Task not found:', task);
+        return;
+    }
+    
+    const modal = document.createElement('div');
+    modal.id = 'viewTaskModal';
+    modal.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;';
+    
+    modal.innerHTML = `
+        <div style="background: white; border-radius: 8px; padding: 24px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">${fullTask.title}</h2>
+                <button onclick="closeViewTaskModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <span class="task-label ${fullTask.label}">${(fullTask.label || 'accounts').toUpperCase()}</span>
+                <span style="margin-left: 8px; color: #6B778C; font-size: 12px; font-family: monospace;">${fullTask.id}</span>
+            </div>
+            ${fullTask.description ? `<div style="margin-bottom: 16px; padding: 12px; background: #F4F5F7; border-radius: 4px;"><strong>Description:</strong><br>${fullTask.description}</div>` : ''}
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div>
+                    <strong style="font-size: 12px; color: #6B778C; text-transform: uppercase;">Status</strong>
+                    <div style="margin-top: 4px;">${(fullTask.status || 'todo').toUpperCase()}</div>
+                </div>
+                <div>
+                    <strong style="font-size: 12px; color: #6B778C; text-transform: uppercase;">Assignee</strong>
+                    <div style="margin-top: 4px;">${fullTask.assignee || 'Unassigned'}</div>
+                </div>
+                <div>
+                    <strong style="font-size: 12px; color: #6B778C; text-transform: uppercase;">Priority</strong>
+                    <div style="margin-top: 4px;">${['Low', 'Medium', 'High'][fullTask.priority || 0]}</div>
+                </div>
+                ${fullTask.dueDate ? `<div>
+                    <strong style="font-size: 12px; color: #6B778C; text-transform: uppercase;">Due Date</strong>
+                    <div style="margin-top: 4px;">${new Date(fullTask.dueDate).toLocaleDateString()}</div>
+                </div>` : ''}
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                <button onclick="closeViewTaskModal()" style="padding: 10px 20px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 14px;">Close</button>
+                <button onclick="editTask('${fullTask.id}')" style="padding: 10px 20px; background: #0052CC; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">Edit Task</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+function closeViewTaskModal() {
+    const modal = document.getElementById('viewTaskModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function editTask(taskId) {
+    closeViewTaskModal();
+    // Find task and open edit modal
+    let task = null;
+    for (const status in tasks) {
+        task = tasks[status].find(t => t.id === taskId || t.taskId === taskId);
+        if (task) {
+            // Open task modal in edit mode
+            const column = status;
+            openTaskModal(column, task);
+            break;
+        }
+    }
 }
 
 function updateCounts() {

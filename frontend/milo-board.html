@@ -446,19 +446,19 @@
         }
 
         .board-column:nth-child(1)::before {
-            background: #DE350B;
+            background: #DE350B; /* Red for TO DO */
         }
 
         .board-column:nth-child(2)::before {
-            background: #DE350B;
+            background: #0052CC; /* Blue for IN PROGRESS */
         }
 
         .board-column:nth-child(3)::before {
-            background: #0052CC;
+            background: #FFAB00; /* Yellow for IN REVIEW */
         }
 
         .board-column:nth-child(4)::before {
-            background: #0052CC;
+            background: #36B37E; /* Green for DONE */
         }
 
         .column-header {
@@ -786,7 +786,7 @@
                 <!-- Board Toolbar -->
                 <div class="board-toolbar">
                     <div class="board-search">
-                        <input type="text" placeholder="Search issues">
+                        <input type="text" id="boardSearchInput" placeholder="Search issues" onkeyup="handleSearch(event)">
                         <div class="board-search-icon">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="11" cy="11" r="8"></circle>
@@ -794,23 +794,45 @@
                             </svg>
                         </div>
                     </div>
-                    <div class="board-user-avatars">
-                        <div class="user-avatar-small">SW</div>
-                        <div class="user-avatar-small">TE</div>
-                        <div class="user-avatar-small">GR</div>
-                        <div class="user-avatar-small">YE</div>
-                        <div class="user-avatar-more">+3</div>
+                    <div class="board-user-avatars" id="boardUserAvatars">
+                        <!-- Will be populated with real project members -->
                     </div>
-                    <select class="board-filter">
-                        <option>Epic</option>
+                    <select class="board-filter" id="epicFilter" onchange="applyFilters()">
+                        <option value="">Epic</option>
+                        <option value="all">All Epics</option>
                     </select>
-                    <select class="board-filter">
-                        <option>Type</option>
+                    <select class="board-filter" id="typeFilter" onchange="applyFilters()">
+                        <option value="">Type</option>
+                        <option value="task">Task</option>
+                        <option value="bug">Bug</option>
+                        <option value="story">Story</option>
+                        <option value="epic">Epic</option>
+                    </select>
+                    <select class="board-filter" id="priorityFilter" onchange="applyFilters()">
+                        <option value="">Priority</option>
+                        <option value="0">Low</option>
+                        <option value="1">Medium</option>
+                        <option value="2">High</option>
+                    </select>
+                    <select class="board-filter" id="labelFilter" onchange="applyFilters()">
+                        <option value="">Label</option>
+                        <option value="accounts">Accounts</option>
+                        <option value="billing">Billing</option>
+                        <option value="forms">Forms</option>
+                        <option value="feedback">Feedback</option>
+                    </select>
+                    <select class="board-filter" id="assigneeFilter" onchange="applyFilters()">
+                        <option value="">Assignee</option>
+                        <option value="unassigned">Unassigned</option>
                     </select>
                     <div class="board-groupby">
                         <span class="board-groupby-label">GROUP BY</span>
-                        <select class="board-filter">
-                            <option>None</option>
+                        <select class="board-filter" id="groupByFilter" onchange="applyGroupBy()">
+                            <option value="none">None</option>
+                            <option value="assignee">Assignee</option>
+                            <option value="priority">Priority</option>
+                            <option value="label">Label</option>
+                            <option value="product">Product</option>
                         </select>
                     </div>
                 </div>
@@ -867,6 +889,8 @@
     <script src="js/api-client.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/project-selector.js"></script>
+    <script src="js/project-modals.js"></script>
+    <script src="js/board-filters.js"></script>
     <script src="js/board.js"></script>
     <script>
         // Check authentication and password change requirement
