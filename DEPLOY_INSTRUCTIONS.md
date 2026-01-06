@@ -1,115 +1,113 @@
-# Deploy Milo Backend - Final Steps
+# Deployment Instructions
 
-## ✅ Current Status
+## Frontend Deployment
+The frontend automatically deploys via **AWS Amplify** when changes are pushed to the `main` branch on GitHub.
 
-- ✅ Cleanup complete - `/var/www` is clean
-- ✅ `milo-api` directory exists and is ready
-- ⚠️ PowerShell scripts must run on **Windows**, not on EC2
+**Status**: ✅ Auto-deployment enabled
 
-## Important: Where to Run Scripts
+## Backend Deployment to EC2
 
-**PowerShell scripts (.ps1) run on your Windows machine**, not on EC2!
+### Option 1: Deploy via SSH/Session Manager (Recommended)
 
-The scripts connect to EC2 remotely and deploy the code.
+1. Connect to EC2 instance:
+   ```bash
+   # Via SSH
+   ssh ec2-user@34.246.3.141
+   
+   # Or via AWS Session Manager
+   aws ssm start-session --target i-06bc5b2218c041802
+   ```
 
-## Deployment Options
+2. Run deployment commands:
+   ```bash
+   export HOME=/home/ec2-user
+   export DOTNET_CLI_HOME=/home/ec2-user/.dotnet
+   
+   cd ~/milo-repo || git clone https://github.com/Icokruger999/milo.git ~/milo-repo
+   cd ~/milo-repo
+   git pull origin main
+   
+   cd backend/Milo.API
+   dotnet restore
+   dotnet publish -c Release -o /var/www/milo-api
+   
+   sudo chown -R ec2-user:ec2-user /var/www/milo-api
+   sudo systemctl daemon-reload
+   sudo systemctl restart milo-api
+   
+   # Test
+   sleep 5
+   curl http://localhost:5001/api/health
+   ```
 
-### Option 1: Use SSM Deployment (Recommended if IAM permissions fixed)
+### Option 2: Use Deployment Script
 
-From your **Windows PowerShell** (not EC2):
+1. Connect to EC2 (SSH or Session Manager)
+
+2. Run the deployment script:
+   ```bash
+   export HOME=/home/ec2-user
+   export DOTNET_CLI_HOME=/home/ec2-user/.dotnet
+   bash deploy-from-github.sh
+   ```
+
+### Option 3: Deploy via AWS Systems Manager (No SSH)
+
+Run this PowerShell command from your local machine:
 
 ```powershell
-.\deploy-to-ec2-ssm.ps1
+$commands = @(
+    'export HOME=/home/ec2-user',
+    'export DOTNET_CLI_HOME=/home/ec2-user/.dotnet',
+    'cd /home/ec2-user/milo-repo 2>/dev/null || git clone https://github.com/Icokruger999/milo.git /home/ec2-user/milo-repo',
+    'cd /home/ec2-user/milo-repo',
+    'git pull origin main',
+    'cd backend/Milo.API',
+    'dotnet restore',
+    'dotnet publish -c Release -o /var/www/milo-api',
+    'sudo chown -R ec2-user:ec2-user /var/www/milo-api',
+    'sudo systemctl daemon-reload',
+    'sudo systemctl restart milo-api',
+    'sleep 5',
+    'curl -s http://localhost:5001/api/health'
+)
+$json = $commands | ConvertTo-Json -Compress
+aws ssm send-command --instance-ids i-06bc5b2218c041802 --document-name "AWS-RunShellScript" --parameters "commands=$json" --output json
 ```
 
-**Note:** You saw an IAM permission error. To fix:
-- The EC2 instance needs an IAM role with `AmazonSSMManagedInstanceCore` policy
-- Or use Option 2 below
-
-### Option 2: Manual Deployment via S3 + SSM
-
-1. **Build on Windows:**
-   ```powershell
-   cd backend/Milo.API
-   dotnet publish -c Release -o ./publish
-   ```
-
-2. **Create ZIP:**
-   ```powershell
-   Compress-Archive -Path "./publish/*" -DestinationPath "../milo-api.zip" -Force
-   ```
-
-3. **Upload to S3:**
-   ```powershell
-   aws s3 cp ../milo-api.zip s3://your-bucket-name/milo-api.zip
-   ```
-
-4. **On EC2 (via Session Manager), download and extract:**
-   ```bash
-   cd /tmp
-   aws s3 cp s3://your-bucket-name/milo-api.zip ./
-   unzip -o milo-api.zip -d /var/www/milo-api/
-   sudo chown -R ec2-user:ec2-user /var/www/milo-api
-   ```
-
-5. **Create systemd service on EC2:**
-   ```bash
-   sudo tee /etc/systemd/system/milo-api.service > /dev/null <<EOF
-   [Unit]
-   Description=Milo API
-   After=network.target
-
-   [Service]
-   Type=notify
-   ExecStart=/usr/bin/dotnet /var/www/milo-api/Milo.API.dll
-   Restart=always
-   RestartSec=10
-   KillSignal=SIGINT
-   SyslogIdentifier=milo-api
-   User=ec2-user
-   Environment=ASPNETCORE_ENVIRONMENT=Production
-   Environment=ASPNETCORE_URLS=http://0.0.0.0:5000
-
-   [Install]
-   WantedBy=multi-user.target
-   EOF
-
-   sudo systemctl daemon-reload
-   sudo systemctl enable milo-api
-   sudo systemctl start milo-api
-   sudo systemctl status milo-api
-   ```
-
-### Option 3: Fix IAM Permissions First
-
-If you want to use SSM deployment, attach proper IAM role:
-
-1. Go to EC2 Console → Your instance
-2. Actions → Security → Modify IAM role
-3. Attach role with `AmazonSSMManagedInstanceCore` policy
-4. Then run: `.\deploy-to-ec2-ssm.ps1` from Windows
+Then check status:
+```powershell
+aws ssm get-command-invocation --command-id <COMMAND_ID> --instance-id i-06bc5b2218c041802
+```
 
 ## Verify Deployment
 
-After deployment, test the API:
+### Frontend
+- Visit: https://www.codingeverest.com
+- Check Amplify console for build status
 
+### Backend
+- Health check: https://api.codingeverest.com/api/health
+- Or: http://34.246.3.141:5001/api/health
+
+## Troubleshooting
+
+### Backend not starting
 ```bash
-# On EC2
-curl http://localhost:5000/api/health
+# Check service status
+sudo systemctl status milo-api
 
-# Should return: {"status":"ok","message":"Milo API is running"}
+# Check logs
+sudo journalctl -u milo-api -f
+
+# Restart service
+sudo systemctl restart milo-api
 ```
 
-Or from outside:
-```powershell
-curl http://34.246.3.141:5000/api/health
-```
+### Database connection issues
+- Ensure RDS connection string is set in `appsettings.json` on EC2
+- Check security groups allow connection from EC2 to RDS
 
-## Next Steps
-
-1. ✅ Cleanup done
-2. ⏳ Deploy Milo backend (choose one option above)
-3. ⏳ Verify API is running
-4. ⏳ Update frontend to point to API
-5. ⏳ Deploy frontend to Amplify
-
+### Port issues
+- Ensure port 5001 is open in security groups
+- Check if service is listening: `sudo netstat -tlnp | grep 5001`
