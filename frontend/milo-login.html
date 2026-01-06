@@ -285,13 +285,21 @@
                         window.location.href = 'milo-board.html';
                     }
                 } else {
-                    // Show error
-                    alert(result.message || 'Login failed. Please check your credentials.');
+                    // Show error without alert
+                    const errorDiv = document.getElementById('errorMessage');
+                    if (errorDiv) {
+                        errorDiv.textContent = result.message || 'Login failed. Please check your credentials.';
+                        errorDiv.style.display = 'block';
+                    }
                     submitButton.disabled = false;
                     submitButton.textContent = originalText;
                 }
             } catch (error) {
-                alert('An error occurred. Please try again.');
+                const errorDiv = document.getElementById('errorMessage');
+                if (errorDiv) {
+                    errorDiv.textContent = 'An error occurred. Please try again.';
+                    errorDiv.style.display = 'block';
+                }
                 submitButton.disabled = false;
                 submitButton.textContent = originalText;
             }

@@ -17,7 +17,7 @@ public class AuthController : ControllerBase
     private readonly ILogger<AuthController> _logger;
 
     // Temporary hardcoded user for development
-    private const string ValidEmail = "info@streamyo.com";
+    private const string ValidEmail = "info@streamyo.net";
     private const string ValidPassword = "Stacey@1122";
 
     public AuthController(MiloDbContext context, EmailService emailService, ILogger<AuthController> logger)

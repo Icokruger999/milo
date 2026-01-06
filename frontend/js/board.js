@@ -125,18 +125,260 @@ function updateCounts() {
 }
 
 function addTask(column) {
-    const title = prompt('Enter task title:');
-    if (!title) return;
+    showTaskModal(column);
+}
 
-    const newTask = {
-        id: 'NUC-' + Math.floor(Math.random() * 1000),
-        title: title,
-        label: 'accounts',
-        assignee: 'ME'
+function showTaskModal(column, task = null) {
+    let modal = document.getElementById('taskModal');
+    if (!modal) {
+        createTaskModal();
+        modal = document.getElementById('taskModal');
+    }
+    
+    modal.dataset.column = column;
+    modal.dataset.taskId = task ? task.id : '';
+    
+    if (task) {
+        document.getElementById('taskTitle').value = task.title || '';
+        document.getElementById('taskDescription').value = task.description || '';
+        document.getElementById('taskLabel').value = task.label || 'accounts';
+        document.getElementById('taskAssignee').value = task.assigneeId || '';
+        document.getElementById('taskProduct').value = task.productId || '';
+        document.getElementById('taskPriority').value = task.priority || 0;
+        document.getElementById('taskDueDate').value = task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '';
+    } else {
+        document.getElementById('taskForm').reset();
+        document.getElementById('taskColumn').value = column;
+    }
+    
+    modal.style.display = 'flex';
+}
+
+function closeTaskModal() {
+    const modal = document.getElementById('taskModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function createTaskModal() {
+    const modal = document.createElement('div');
+    modal.id = 'taskModal';
+    modal.style.cssText = 'display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;';
+    
+    modal.innerHTML = `
+        <div style="background: white; border-radius: 8px; padding: 24px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Create Task</h2>
+                <button onclick="closeTaskModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+            </div>
+            <form id="taskForm" onsubmit="handleTaskSubmit(event)">
+                <input type="hidden" id="taskColumn" name="column">
+                <input type="hidden" id="taskId" name="taskId">
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Title *</label>
+                    <input type="text" id="taskTitle" name="title" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Description</label>
+                    <textarea id="taskDescription" name="description" rows="3" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box; resize: vertical;"></textarea>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Label</label>
+                        <select id="taskLabel" name="label" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+                            <option value="accounts">Accounts</option>
+                            <option value="billing">Billing</option>
+                            <option value="forms">Forms</option>
+                            <option value="feedback">Feedback</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Priority</label>
+                        <select id="taskPriority" name="priority" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+                            <option value="0">Low</option>
+                            <option value="1">Medium</option>
+                            <option value="2">High</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                    <div>
+                        <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Assignee</label>
+                        <select id="taskAssignee" name="assigneeId" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+                            <option value="">Unassigned</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Product</label>
+                        <select id="taskProduct" name="productId" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+                            <option value="">General</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Due Date</label>
+                    <input type="date" id="taskDueDate" name="dueDate" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" onclick="closeTaskModal()" style="padding: 10px 20px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 14px;">Cancel</button>
+                    <button type="submit" style="padding: 10px 20px; background: #0052CC; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">Create Task</button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Load users and products
+    loadUsersAndProducts();
+}
+
+async function loadUsersAndProducts() {
+    try {
+        // Load users
+        const usersResponse = await apiClient.get('/auth/users');
+        if (usersResponse.ok) {
+            const users = await usersResponse.json();
+            const assigneeSelect = document.getElementById('taskAssignee');
+            if (assigneeSelect) {
+                assigneeSelect.innerHTML = '<option value="">Unassigned</option>';
+                users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = user.name;
+                    assigneeSelect.appendChild(option);
+                });
+            }
+        }
+        
+        // Load products
+        const productsResponse = await apiClient.get('/products');
+        if (productsResponse.ok) {
+            const products = await productsResponse.json();
+            const productSelect = document.getElementById('taskProduct');
+            if (productSelect) {
+                productSelect.innerHTML = '<option value="">General</option>';
+                products.forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product.id;
+                    option.textContent = product.name;
+                    productSelect.appendChild(option);
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load users/products:', error);
+    }
+}
+
+async function handleTaskSubmit(event) {
+    event.preventDefault();
+    
+    const modal = document.getElementById('taskModal');
+    const column = modal.dataset.column;
+    const taskId = modal.dataset.taskId;
+    
+    const taskData = {
+        title: document.getElementById('taskTitle').value,
+        description: document.getElementById('taskDescription').value,
+        status: column,
+        label: document.getElementById('taskLabel').value,
+        assigneeId: document.getElementById('taskAssignee').value ? parseInt(document.getElementById('taskAssignee').value) : null,
+        productId: document.getElementById('taskProduct').value ? parseInt(document.getElementById('taskProduct').value) : null,
+        priority: parseInt(document.getElementById('taskPriority').value),
+        dueDate: document.getElementById('taskDueDate').value || null
     };
+    
+    try {
+        let response;
+        if (taskId) {
+            // Update existing task
+            response = await apiClient.put(`/tasks/${taskId}`, taskData);
+        } else {
+            // Create new task
+            const user = authService.getCurrentUser();
+            if (user && user.id) {
+                taskData.creatorId = user.id;
+            }
+            response = await apiClient.post('/tasks', taskData);
+        }
+        
+        if (response.ok) {
+            closeTaskModal();
+            await loadTasksFromAPI();
+            renderBoard();
+        } else {
+            const error = await response.json();
+            // Show error in modal instead of alert
+            const errorDiv = document.createElement('div');
+            errorDiv.style.cssText = 'background: #fee; color: #c33; padding: 12px; border-radius: 4px; margin-bottom: 16px;';
+            errorDiv.textContent = error.message || 'Failed to save task';
+            const form = document.getElementById('taskForm');
+            form.insertBefore(errorDiv, form.firstChild);
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+    } catch (error) {
+        console.error('Error saving task:', error);
+        // Show error in modal instead of alert
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = 'background: #fee; color: #c33; padding: 12px; border-radius: 4px; margin-bottom: 16px;';
+        errorDiv.textContent = 'Failed to save task. Please try again.';
+        const form = document.getElementById('taskForm');
+        form.insertBefore(errorDiv, form.firstChild);
+        setTimeout(() => errorDiv.remove(), 5000);
+    }
+}
 
-    tasks[column === 'todo' ? 'todo' : column === 'progress' ? 'progress' : column === 'review' ? 'review' : 'done'].push(newTask);
-    renderBoard();
+async function loadTasksFromAPI() {
+    try {
+        const response = await apiClient.get('/tasks');
+        if (response.ok) {
+            const apiTasks = await response.json();
+            
+            // Convert API tasks to board format
+            tasks = {
+                todo: [],
+                progress: [],
+                review: [],
+                done: []
+            };
+            
+            apiTasks.forEach(task => {
+                const taskObj = {
+                    id: task.taskId || `TASK-${task.id}`,
+                    title: task.title,
+                    description: task.description,
+                    label: task.label || 'accounts',
+                    assignee: task.assignee ? task.assignee.name.substring(0, 2).toUpperCase() : 'UN',
+                    assigneeId: task.assigneeId,
+                    assigneeEmail: task.assignee ? task.assignee.email : null,
+                    productId: task.productId,
+                    priority: task.priority,
+                    dueDate: task.dueDate
+                };
+                
+                const status = task.status || 'todo';
+                if (tasks[status]) {
+                    tasks[status].push(taskObj);
+                } else {
+                    tasks.todo.push(taskObj);
+                }
+            });
+            
+            renderBoard();
+        }
+    } catch (error) {
+        console.error('Failed to load tasks:', error);
+    }
 }
 
 let draggedElement = null;
