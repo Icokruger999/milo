@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Milo.API.Models;
+using Task = Milo.API.Models.Task; // Alias to avoid conflict with System.Threading.Tasks.Task
 
 namespace Milo.API.Data;
 
