@@ -1,7 +1,10 @@
 // API Configuration - Production Only
 const API_CONFIG = {
-    // Production API URL
-    baseURL: 'https://www.codingeverest.com/api',
+    // Production API URL - Use EC2 IP for now, will switch to domain later
+    baseURL: window.location.hostname === 'www.codingeverest.com' || 
+             window.location.hostname === 'codingeverest.com'
+        ? 'http://34.246.3.141:5000/api'
+        : 'http://localhost:5000/api',
     
     // Timeout settings
     timeout: 30000,
