@@ -58,19 +58,22 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Ensure database is created
+// Apply database migrations to create all tables
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<MiloDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
     {
-        dbContext.Database.EnsureCreated();
+        // Use Migrate() instead of EnsureCreated() to properly run migrations
+        // This will create all tables defined in the InitialCreate migration
+        dbContext.Database.Migrate();
+        logger.LogInformation("Database migrations applied successfully.");
     }
     catch (Exception ex)
     {
         // Log error but don't fail startup - database might not be configured yet
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        logger.LogWarning(ex, "Database initialization failed. Ensure RDS connection string is configured.");
+        logger.LogWarning(ex, "Database migration failed. Ensure RDS connection string is configured. Error: {Error}", ex.Message);
     }
 }
 
