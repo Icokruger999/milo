@@ -72,9 +72,37 @@ async function handleCreateProject(event) {
         
         if (response.ok) {
             const project = await response.json();
-            projectSelector.setCurrentProject(project);
+            
+            // Ensure project has all required fields
+            if (!project.id) {
+                errorDiv.textContent = 'Invalid project response from server';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            // Store project in selector immediately (synchronous)
+            const projectData = {
+                id: project.id,
+                name: project.name || name,
+                key: project.key,
+                description: project.description,
+                status: project.status || 'active'
+            };
+            
+            // Store synchronously
+            localStorage.setItem('milo_current_project', JSON.stringify(projectData));
+            projectSelector.currentProject = projectData;
+            
+            // Close modal
             closeCreateProjectModal();
-            window.location.href = 'milo-board.html';
+            
+            // Reload projects list to include the new project
+            await projectSelector.loadProjects();
+            
+            // Redirect after a brief moment to ensure everything is saved
+            setTimeout(() => {
+                window.location.href = 'milo-board.html';
+            }, 200);
         } else {
             const error = await response.json();
             errorDiv.textContent = error.message || 'Failed to create project';

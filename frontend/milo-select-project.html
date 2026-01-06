@@ -186,7 +186,7 @@
                 <p>Loading projects...</p>
             </div>
 
-            <button class="create-project-button" onclick="showCreateProjectModal()">+ Create New Project</button>
+            <button class="create-project-button" onclick="showCreateProjectModalLocal()">+ Create New Project</button>
         </div>
     </div>
 
@@ -252,9 +252,10 @@
             }
         }
 
-        function showCreateProjectModal() {
-            // Use the modal from project-modals.js
-            if (typeof showCreateProjectModal === 'function') {
+        // Override showCreateProjectModal to use the one from project-modals.js
+        window.showCreateProjectModalLocal = function() {
+            // Check if the modal function from project-modals.js is available
+            if (typeof window.showCreateProjectModal === 'function') {
                 window.showCreateProjectModal();
             } else {
                 // Fallback if script not loaded
@@ -264,7 +265,7 @@
                 const key = prompt('Enter project key (optional, e.g., MILO):') || '';
                 createProject(name.trim(), description.trim(), key.trim());
             }
-        }
+        };
 
         async function createProject(name, description, key) {
             try {
@@ -278,8 +279,33 @@
 
                 if (response.ok) {
                     const project = await response.json();
-                    projectSelector.setCurrentProject(project);
-                    window.location.href = 'milo-board.html';
+                    
+                    // Ensure project has all required fields
+                    if (!project.id) {
+                        alert('Invalid project response from server');
+                        return;
+                    }
+                    
+                    // Store project with all required fields (synchronous)
+                    const projectData = {
+                        id: project.id,
+                        name: project.name || name,
+                        key: project.key,
+                        description: project.description,
+                        status: project.status || 'active'
+                    };
+                    
+                    // Store synchronously
+                    localStorage.setItem('milo_current_project', JSON.stringify(projectData));
+                    projectSelector.currentProject = projectData;
+                    
+                    // Reload projects list
+                    await projectSelector.loadProjects();
+                    
+                    // Redirect after a brief moment
+                    setTimeout(() => {
+                        window.location.href = 'milo-board.html';
+                    }, 200);
                 } else {
                     const error = await response.json();
                     alert(error.message || 'Failed to create project');

@@ -137,6 +137,7 @@ public class ProjectsController : ControllerBase
         {
             id = project.Id,
             name = project.Name,
+            description = project.Description,
             key = project.Key,
             status = project.Status,
             createdAt = project.CreatedAt
