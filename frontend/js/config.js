@@ -1,12 +1,12 @@
 // API Configuration - Production Only
+// STABLE CONFIGURATION - DO NOT CHANGE UNLESS EC2 IP CHANGES
 const API_CONFIG = {
     // Production API URL - Milo backend runs on port 5001
-    // Note: If frontend is HTTPS and backend is HTTP, browsers may block (mixed content)
-    // For now using HTTP - will need HTTPS setup for backend later
+    // STABLE: Using direct EC2 IP - this works and should not be changed
     get baseURL() {
         const hostname = window.location.hostname;
         if (hostname === 'www.codingeverest.com' || hostname === 'codingeverest.com') {
-            // Use direct EC2 IP - backend runs on port 5001
+            // STABLE CONFIG: Direct EC2 IP on port 5001 - DO NOT CHANGE
             return 'http://34.246.3.141:5001/api';
         }
         return 'http://localhost:5001/api';
