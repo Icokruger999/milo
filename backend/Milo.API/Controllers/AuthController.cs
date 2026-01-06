@@ -180,7 +180,7 @@ public class AuthController : ControllerBase
         await _context.SaveChangesAsync();
 
         // Send email with temporary password (fire and forget)
-        _ = Task.Run(async () =>
+        _ = System.Threading.Tasks.Task.Run(async () =>
         {
             try
             {
