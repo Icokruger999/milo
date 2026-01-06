@@ -58,24 +58,28 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Apply database migrations to create all tables
-using (var scope = app.Services.CreateScope())
+// Apply database migrations to create all tables (non-blocking)
+_ = Task.Run(async () =>
 {
-    var dbContext = scope.ServiceProvider.GetRequiredService<MiloDbContext>();
-    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    try
+    await Task.Delay(2000); // Wait 2 seconds for app to start
+    using (var scope = app.Services.CreateScope())
     {
-        // Use Migrate() instead of EnsureCreated() to properly run migrations
-        // This will create all tables defined in the InitialCreate migration
-        dbContext.Database.Migrate();
-        logger.LogInformation("Database migrations applied successfully.");
+        var dbContext = scope.ServiceProvider.GetRequiredService<MiloDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        try
+        {
+            // Use Migrate() instead of EnsureCreated() to properly run migrations
+            // This will create all tables defined in the InitialCreate migration
+            dbContext.Database.Migrate();
+            logger.LogInformation("Database migrations applied successfully.");
+        }
+        catch (Exception ex)
+        {
+            // Log error but don't fail startup - database might not be configured yet
+            logger.LogWarning(ex, "Database migration failed. Ensure RDS connection string is configured. Error: {Error}", ex.Message);
+        }
     }
-    catch (Exception ex)
-    {
-        // Log error but don't fail startup - database might not be configured yet
-        logger.LogWarning(ex, "Database migration failed. Ensure RDS connection string is configured. Error: {Error}", ex.Message);
-    }
-}
+});
 
 // Configure the HTTP request pipeline for production
 // Swagger disabled in production for security
