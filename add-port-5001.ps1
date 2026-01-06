@@ -8,8 +8,7 @@ aws ec2 authorize-security-group-ingress `
   --group-id sg-0eb3b878979ad2355 `
   --protocol tcp `
   --port 5001 `
-  --cidr 0.0.0.0/0 `
-  --description "Milo API Backend HTTP endpoint"
+  --cidr 0.0.0.0/0
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Port 5001 added successfully to launch-wizard-2!" -ForegroundColor Green
@@ -23,8 +22,7 @@ aws ec2 authorize-security-group-ingress `
   --group-id sg-00069569b0ba2dcdf `
   --protocol tcp `
   --port 5001 `
-  --cidr 0.0.0.0/0 `
-  --description "Milo API Backend HTTP endpoint"
+  --cidr 0.0.0.0/0
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Port 5001 added successfully to ec2-rds-1!" -ForegroundColor Green
