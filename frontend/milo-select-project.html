@@ -155,6 +155,11 @@
             background: #0065FF;
         }
 
+        .back-to-login-button:hover {
+            background: #EBECF0;
+            border-color: #C1C7D0;
+        }
+
         .error-message {
             background: #FFEBE6;
             border: 1px solid #DE350B;
@@ -186,7 +191,12 @@
                 <p>Loading projects...</p>
             </div>
 
-            <button class="create-project-button" onclick="showCreateProjectModalLocal()">+ Create New Project</button>
+            <div style="display: flex; gap: 12px; flex-direction: column;">
+                <button class="create-project-button" onclick="showCreateProjectModal()">+ Create New Project</button>
+                <button class="back-to-login-button" onclick="window.location.href='milo-login.html'" style="width: 100%; padding: 12px; background: #F4F5F7; color: #42526E; border: 1px solid #DFE1E6; border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.15s;">
+                    ← Back to Login
+                </button>
+            </div>
         </div>
     </div>
 
@@ -198,32 +208,44 @@
     <script>
         // Check authentication - prevent redirect loops
         // Users MUST signup/login before accessing projects
-        let redirecting = false;
-        
-        if (!authService.isAuthenticated()) {
-            if (!redirecting) {
-                redirecting = true;
-                // Redirect to login - user must authenticate first
-                window.location.href = 'milo-login.html';
+        (function() {
+            let redirecting = false;
+            
+            if (!authService.isAuthenticated()) {
+                if (!redirecting) {
+                    redirecting = true;
+                    // Redirect to login - user must authenticate first
+                    window.location.href = 'milo-login.html';
+                }
+                return;
             }
-            return;
-        }
 
-        const user = authService.getCurrentUser();
-        if (!user || !user.id) {
-            if (!redirecting) {
-                redirecting = true;
-                // User not properly authenticated - redirect to login
-                window.location.href = 'milo-login.html';
+            const user = authService.getCurrentUser();
+            if (!user || !user.id) {
+                if (!redirecting) {
+                    redirecting = true;
+                    // User not properly authenticated - redirect to login
+                    window.location.href = 'milo-login.html';
+                }
+                return;
             }
-            return;
-        }
+            
+            // Make user available globally
+            window.currentUser = user;
+        })();
 
         // Load projects
         async function loadProjects() {
             try {
+                // Get current user
+                const currentUser = window.currentUser || authService.getCurrentUser();
+                if (!currentUser || !currentUser.id) {
+                    console.error('User not found');
+                    return;
+                }
+                
                 // Pass user ID to load only projects the user has access to
-                const projects = await projectSelector.loadProjects(user.id);
+                const projects = await projectSelector.loadProjects(currentUser.id);
                 const container = document.getElementById('projectList');
 
                 if (projects.length === 0) {
@@ -268,20 +290,17 @@
             }
         }
 
-        // Override showCreateProjectModal to use the one from project-modals.js
-        window.showCreateProjectModalLocal = function() {
-            // Check if the modal function from project-modals.js is available
-            if (typeof window.showCreateProjectModal === 'function') {
-                window.showCreateProjectModal();
-            } else {
+        // Ensure showCreateProjectModal is available globally
+        if (typeof window.showCreateProjectModal !== 'function') {
+            window.showCreateProjectModal = function() {
                 // Fallback if script not loaded
                 const name = prompt('Enter project name:');
                 if (!name || name.trim() === '') return;
                 const description = prompt('Enter project description (optional):') || '';
                 const key = prompt('Enter project key (optional, e.g., MILO):') || '';
                 createProject(name.trim(), description.trim(), key.trim());
-            }
-        };
+            };
+        }
 
         async function createProject(name, description, key) {
             try {
@@ -316,7 +335,10 @@
                     projectSelector.currentProject = projectData;
                     
                     // Reload projects list with user ID
-                    await projectSelector.loadProjects(user.id);
+                    const currentUser = window.currentUser || authService.getCurrentUser();
+                    if (currentUser && currentUser.id) {
+                        await projectSelector.loadProjects(currentUser.id);
+                    }
                     
                     // Redirect after a brief moment
                     setTimeout(() => {
