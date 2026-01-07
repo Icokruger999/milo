@@ -209,6 +209,9 @@ public class TasksController : ControllerBase
             string? assigneeEmail = null;
             string? assigneeName = null;
             string? projectName = null;
+            string? taskTitle = null;
+            string? taskIdForEmail = null;
+            string? taskLink = null;
             
             if (task.AssigneeId.HasValue)
             {
@@ -220,38 +223,59 @@ public class TasksController : ControllerBase
                     assigneeEmail = task.Assignee.Email;
                     assigneeName = task.Assignee.Name;
                     projectName = task.Project?.Name ?? "General";
+                    taskTitle = task.Title;
+                    taskIdForEmail = task.TaskId ?? task.Id.ToString();
+                    taskLink = $"https://www.codingeverest.com/milo-board.html?projectId={task.ProjectId}&taskId={task.Id}";
+                    
+                    _logger.LogInformation($"Preparing to send task assignment email to {assigneeEmail} for task {taskIdForEmail}");
                     
                     // Send email notification (fire and forget)
-                    // Pass all data as parameters to avoid needing DbContext
-                    var taskTitle = task.Title;
-                    var taskIdForEmail = task.TaskId ?? task.Id.ToString();
-                    var taskLink = $"https://www.codingeverest.com/milo-board.html?projectId={task.ProjectId}&taskId={task.Id}";
-                    
+                    // Use IServiceScopeFactory to create a new scope for the email service
+                    // This ensures the email service has access to configuration even after the request scope is disposed
                     _ = System.Threading.Tasks.Task.Run(async () =>
                     {
                         try
                         {
-                            // Note: The email service expects taskId as the 4th parameter, but we'll pass the link
-                            // Actually, looking at the signature, it expects: toEmail, toName, taskTitle, taskId, productName
-                            // But the email template uses taskId in the subject and body, and we want to include the link
-                            // Let me check the email service signature again - it's: SendTaskAssignmentEmailAsync(string toEmail, string toName, string taskTitle, string taskId, string productName)
-                            // So taskId is the 4th parameter, and productName is the 5th
-                            await _emailService.SendTaskAssignmentEmailAsync(
-                                assigneeEmail!,
-                                assigneeName!,
-                                taskTitle,
-                                taskIdForEmail, // Pass task ID (e.g., "MILO-1")
-                                projectName!,   // Pass project name as productName parameter
-                                taskLink        // Pass the full task link
-                            );
-                            _logger.LogInformation($"Task assignment email sent successfully to {assigneeEmail} for task {taskIdForEmail}");
+                            // Create a new scope for the email service
+                            using (var scope = _serviceScopeFactory.CreateScope())
+                            {
+                                var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
+                                
+                                _logger.LogInformation($"Sending task assignment email to {assigneeEmail} for task {taskIdForEmail}");
+                                
+                                var emailSent = await emailService.SendTaskAssignmentEmailAsync(
+                                    assigneeEmail!,
+                                    assigneeName!,
+                                    taskTitle!,
+                                    taskIdForEmail!,
+                                    projectName!,
+                                    taskLink
+                                );
+                                
+                                if (emailSent)
+                                {
+                                    _logger.LogInformation($"Task assignment email sent successfully to {assigneeEmail} for task {taskIdForEmail}");
+                                }
+                                else
+                                {
+                                    _logger.LogWarning($"Task assignment email was not sent to {assigneeEmail} for task {taskIdForEmail} - email service returned false");
+                                }
+                            }
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(ex, $"Failed to send task assignment email to {assigneeEmail} for task {taskIdForEmail}: {ex.Message}");
+                            _logger.LogError(ex, $"Failed to send task assignment email to {assigneeEmail} for task {taskIdForEmail}. Error: {ex.Message}. StackTrace: {ex.StackTrace}");
                         }
                     });
                 }
+                else
+                {
+                    _logger.LogWarning($"Task {task.Id} has AssigneeId {task.AssigneeId} but assignee was not found in database");
+                }
+            }
+            else
+            {
+                _logger.LogInformation($"Task {task.Id} created without assignee - no email will be sent");
             }
 
             return CreatedAtAction(nameof(GetTask), new { id = task.Id }, new
