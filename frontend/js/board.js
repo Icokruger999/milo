@@ -823,12 +823,17 @@ async function loadTasksFromAPI() {
                 }
             });
             
-            renderBoard();
+                renderBoard();
+                
+                // Apply filters after loading tasks
+                if (typeof filterTasks === 'function') {
+                    filterTasks();
+                }
+            }
+        } catch (error) {
+            console.error('Failed to load tasks:', error);
         }
-    } catch (error) {
-        console.error('Failed to load tasks:', error);
     }
-}
 
 let draggedElement = null;
 

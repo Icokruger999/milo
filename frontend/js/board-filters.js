@@ -28,9 +28,13 @@ function applyFilters() {
     currentFilters.label = document.getElementById('labelFilter')?.value || '';
     currentFilters.assignee = document.getElementById('assigneeFilter')?.value || '';
     
-    // Reload tasks from API with assignee filter if set
+    // Always apply client-side filters after loading from API
+    // This ensures all filters (epic, type, priority, label, assignee) work together
     if (typeof loadTasksFromAPI === 'function') {
-        loadTasksFromAPI();
+        loadTasksFromAPI().then(() => {
+            // After loading, apply all filters
+            filterTasks();
+        });
     } else {
         filterTasks();
     }
@@ -62,14 +66,44 @@ function filterTasks() {
             }
         }
         
+        // Apply epic filter (epic is stored in label for now, or can be a separate field)
+        if (currentFilters.epic && currentFilters.epic !== '') {
+            // Epic filter - check if task label matches epic name
+            // For now, epic is the same as label, but this can be extended
+            const epicName = currentFilters.epic.toLowerCase();
+            const taskLabel = (task.label || '').toLowerCase();
+            if (taskLabel !== epicName) {
+                return; // Skip tasks that don't match epic
+            }
+        }
+        
+        // Apply type filter (type can be based on label or a separate field)
+        if (currentFilters.type && currentFilters.type !== '') {
+            // Type filter - for now, we'll check if it matches label
+            // This can be extended when we add a proper "type" field to tasks
+            const typeName = currentFilters.type.toLowerCase();
+            const taskLabel = (task.label || '').toLowerCase();
+            if (taskLabel !== typeName) {
+                return; // Skip tasks that don't match type
+            }
+        }
+        
         // Apply label filter
-        if (currentFilters.label && task.label !== currentFilters.label) {
-            return;
+        if (currentFilters.label && currentFilters.label !== '') {
+            const filterLabel = currentFilters.label.toLowerCase();
+            const taskLabel = (task.label || '').toLowerCase();
+            if (taskLabel !== filterLabel) {
+                return; // Skip tasks that don't match label
+            }
         }
         
         // Apply priority filter
-        if (currentFilters.priority && task.priority !== parseInt(currentFilters.priority)) {
-            return;
+        if (currentFilters.priority && currentFilters.priority !== '') {
+            const filterPriority = parseInt(currentFilters.priority);
+            const taskPriority = parseInt(task.priority) || 0;
+            if (taskPriority !== filterPriority) {
+                return; // Skip tasks that don't match priority
+            }
         }
         
         // Apply assignee filter
