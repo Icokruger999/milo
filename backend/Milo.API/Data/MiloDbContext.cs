@@ -21,6 +21,7 @@ public class MiloDbContext : DbContext
     public DbSet<ProjectMember> ProjectMembers { get; set; }
     public DbSet<Label> Labels { get; set; }
     public DbSet<TaskComment> TaskComments { get; set; }
+    public DbSet<TaskLink> TaskLinks { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -131,6 +132,28 @@ public class MiloDbContext : DbContext
                 .WithMany(p => p.Tasks)
                 .HasForeignKey(e => e.ProjectId)
                 .OnDelete(DeleteBehavior.SetNull);
+            
+            // Parent/Child task relationships
+            entity.HasOne(e => e.ParentTask)
+                .WithMany(t => t.ChildTasks)
+                .HasForeignKey(e => e.ParentTaskId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+        
+        // TaskLink configuration
+        modelBuilder.Entity<TaskLink>(entity =>
+        {
+            entity.HasIndex(e => e.SourceTaskId);
+            entity.HasIndex(e => e.TargetTaskId);
+            entity.HasIndex(e => new { e.SourceTaskId, e.TargetTaskId });
+            entity.HasOne(e => e.SourceTask)
+                .WithMany(t => t.LinkedTasks)
+                .HasForeignKey(e => e.SourceTaskId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.TargetTask)
+                .WithMany(t => t.LinkedFromTasks)
+                .HasForeignKey(e => e.TargetTaskId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Label configuration

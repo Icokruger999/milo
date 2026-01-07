@@ -27,7 +27,7 @@ public class TasksController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetTasks([FromQuery] string? status, [FromQuery] int? productId, [FromQuery] int? projectId, [FromQuery] int? assigneeId)
+    public async Task<IActionResult> GetTasks([FromQuery] string? status, [FromQuery] int? productId, [FromQuery] int? projectId, [FromQuery] int? assigneeId, [FromQuery] int? parentTaskId)
     {
         try
         {
@@ -59,6 +59,11 @@ public class TasksController : ControllerBase
                 query = query.Where(t => t.AssigneeId == assigneeId);
             }
 
+            if (parentTaskId.HasValue)
+            {
+                query = query.Where(t => t.ParentTaskId == parentTaskId);
+            }
+
             var tasks = await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
 
             return Ok(tasks.Select(t => new
@@ -78,6 +83,7 @@ public class TasksController : ControllerBase
                 project = t.Project != null ? new { id = t.Project.Id, name = t.Project.Name, key = t.Project.Key } : null,
                 priority = t.Priority,
                 dueDate = t.DueDate,
+                startDate = t.StartDate,
                 createdAt = t.CreatedAt
             }));
         }
@@ -95,6 +101,7 @@ public class TasksController : ControllerBase
             .Include(t => t.Assignee)
             .Include(t => t.Creator)
             .Include(t => t.Product)
+            .Include(t => t.Project)
             .FirstOrDefaultAsync(t => t.Id == id && !t.IsDeleted);
 
         if (task == null)
@@ -115,8 +122,11 @@ public class TasksController : ControllerBase
             creator = task.Creator != null ? new { id = task.Creator.Id, name = task.Creator.Name } : null,
             productId = task.ProductId,
             product = task.Product != null ? new { id = task.Product.Id, name = task.Product.Name } : null,
+            projectId = task.ProjectId,
+            project = task.Project != null ? new { id = task.Project.Id, name = task.Project.Name, key = task.Project.Key } : null,
             priority = task.Priority,
             dueDate = task.DueDate,
+            startDate = task.StartDate,
             createdAt = task.CreatedAt
         });
     }
@@ -193,6 +203,31 @@ public class TasksController : ControllerBase
                 }
             }
 
+            // Ensure StartDate is UTC if provided
+            DateTime? startDateUtc = null;
+            if (request.StartDate.HasValue)
+            {
+                var startDate = request.StartDate.Value;
+                
+                if (startDate.Kind == DateTimeKind.Unspecified)
+                {
+                    startDateUtc = DateTime.SpecifyKind(startDate, DateTimeKind.Utc);
+                }
+                else if (startDate.Kind == DateTimeKind.Local)
+                {
+                    startDateUtc = startDate.ToUniversalTime();
+                }
+                else
+                {
+                    startDateUtc = startDate;
+                }
+                
+                if (startDateUtc.HasValue && startDateUtc.Value.Kind != DateTimeKind.Utc)
+                {
+                    startDateUtc = DateTime.SpecifyKind(startDateUtc.Value, DateTimeKind.Utc);
+                }
+            }
+
             var task = new Models.Task
             {
                 Title = request.Title,
@@ -206,6 +241,8 @@ public class TasksController : ControllerBase
                 ProjectId = request.ProjectId,
                 Priority = request.Priority ?? 0,
                 DueDate = dueDateUtc,
+                StartDate = startDateUtc,
+                ParentTaskId = request.ParentTaskId,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -477,6 +514,26 @@ public class TasksController : ControllerBase
                 task.DueDate = dueDate;
             }
         }
+        if (request.StartDate.HasValue)
+        {
+            var startDate = request.StartDate.Value;
+            if (startDate.Kind == DateTimeKind.Unspecified)
+            {
+                task.StartDate = DateTime.SpecifyKind(startDate, DateTimeKind.Utc);
+            }
+            else if (startDate.Kind == DateTimeKind.Local)
+            {
+                task.StartDate = startDate.ToUniversalTime();
+            }
+            else
+            {
+                task.StartDate = startDate;
+            }
+        }
+        if (request.ParentTaskId.HasValue)
+        {
+            task.ParentTaskId = request.ParentTaskId;
+        }
 
             task.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
@@ -546,6 +603,8 @@ public class CreateTaskRequest
     public int? ProjectId { get; set; }
     public int? Priority { get; set; }
     public DateTime? DueDate { get; set; }
+    public DateTime? StartDate { get; set; }
+    public int? ParentTaskId { get; set; }
 }
 
 public class UpdateTaskRequest
@@ -558,5 +617,7 @@ public class UpdateTaskRequest
     public int? ProductId { get; set; }
     public int? Priority { get; set; }
     public DateTime? DueDate { get; set; }
+    public DateTime? StartDate { get; set; }
+    public int? ParentTaskId { get; set; }
 }
 

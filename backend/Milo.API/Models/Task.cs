@@ -51,7 +51,20 @@ public class Task
     
     public bool IsDeleted { get; set; } = false;
     
+    // Parent/Child task relationships (for Epics)
+    [ForeignKey("ParentTask")]
+    public int? ParentTaskId { get; set; }
+    public Task? ParentTask { get; set; }
+    public ICollection<Task> ChildTasks { get; set; } = new List<Task>();
+    
+    // Linked tasks (for related issues)
+    public ICollection<TaskLink> LinkedTasks { get; set; } = new List<TaskLink>();
+    public ICollection<TaskLink> LinkedFromTasks { get; set; } = new List<TaskLink>();
+    
     // Navigation property for comments
     public ICollection<TaskComment> Comments { get; set; } = new List<TaskComment>();
+    
+    // Start date for roadmap timeline
+    public DateTime? StartDate { get; set; }
 }
 
