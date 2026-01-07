@@ -384,66 +384,91 @@ function createTaskModal() {
                 <input type="hidden" id="taskColumn" name="column">
                 <input type="hidden" id="taskId" name="taskId">
                 
-                <div style="margin-bottom: 16px;">
-                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Title *</label>
-                    <input type="text" id="taskTitle" name="title" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
-                </div>
-                
-                <div style="margin-bottom: 16px;">
-                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Description</label>
-                    <textarea id="taskDescription" name="description" rows="3" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box; resize: vertical;"></textarea>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 32px; margin-bottom: 24px;">
+                    <!-- Left Column - Main Content -->
                     <div>
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-                            <label style="display: block; font-weight: 500; font-size: 14px;">Label</label>
-                            <button type="button" onclick="showCreateLabelModal()" style="background: none; border: none; color: #0052CC; font-size: 12px; cursor: pointer; padding: 0;">+ New Label</button>
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #172B4D;">Title *</label>
+                            <input type="text" id="taskTitle" name="title" required style="width: 100%; padding: 10px 12px; border: 2px solid #DFE1E6; border-radius: 4px; font-size: 15px; box-sizing: border-box; transition: border-color 0.2s;" onfocus="this.style.borderColor='#0052CC'" onblur="this.style.borderColor='#DFE1E6'">
                         </div>
-                        <select id="taskLabel" name="label" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
-                            <option value="">No Label</option>
-                        </select>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #172B4D;">Description</label>
+                            <textarea id="taskDescription" name="description" rows="8" style="width: 100%; padding: 10px 12px; border: 2px solid #DFE1E6; border-radius: 4px; font-size: 14px; box-sizing: border-box; resize: vertical; font-family: inherit; line-height: 1.5; transition: border-color 0.2s;" onfocus="this.style.borderColor='#0052CC'" onblur="this.style.borderColor='#DFE1E6'"></textarea>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                <label style="display: block; font-weight: 600; font-size: 14px; color: #172B4D;">Checklist</label>
+                                <button type="button" onclick="addChecklistItem()" style="background: none; border: none; color: #0052CC; font-size: 13px; cursor: pointer; padding: 4px 8px; font-weight: 500;">+ Add Item</button>
+                            </div>
+                            <div id="taskChecklist" style="border: 2px solid #DFE1E6; border-radius: 4px; padding: 12px; min-height: 60px; background: #F4F5F7;">
+                                <div style="color: #6B778C; font-size: 13px; text-align: center; padding: 8px;">No checklist items yet</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #172B4D;">Comments</label>
+                            <div id="taskCommentsList" style="border: 2px solid #DFE1E6; border-radius: 4px; padding: 12px; background: #F4F5F7; max-height: 250px; overflow-y: auto; margin-bottom: 12px;">
+                                <div style="color: #6B778C; font-size: 13px; text-align: center; padding: 8px;">No comments yet</div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="newCommentInput" placeholder="Add a comment..." style="flex: 1; padding: 10px 12px; border: 2px solid #DFE1E6; border-radius: 4px; font-size: 14px; transition: border-color 0.2s;" onfocus="this.style.borderColor='#0052CC'" onblur="this.style.borderColor='#DFE1E6'">
+                                <button type="button" onclick="addCommentToTaskModal()" style="padding: 10px 20px; background: #0052CC; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#0065FF'" onmouseout="this.style.background='#0052CC'">Post</button>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div>
-                        <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Priority</label>
-                        <select id="taskPriority" name="priority" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
-                            <option value="0">Low</option>
-                            <option value="1">Medium</option>
-                            <option value="2">High</option>
-                        </select>
+                    <!-- Right Column - Sidebar Fields -->
+                    <div style="border-left: 1px solid #DFE1E6; padding-left: 24px;">
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #172B4D;">Status *</label>
+                            <select id="taskStatus" name="status" required style="width: 100%; padding: 10px 12px; border: 2px solid #DFE1E6; border-radius: 4px; font-size: 14px; box-sizing: border-box; background: white; cursor: pointer; transition: border-color 0.2s;" onfocus="this.style.borderColor='#0052CC'" onblur="this.style.borderColor='#DFE1E6'">
+                                <option value="todo">Backlog</option>
+                                <option value="progress">In Progress</option>
+                                <option value="review">In Review</option>
+                                <option value="done">Done</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #172B4D;">Assignee</label>
+                            <select id="taskAssignee" name="assigneeId" style="width: 100%; padding: 10px 12px; border: 2px solid #DFE1E6; border-radius: 4px; font-size: 14px; box-sizing: border-box; background: white; cursor: pointer; transition: border-color 0.2s;" onfocus="this.style.borderColor='#0052CC'" onblur="this.style.borderColor='#DFE1E6'">
+                                <option value="">Unassigned</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                <label style="display: block; font-weight: 600; font-size: 14px; color: #172B4D;">Label</label>
+                                <button type="button" onclick="showCreateLabelModal()" style="background: none; border: none; color: #0052CC; font-size: 13px; cursor: pointer; padding: 4px 8px; font-weight: 500;">+ New Label</button>
+                            </div>
+                            <select id="taskLabel" name="label" style="width: 100%; padding: 10px 12px; border: 2px solid #DFE1E6; border-radius: 4px; font-size: 14px; box-sizing: border-box; background: white; cursor: pointer; transition: border-color 0.2s;" onfocus="this.style.borderColor='#0052CC'" onblur="this.style.borderColor='#DFE1E6'">
+                                <option value="">No Label</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #172B4D;">Priority</label>
+                            <select id="taskPriority" name="priority" style="width: 100%; padding: 10px 12px; border: 2px solid #DFE1E6; border-radius: 4px; font-size: 14px; box-sizing: border-box; background: white; cursor: pointer; transition: border-color 0.2s;" onfocus="this.style.borderColor='#0052CC'" onblur="this.style.borderColor='#DFE1E6'">
+                                <option value="0">Low</option>
+                                <option value="1">Medium</option>
+                                <option value="2">High</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #172B4D;">Product</label>
+                            <select id="taskProduct" name="productId" style="width: 100%; padding: 10px 12px; border: 2px solid #DFE1E6; border-radius: 4px; font-size: 14px; box-sizing: border-box; background: white; cursor: pointer; transition: border-color 0.2s;" onfocus="this.style.borderColor='#0052CC'" onblur="this.style.borderColor='#DFE1E6'">
+                                <option value="">General</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #172B4D;">Due Date</label>
+                            <input type="date" id="taskDueDate" name="dueDate" style="width: 100%; padding: 10px 12px; border: 2px solid #DFE1E6; border-radius: 4px; font-size: 14px; box-sizing: border-box; transition: border-color 0.2s;" onfocus="this.style.borderColor='#0052CC'" onblur="this.style.borderColor='#DFE1E6'">
+                        </div>
                     </div>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                    <div>
-                        <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Status *</label>
-                        <select id="taskStatus" name="status" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
-                            <option value="todo">Backlog</option>
-                            <option value="progress">In Progress</option>
-                            <option value="review">In Review</option>
-                            <option value="done">Done</option>
-                        </select>
-                    </div>
-                    
-                    <div>
-                        <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Assignee</label>
-                        <select id="taskAssignee" name="assigneeId" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
-                            <option value="">Unassigned</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <div style="margin-bottom: 16px;">
-                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Product</label>
-                    <select id="taskProduct" name="productId" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
-                        <option value="">General</option>
-                    </select>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Due Date</label>
-                    <input type="date" id="taskDueDate" name="dueDate" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
                 </div>
                 
                 <div style="margin-bottom: 20px;">
