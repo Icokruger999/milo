@@ -207,102 +207,112 @@ public class TasksController : ControllerBase
             _context.Tasks.Add(task);
             await _context.SaveChangesAsync();
 
-            // Load all data needed for email notification BEFORE Task.Run
-            // (DbContext is scoped and will be disposed after request completes)
-            string? assigneeEmail = null;
-            string? assigneeName = null;
-            string? projectName = null;
-            string? taskTitle = null;
-            string? taskIdForEmail = null;
-            string? taskLink = null;
-            
+            // Smart Email Sending Solution
+            // Load assignee and project data for email notification
             if (task.AssigneeId.HasValue)
             {
                 await _context.Entry(task).Reference(t => t.Assignee).LoadAsync();
                 await _context.Entry(task).Reference(t => t.Project).LoadAsync();
                 
-                if (task.Assignee != null)
+                if (task.Assignee != null && !string.IsNullOrEmpty(task.Assignee.Email))
                 {
-                    assigneeEmail = task.Assignee.Email;
-                    assigneeName = task.Assignee.Name;
-                    projectName = task.Project?.Name ?? "General";
-                    taskTitle = task.Title;
-                    taskIdForEmail = task.TaskId ?? task.Id.ToString();
-                    taskLink = $"https://www.codingeverest.com/milo-board.html?projectId={task.ProjectId}&taskId={task.Id}";
+                    var assigneeEmail = task.Assignee.Email;
+                    var assigneeName = task.Assignee.Name;
+                    var projectName = task.Project?.Name ?? "General";
+                    var taskTitle = task.Title;
+                    var taskIdForEmail = task.TaskId ?? task.Id.ToString();
+                    var taskLink = $"https://www.codingeverest.com/milo-board.html?projectId={task.ProjectId}&taskId={task.Id}";
                     
-                    _logger.LogInformation($"Preparing to send task assignment email to {assigneeEmail} for task {taskIdForEmail}");
+                    _logger.LogInformation($"[EMAIL] Task {taskIdForEmail} created with assignee {assigneeName} ({assigneeEmail}) - preparing to send email");
                     
-                    // Send email notification in background (fire and forget)
-                    // Use IServiceScopeFactory to create a new scope for the email service
-                    // This ensures the email service has access to configuration even after the request scope is disposed
+                    // Smart solution: Send email in background with proper error handling
+                    // Use IServiceScopeFactory to ensure email service has proper scope
                     _ = System.Threading.Tasks.Task.Run(async () =>
                     {
-                        // Add delay to ensure request completes first
-                        await System.Threading.Tasks.Task.Delay(500);
+                        // Small delay to ensure database transaction is committed
+                        await System.Threading.Tasks.Task.Delay(300);
                         
                         try
                         {
-                            // Create a new scope for the email service
                             using (var scope = _serviceScopeFactory.CreateScope())
                             {
                                 var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
                                 var logger = scope.ServiceProvider.GetRequiredService<ILogger<TasksController>>();
                                 
-                                logger.LogInformation($"Sending task assignment email to {assigneeEmail} for task {taskIdForEmail}");
+                                logger.LogInformation($"[EMAIL] Attempting to send task assignment email to {assigneeEmail} for task {taskIdForEmail}");
                                 
-                                var emailSent = await emailService.SendTaskAssignmentEmailAsync(
-                                    assigneeEmail!,
-                                    assigneeName!,
-                                    taskTitle!,
-                                    taskIdForEmail!,
-                                    projectName!,
+                                // Send email with timeout protection
+                                var emailTask = emailService.SendTaskAssignmentEmailAsync(
+                                    assigneeEmail,
+                                    assigneeName,
+                                    taskTitle,
+                                    taskIdForEmail,
+                                    projectName,
                                     taskLink
                                 );
                                 
-                                if (emailSent)
+                                // Wait for email with timeout (30 seconds)
+                                var timeoutTask = System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(30));
+                                var completedTask = await System.Threading.Tasks.Task.WhenAny(emailTask, timeoutTask);
+                                
+                                if (completedTask == emailTask)
                                 {
-                                    logger.LogInformation($"✓ Task assignment email sent successfully to {assigneeEmail} for task {taskIdForEmail}");
+                                    var emailSent = await emailTask;
+                                    if (emailSent)
+                                    {
+                                        logger.LogInformation($"[EMAIL] ✓ SUCCESS: Task assignment email sent to {assigneeEmail} for task {taskIdForEmail}");
+                                    }
+                                    else
+                                    {
+                                        logger.LogWarning($"[EMAIL] ✗ FAILED: Email service returned false for {assigneeEmail} (task {taskIdForEmail}) - check email configuration in appsettings.json");
+                                    }
                                 }
                                 else
                                 {
-                                    logger.LogWarning($"✗ Task assignment email was not sent to {assigneeEmail} for task {taskIdForEmail} - email service returned false (check email configuration)");
+                                    logger.LogError($"[EMAIL] ✗ TIMEOUT: Email sending timed out after 30 seconds for {assigneeEmail} (task {taskIdForEmail})");
                                 }
                             }
                         }
                         catch (Exception ex)
                         {
-                            // Use a new logger scope to ensure we can log even if the original scope is disposed
+                            // Comprehensive error logging
                             try
                             {
                                 using (var logScope = _serviceScopeFactory.CreateScope())
                                 {
                                     var logger = logScope.ServiceProvider.GetRequiredService<ILogger<TasksController>>();
-                                    logger.LogError(ex, $"✗ FAILED to send task assignment email to {assigneeEmail} for task {taskIdForEmail}. Error: {ex.Message}");
-                                    logger.LogError($"Stack trace: {ex.StackTrace}");
+                                    logger.LogError(ex, $"[EMAIL] ✗ EXCEPTION: Failed to send email to {assigneeEmail} for task {taskIdForEmail}");
+                                    logger.LogError($"[EMAIL] Error Type: {ex.GetType().Name}");
+                                    logger.LogError($"[EMAIL] Error Message: {ex.Message}");
+                                    if (ex.InnerException != null)
+                                    {
+                                        logger.LogError($"[EMAIL] Inner Exception: {ex.InnerException.Message}");
+                                    }
+                                    logger.LogError($"[EMAIL] Stack Trace: {ex.StackTrace}");
                                 }
                             }
-                            catch
+                            catch (LogException)
                             {
-                                // If even logging fails, at least write to console
-                                Console.WriteLine($"ERROR: Failed to send email to {assigneeEmail}: {ex.Message}");
+                                // Last resort: write to console
+                                Console.WriteLine($"[EMAIL ERROR] Failed to send to {assigneeEmail}: {ex.Message}");
                             }
                         }
-                    }).ContinueWith(task =>
+                    }).ContinueWith(t =>
                     {
-                        if (task.IsFaulted)
+                        if (t.IsFaulted && t.Exception != null)
                         {
-                            _logger.LogError(task.Exception, $"Email task failed with exception for task {taskIdForEmail}");
+                            _logger.LogError(t.Exception, $"[EMAIL] Background task faulted for task {taskIdForEmail}");
                         }
                     }, System.Threading.Tasks.TaskContinuationOptions.OnlyOnFaulted);
                 }
                 else
                 {
-                    _logger.LogWarning($"Task {task.Id} has AssigneeId {task.AssigneeId} but assignee was not found in database");
+                    _logger.LogWarning($"[EMAIL] Task {task.Id} has AssigneeId {task.AssigneeId} but assignee is null or has no email address");
                 }
             }
             else
             {
-                _logger.LogInformation($"Task {task.Id} created without assignee - no email will be sent");
+                _logger.LogInformation($"[EMAIL] Task {task.Id} created without assignee - no email will be sent (this is expected)");
             }
 
             return CreatedAtAction(nameof(GetTask), new { id = task.Id }, new
