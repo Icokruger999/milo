@@ -709,10 +709,30 @@ async function handleTaskSubmit(event) {
         }
         
         if (response.ok) {
+            const savedTask = await response.json();
             closeTaskModal();
-            // Optimize: Update UI immediately, then sync with API
-            debouncedRender();
-            setTimeout(() => loadTasksFromAPI(), 300);
+            
+            // Check if we're on the backlog page
+            const isBacklogPage = window.location.pathname.includes('backlog') || window.location.hash === '#backlog';
+            
+            if (isBacklogPage && typeof loadBacklogTasks === 'function') {
+                // Reload backlog if on backlog page
+                loadBacklogTasks();
+            } else if (!taskId && savedTask && savedTask.id) {
+                // If this was a new task, open it in the unified modal to view/edit
+                await loadTasksFromAPI();
+                setTimeout(() => {
+                    const allTasks = [...tasks.todo, ...tasks.progress, ...tasks.review, ...tasks.done];
+                    const newTask = allTasks.find(t => t.id === savedTask.id);
+                    if (newTask) {
+                        showTaskModal(newTask.status || 'todo', newTask);
+                    }
+                }, 500);
+            } else {
+                // For updates, just reload
+                debouncedRender();
+                setTimeout(() => loadTasksFromAPI(), 300);
+            }
         } else {
             const error = await response.json();
             // Show error in modal instead of alert
