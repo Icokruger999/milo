@@ -375,25 +375,62 @@ public class TasksController : ControllerBase
                     var projectName = task.Project?.Name ?? "General";
                     var taskLink = $"https://www.codingeverest.com/milo-board.html?projectId={task.ProjectId}&taskId={task.Id}";
                     
+                    _logger.LogInformation($"Preparing to send task assignment email to {assigneeEmail} for task {taskIdForEmail} (update)");
+                    
                     _ = System.Threading.Tasks.Task.Run(async () =>
                     {
+                        await System.Threading.Tasks.Task.Delay(500);
+                        
                         try
                         {
-                            await _emailService.SendTaskAssignmentEmailAsync(
-                                assigneeEmail,
-                                assigneeName,
-                                taskTitle,
-                                taskIdForEmail,
-                                projectName,
-                                taskLink
-                            );
-                            _logger.LogInformation($"Task assignment email sent successfully to {assigneeEmail} for task {taskIdForEmail}");
+                            using (var scope = _serviceScopeFactory.CreateScope())
+                            {
+                                var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
+                                var logger = scope.ServiceProvider.GetRequiredService<ILogger<TasksController>>();
+                                
+                                logger.LogInformation($"Sending task assignment email to {assigneeEmail} for task {taskIdForEmail}");
+                                
+                                var emailSent = await emailService.SendTaskAssignmentEmailAsync(
+                                    assigneeEmail,
+                                    assigneeName,
+                                    taskTitle,
+                                    taskIdForEmail,
+                                    projectName,
+                                    taskLink
+                                );
+                                
+                                if (emailSent)
+                                {
+                                    logger.LogInformation($"✓ Task assignment email sent successfully to {assigneeEmail} for task {taskIdForEmail}");
+                                }
+                                else
+                                {
+                                    logger.LogWarning($"✗ Task assignment email was not sent to {assigneeEmail} for task {taskIdForEmail} - email service returned false");
+                                }
+                            }
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(ex, $"Failed to send task assignment email to {assigneeEmail} for task {taskIdForEmail}: {ex.Message}");
+                            try
+                            {
+                                using (var logScope = _serviceScopeFactory.CreateScope())
+                                {
+                                    var logger = logScope.ServiceProvider.GetRequiredService<ILogger<TasksController>>();
+                                    logger.LogError(ex, $"✗ FAILED to send task assignment email to {assigneeEmail} for task {taskIdForEmail}. Error: {ex.Message}");
+                                }
+                            }
+                            catch
+                            {
+                                Console.WriteLine($"ERROR: Failed to send email to {assigneeEmail}: {ex.Message}");
+                            }
                         }
-                    });
+                    }).ContinueWith(t =>
+                    {
+                        if (t.IsFaulted)
+                        {
+                            _logger.LogError(t.Exception, $"Email task failed with exception for task {taskIdForEmail}");
+                        }
+                    }, System.Threading.Tasks.TaskContinuationOptions.OnlyOnFaulted);
                 }
             }
         }
