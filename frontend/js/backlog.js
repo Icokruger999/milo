@@ -394,7 +394,8 @@ function openTaskModal(taskId) {
 
 function showCreateTaskModal() {
     if (typeof window.showCreateTaskModal === 'function') {
-        window.showCreateTaskModal('todo');
+        // Create task with 'backlog' status when created from backlog page
+        window.showCreateTaskModal('backlog');
     }
 }
 

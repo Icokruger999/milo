@@ -814,6 +814,7 @@ async function loadTasksFromAPI() {
                 if (task.status === 'progress' || task.status === 'in-progress') boardStatus = 'progress';
                 else if (task.status === 'review' || task.status === 'in-review') boardStatus = 'review';
                 else if (task.status === 'done' || task.status === 'completed') boardStatus = 'done';
+                else if (task.status === 'backlog') boardStatus = 'todo'; // Backlog tasks show in todo column
                 else boardStatus = 'todo';
                 
                 if (tasks[boardStatus]) {
