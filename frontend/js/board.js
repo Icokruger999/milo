@@ -720,10 +720,16 @@ function handleDragOver(e) {
 async function handleDrop(e) {
     e.preventDefault();
     
-    if (!draggedElement) return;
+    if (!draggedElement) {
+        console.error('No dragged element');
+        return;
+    }
 
     const taskId = draggedElement.dataset.taskId;
-    if (!taskId) return;
+    if (!taskId) {
+        console.error('No task ID found on dragged element', draggedElement);
+        return;
+    }
 
     // Get new status from column
     const newColumnId = e.currentTarget.id;
@@ -732,38 +738,56 @@ async function handleDrop(e) {
     else if (newColumnId === 'reviewItems') newStatus = 'review';
     else if (newColumnId === 'doneItems') newStatus = 'done';
 
+    console.log(`Moving task ${taskId} to status: ${newStatus}`);
+
     // Find task in current tasks
     let task = null;
     for (const status in tasks) {
-        task = tasks[status].find(t => (t.id === taskId || t.taskId === taskId));
+        task = tasks[status].find(t => {
+            // Match by numeric ID or taskId string
+            return t.id == taskId || t.id.toString() === taskId || t.taskId === taskId;
+        });
         if (task) break;
     }
 
-    if (!task) return;
+    if (!task) {
+        console.error('Task not found in local tasks:', taskId);
+        // Try to update directly using the taskId as numeric ID
+        try {
+            const updateResponse = await apiClient.put(`/tasks/${taskId}`, {
+                status: newStatus
+            });
 
-    // Update task status via API
-    try {
-        // Extract numeric ID from taskId (e.g., "NUC-344" -> find task with that taskId)
-        const response = await apiClient.get('/tasks');
-        if (response.ok) {
-            const allTasks = await response.json();
-            const apiTask = allTasks.find(t => t.taskId === taskId || t.id.toString() === taskId.replace('TASK-', ''));
-            
-            if (apiTask) {
-                const updateResponse = await apiClient.put(`/tasks/${apiTask.id}`, {
-                    status: newStatus
-                });
-
-                if (updateResponse.ok) {
-                    // Reload tasks from API
-                    await loadTasksFromAPI();
-                    renderBoard();
-                } else {
-                    console.error('Failed to update task status');
-                    // Revert visual change
-                    renderBoard();
-                }
+            if (updateResponse.ok) {
+                await loadTasksFromAPI();
+                renderBoard();
+            } else {
+                const error = await updateResponse.json();
+                console.error('Failed to update task status:', error);
+                renderBoard();
             }
+        } catch (error) {
+            console.error('Error updating task:', error);
+            renderBoard();
+        }
+        return;
+    }
+
+    // Update task status via API using the numeric ID
+    try {
+        const updateResponse = await apiClient.put(`/tasks/${task.id}`, {
+            status: newStatus
+        });
+
+        if (updateResponse.ok) {
+            // Reload tasks from API to get updated status
+            await loadTasksFromAPI();
+            renderBoard();
+        } else {
+            const error = await updateResponse.json();
+            console.error('Failed to update task status:', error);
+            // Revert visual change
+            renderBoard();
         }
     } catch (error) {
         console.error('Error updating task:', error);
