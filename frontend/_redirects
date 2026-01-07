@@ -1,3 +1,6 @@
+# Redirect root domain to www (if accessed via root)
+/    https://www.codingeverest.com/    301
+
 # Handle all routes - serve index.html for SPA
 /*    /index.html   200
 
