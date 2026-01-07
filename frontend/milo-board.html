@@ -773,11 +773,25 @@
                         <a href="milo-select-project.html">Projects</a> / <span id="currentProjectName">Loading...</span>
                     </div>
                     <div class="board-title-row">
-                        <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="display: flex; align-items: center; gap: 12px; position: relative;">
                             <div class="board-title">Board</div>
-                            <select id="projectSelector" style="padding: 6px 12px; border: 1px solid #DFE1E6; border-radius: 3px; background: white; font-size: 14px; color: #42526E; cursor: pointer;">
-                                <option>Loading projects...</option>
-                            </select>
+                            <div style="position: relative;">
+                                <select id="projectSelector" style="padding: 6px 32px 6px 12px; border: 1px solid #DFE1E6; border-radius: 3px; background: white; font-size: 14px; color: #42526E; cursor: pointer; appearance: none; min-width: 200px;">
+                                    <option value="">Loading projects...</option>
+                                </select>
+                                <div id="projectDropdown" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 4px; background: white; border: 1px solid #DFE1E6; border-radius: 3px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 200px; max-height: 300px; overflow-y: auto;">
+                                    <div id="projectDropdownItems"></div>
+                                    <div style="border-top: 1px solid #DFE1E6; padding: 8px;">
+                                        <button onclick="showCreateProjectModal(); document.getElementById('projectDropdown').style.display='none'; return false;" style="width: 100%; padding: 8px 12px; background: #0052CC; color: white; border: none; border-radius: 3px; font-size: 13px; font-weight: 500; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px;">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                            </svg>
+                                            Create New Project
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="board-title-actions">
                             <div class="board-title-icon">
@@ -908,6 +922,7 @@
     <script src="js/auth.js"></script>
     <script src="js/project-selector.js"></script>
     <script src="js/project-modals.js"></script>
+    <script src="js/project-selector-enhanced.js"></script>
     <script src="js/board-filters.js"></script>
     <script src="js/board.js"></script>
     <script>
@@ -944,14 +959,14 @@
             }
         };
         
-        // Check if project is selected - but wait a moment for it to be set
-        setTimeout(() => {
-            const currentProject = projectSelector.getCurrentProject();
-            if (!currentProject) {
-                console.log('No project selected, redirecting to project selector');
-                window.location.href = 'milo-select-project.html';
-            }
-        }, 1000);
+        // Don't auto-redirect if no project - let user create one from dropdown
+        // setTimeout(() => {
+        //     const currentProject = projectSelector.getCurrentProject();
+        //     if (!currentProject) {
+        //         console.log('No project selected, redirecting to project selector');
+        //         window.location.href = 'milo-select-project.html';
+        //     }
+        // }, 1000);
 
         // Load projects and setup selector
         async function setupProjectSelector() {
@@ -973,17 +988,28 @@
                 }
                 
                 if (projects.length === 0) {
-                    selector.innerHTML = '<option>No projects</option>';
+                    selector.innerHTML = '<option value="create">+ Create New Project</option>';
+                    selector.value = 'create';
                     const projectNameEl = document.getElementById('currentProjectName');
                     if (projectNameEl) {
                         projectNameEl.textContent = 'No projects';
                     }
+                    // Handle create option
+                    selector.addEventListener('change', function() {
+                        if (this.value === 'create') {
+                            if (typeof showCreateProjectModal === 'function') {
+                                showCreateProjectModal();
+                            } else {
+                                window.location.href = 'milo-select-project.html';
+                            }
+                        }
+                    });
                     return;
                 }
 
                 selector.innerHTML = projects.map(p => 
                     `<option value="${p.id}" ${currentProject && p.id === currentProject.id ? 'selected' : ''}>${p.name}${p.key ? ` (${p.key})` : ''}</option>`
-                ).join('');
+                ).join('') + '<option value="create" style="font-weight: 600; color: #0052CC;">+ Create New Project</option>';
 
                 // Update project name in breadcrumb
                 if (currentProject) {
@@ -1043,8 +1069,12 @@
             if (sidebarUserAvatarEl) sidebarUserAvatarEl.textContent = initials;
         }
 
-        // Setup project selector
-        setupProjectSelector();
+        // Setup project selector (use enhanced if available, otherwise fallback)
+        if (typeof setupProjectSelectorEnhanced === 'function') {
+            setupProjectSelectorEnhanced();
+        } else {
+            setupProjectSelector();
+        }
         
         // Make Create button work
         document.addEventListener('DOMContentLoaded', function() {
