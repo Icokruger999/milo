@@ -147,9 +147,14 @@ function createTaskCard(task) {
     card.addEventListener('dragstart', handleDragStart);
     card.addEventListener('dragend', handleDragEnd);
     
-    // Make card clickable to view/edit
-    card.addEventListener('click', function() {
-        viewTask(task);
+    // Make card clickable - open in edit mode directly (unified modal)
+    card.addEventListener('click', function(e) {
+        // Don't trigger if clicking on drag handle or other interactive elements
+        if (e.target.closest('.task-assignee') || e.target.closest('.task-icon')) {
+            return;
+        }
+        // Open task in edit mode directly (unified modal)
+        showTaskModal(task.status || 'todo', task);
     });
 
     return card;

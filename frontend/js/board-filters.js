@@ -28,7 +28,12 @@ function applyFilters() {
     currentFilters.label = document.getElementById('labelFilter')?.value || '';
     currentFilters.assignee = document.getElementById('assigneeFilter')?.value || '';
     
-    filterTasks();
+    // Reload tasks from API with assignee filter if set
+    if (typeof loadTasksFromAPI === 'function') {
+        loadTasksFromAPI();
+    } else {
+        filterTasks();
+    }
 }
 
 // Filter tasks based on current filters
