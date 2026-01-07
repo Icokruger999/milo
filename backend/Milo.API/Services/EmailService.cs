@@ -323,16 +323,36 @@ The Milo Team
             message.Body = bodyBuilder.ToMessageBody();
 
             using var client = new SmtpClient();
-            _logger.LogInformation($"Connecting to SMTP server: {smtpHost}:{smtpPort}");
-            await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
-            _logger.LogInformation($"Authenticating with SMTP server as: {smtpUser}");
-            await client.AuthenticateAsync(smtpUser, smtpPassword);
-            _logger.LogInformation($"Sending email to: {toEmail}");
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
-
-            _logger.LogInformation($"Task assignment email sent successfully to {toEmail} for task {taskId}");
-            return true;
+            
+            try
+            {
+                _logger.LogInformation($"[Email] Connecting to SMTP server: {smtpHost}:{smtpPort}");
+                await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
+                
+                _logger.LogInformation($"[Email] Authenticating with SMTP server as: {smtpUser}");
+                await client.AuthenticateAsync(smtpUser, smtpPassword);
+                
+                _logger.LogInformation($"[Email] Sending email to: {toEmail}");
+                await client.SendAsync(message);
+                
+                await client.DisconnectAsync(true);
+                
+                _logger.LogInformation($"[Email] ✓ Task assignment email sent successfully to {toEmail} for task {taskId}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"[Email] ✗ Failed to send email to {toEmail} for task {taskId}. Error: {ex.Message}");
+                try
+                {
+                    if (client.IsConnected)
+                    {
+                        await client.DisconnectAsync(true);
+                    }
+                }
+                catch { }
+                throw; // Re-throw to be caught by outer try-catch
+            }
         }
         catch (Exception ex)
         {

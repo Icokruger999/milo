@@ -232,19 +232,23 @@ public class TasksController : ControllerBase
                     
                     _logger.LogInformation($"Preparing to send task assignment email to {assigneeEmail} for task {taskIdForEmail}");
                     
-                    // Send email notification (fire and forget)
+                    // Send email notification in background (fire and forget)
                     // Use IServiceScopeFactory to create a new scope for the email service
                     // This ensures the email service has access to configuration even after the request scope is disposed
                     _ = System.Threading.Tasks.Task.Run(async () =>
                     {
+                        // Add delay to ensure request completes first
+                        await System.Threading.Tasks.Task.Delay(500);
+                        
                         try
                         {
                             // Create a new scope for the email service
                             using (var scope = _serviceScopeFactory.CreateScope())
                             {
                                 var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
+                                var logger = scope.ServiceProvider.GetRequiredService<ILogger<TasksController>>();
                                 
-                                _logger.LogInformation($"Sending task assignment email to {assigneeEmail} for task {taskIdForEmail}");
+                                logger.LogInformation($"Sending task assignment email to {assigneeEmail} for task {taskIdForEmail}");
                                 
                                 var emailSent = await emailService.SendTaskAssignmentEmailAsync(
                                     assigneeEmail!,
@@ -257,19 +261,39 @@ public class TasksController : ControllerBase
                                 
                                 if (emailSent)
                                 {
-                                    _logger.LogInformation($"Task assignment email sent successfully to {assigneeEmail} for task {taskIdForEmail}");
+                                    logger.LogInformation($"✓ Task assignment email sent successfully to {assigneeEmail} for task {taskIdForEmail}");
                                 }
                                 else
                                 {
-                                    _logger.LogWarning($"Task assignment email was not sent to {assigneeEmail} for task {taskIdForEmail} - email service returned false");
+                                    logger.LogWarning($"✗ Task assignment email was not sent to {assigneeEmail} for task {taskIdForEmail} - email service returned false (check email configuration)");
                                 }
                             }
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(ex, $"Failed to send task assignment email to {assigneeEmail} for task {taskIdForEmail}. Error: {ex.Message}. StackTrace: {ex.StackTrace}");
+                            // Use a new logger scope to ensure we can log even if the original scope is disposed
+                            try
+                            {
+                                using (var logScope = _serviceScopeFactory.CreateScope())
+                                {
+                                    var logger = logScope.ServiceProvider.GetRequiredService<ILogger<TasksController>>();
+                                    logger.LogError(ex, $"✗ FAILED to send task assignment email to {assigneeEmail} for task {taskIdForEmail}. Error: {ex.Message}");
+                                    logger.LogError($"Stack trace: {ex.StackTrace}");
+                                }
+                            }
+                            catch
+                            {
+                                // If even logging fails, at least write to console
+                                Console.WriteLine($"ERROR: Failed to send email to {assigneeEmail}: {ex.Message}");
+                            }
                         }
-                    });
+                    }).ContinueWith(task =>
+                    {
+                        if (task.IsFaulted)
+                        {
+                            _logger.LogError(task.Exception, $"Email task failed with exception for task {taskIdForEmail}");
+                        }
+                    }, System.Threading.Tasks.TaskContinuationOptions.OnlyOnFaulted);
                 }
                 else
                 {
