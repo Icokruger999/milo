@@ -115,15 +115,19 @@ function logout() {
 
 async function loadBacklogTasks() {
     try {
+        console.log('Loading backlog tasks...');
         const currentProject = projectSelector.getCurrentProject();
         if (!currentProject) {
+            console.log('No project selected, redirecting to project selector');
             window.location.href = 'milo-select-project.html';
             return;
         }
 
+        console.log('Current project:', currentProject.id, currentProject.name);
         const filter = document.getElementById('backlogFilter')?.value || 'backlog';
         // Get all tasks for the project (no status filter on API)
         let queryUrl = `/tasks?projectId=${currentProject.id}`;
+        console.log('Fetching tasks from:', queryUrl);
 
         const response = await apiClient.get(queryUrl);
         if (response.ok) {
