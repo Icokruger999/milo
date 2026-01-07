@@ -1003,7 +1003,17 @@
         const user = authService.getCurrentUser();
         if (user) {
             const userName = user.name || user.email || 'User';
-            const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+            // Calculate initials properly: first letter of first name + first letter of last name
+            let initials = 'U';
+            const nameParts = userName.trim().split(' ');
+            if (nameParts.length >= 2) {
+                // First letter of first name + first letter of last name
+                initials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+            } else if (nameParts.length === 1) {
+                // Single name - use first 2 letters
+                initials = nameParts[0].substring(0, 2).toUpperCase();
+            }
+            
             const userAvatarEl = document.getElementById('userAvatar');
             const globalUserAvatarEl = document.getElementById('globalUserAvatar');
             const sidebarUserAvatarEl = document.getElementById('sidebarUserAvatar');
