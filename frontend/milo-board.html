@@ -889,22 +889,26 @@
     <script src="js/board-filters.js"></script>
     <script src="js/board.js"></script>
     <script>
-        // Check authentication - users must login before accessing board
-        if (!authService.isAuthenticated()) {
-            // Redirect to login - user must authenticate first
-            window.location.href = 'milo-login.html';
-            return;
-        }
-        
-        // Check password change requirement
-        if (authService.requiresPasswordChange()) {
-            const user = authService.getCurrentUser();
-            if (user && user.email) {
-                window.location.href = `milo-change-password.html?email=${encodeURIComponent(user.email)}`;
-            } else {
+        // Wrap in IIFE to allow return statements
+        (function() {
+            // Check authentication - users must login before accessing board
+            if (!authService.isAuthenticated()) {
+                // Redirect to login - user must authenticate first
                 window.location.href = 'milo-login.html';
+                return;
             }
-        }
+            
+            // Check password change requirement
+            if (authService.requiresPasswordChange()) {
+                const user = authService.getCurrentUser();
+                if (user && user.email) {
+                    window.location.href = `milo-change-password.html?email=${encodeURIComponent(user.email)}`;
+                    return;
+                } else {
+                    window.location.href = 'milo-login.html';
+                    return;
+                }
+            }
 
         // Make logout accessible globally
         window.logout = function() {
@@ -1037,6 +1041,7 @@
         if (typeof loadTasks === 'function') {
             setTimeout(() => loadTasks(), 500);
         }
+        })(); // End of IIFE
     </script>
 </body>
 </html>

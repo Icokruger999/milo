@@ -26,50 +26,58 @@ public class TasksController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetTasks([FromQuery] string? status, [FromQuery] int? productId, [FromQuery] int? projectId)
     {
-        var query = _context.Tasks
-            .Where(t => !t.IsDeleted)
-            .Include(t => t.Assignee)
-            .Include(t => t.Creator)
-            .Include(t => t.Product)
-            .Include(t => t.Project)
-            .AsQueryable();
-
-        if (!string.IsNullOrEmpty(status))
+        try
         {
-            query = query.Where(t => t.Status == status);
+            var query = _context.Tasks
+                .Where(t => !t.IsDeleted)
+                .Include(t => t.Assignee)
+                .Include(t => t.Creator)
+                .Include(t => t.Product)
+                .Include(t => t.Project)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                query = query.Where(t => t.Status == status);
+            }
+
+            if (productId.HasValue)
+            {
+                query = query.Where(t => t.ProductId == productId);
+            }
+
+            if (projectId.HasValue)
+            {
+                query = query.Where(t => t.ProjectId == projectId);
+            }
+
+            var tasks = await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
+
+            return Ok(tasks.Select(t => new
+            {
+                id = t.Id,
+                title = t.Title,
+                description = t.Description,
+                status = t.Status,
+                label = t.Label,
+                taskId = t.TaskId,
+                assignee = t.Assignee != null ? new { id = t.Assignee.Id, name = t.Assignee.Name, email = t.Assignee.Email } : null,
+                assigneeId = t.AssigneeId,
+                creator = t.Creator != null ? new { id = t.Creator.Id, name = t.Creator.Name } : null,
+                productId = t.ProductId,
+                product = t.Product != null ? new { id = t.Product.Id, name = t.Product.Name } : null,
+                projectId = t.ProjectId,
+                project = t.Project != null ? new { id = t.Project.Id, name = t.Project.Name, key = t.Project.Key } : null,
+                priority = t.Priority,
+                dueDate = t.DueDate,
+                createdAt = t.CreatedAt
+            }));
         }
-
-        if (productId.HasValue)
+        catch (Exception ex)
         {
-            query = query.Where(t => t.ProductId == productId);
+            _logger.LogError(ex, "Error getting tasks: {Message}", ex.Message);
+            return StatusCode(500, new { message = "An error occurred while retrieving tasks", detail = ex.Message });
         }
-
-        if (projectId.HasValue)
-        {
-            query = query.Where(t => t.ProjectId == projectId);
-        }
-
-        var tasks = await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
-
-        return Ok(tasks.Select(t => new
-        {
-            id = t.Id,
-            title = t.Title,
-            description = t.Description,
-            status = t.Status,
-            label = t.Label,
-            taskId = t.TaskId,
-            assignee = t.Assignee != null ? new { id = t.Assignee.Id, name = t.Assignee.Name, email = t.Assignee.Email } : null,
-            assigneeId = t.AssigneeId,
-            creator = t.Creator != null ? new { id = t.Creator.Id, name = t.Creator.Name } : null,
-            productId = t.ProductId,
-            product = t.Product != null ? new { id = t.Product.Id, name = t.Product.Name } : null,
-            projectId = t.ProjectId,
-            project = t.Project != null ? new { id = t.Project.Id, name = t.Project.Name, key = t.Project.Key } : null,
-            priority = t.Priority,
-            dueDate = t.DueDate,
-            createdAt = t.CreatedAt
-        }));
     }
 
     [HttpGet("{id}")]
@@ -108,50 +116,63 @@ public class TasksController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateTask([FromBody] CreateTaskRequest request)
     {
-        if (request == null || string.IsNullOrEmpty(request.Title))
+        try
         {
-            return BadRequest(new { message = "Title is required" });
-        }
-
-        // Generate task ID if not provided
-        var taskId = request.TaskId;
-        if (string.IsNullOrEmpty(taskId))
-        {
-            var lastTask = await _context.Tasks
-                .Where(t => t.TaskId != null && t.TaskId.StartsWith("NUC-"))
-                .OrderByDescending(t => t.Id)
-                .FirstOrDefaultAsync();
-            
-            var nextNumber = 1;
-            if (lastTask != null && lastTask.TaskId != null)
+            if (request == null || string.IsNullOrEmpty(request.Title))
             {
-                var parts = lastTask.TaskId.Split('-');
-                if (parts.Length > 1 && int.TryParse(parts[1], out var lastNum))
+                return BadRequest(new { message = "Title is required" });
+            }
+
+            // Get project key for task ID prefix
+            string taskPrefix = "TASK";
+            if (request.ProjectId.HasValue)
+            {
+                var project = await _context.Projects.FindAsync(request.ProjectId.Value);
+                if (project != null && !string.IsNullOrEmpty(project.Key))
                 {
-                    nextNumber = lastNum + 1;
+                    taskPrefix = project.Key;
                 }
             }
-            taskId = $"NUC-{nextNumber}";
-        }
 
-        var task = new Models.Task
-        {
-            Title = request.Title,
-            Description = request.Description,
-            Status = request.Status ?? "todo",
-            Label = request.Label,
-            TaskId = taskId,
-            AssigneeId = request.AssigneeId,
-            CreatorId = request.CreatorId,
-            ProductId = request.ProductId,
-            ProjectId = request.ProjectId,
-            Priority = request.Priority ?? 0,
-            DueDate = request.DueDate,
-            CreatedAt = DateTime.UtcNow
-        };
+            // Generate task ID if not provided
+            var taskId = request.TaskId;
+            if (string.IsNullOrEmpty(taskId))
+            {
+                var lastTask = await _context.Tasks
+                    .Where(t => t.ProjectId == request.ProjectId && t.TaskId != null && t.TaskId.StartsWith($"{taskPrefix}-"))
+                    .OrderByDescending(t => t.Id)
+                    .FirstOrDefaultAsync();
+                
+                var nextNumber = 1;
+                if (lastTask != null && lastTask.TaskId != null)
+                {
+                    var parts = lastTask.TaskId.Split('-');
+                    if (parts.Length > 1 && int.TryParse(parts[1], out var lastNum))
+                    {
+                        nextNumber = lastNum + 1;
+                    }
+                }
+                taskId = $"{taskPrefix}-{nextNumber}";
+            }
 
-        _context.Tasks.Add(task);
-        await _context.SaveChangesAsync();
+            var task = new Models.Task
+            {
+                Title = request.Title,
+                Description = request.Description,
+                Status = request.Status ?? "todo",
+                Label = request.Label,
+                TaskId = taskId,
+                AssigneeId = request.AssigneeId,
+                CreatorId = request.CreatorId,
+                ProductId = request.ProductId,
+                ProjectId = request.ProjectId,
+                Priority = request.Priority ?? 0,
+                DueDate = request.DueDate,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Tasks.Add(task);
+            await _context.SaveChangesAsync();
 
         // Load assignee for email notification
         if (task.AssigneeId.HasValue)
@@ -167,12 +188,13 @@ public class TasksController : ControllerBase
                 {
                     try
                     {
+                        await _context.Entry(task).Reference(t => t.Project).LoadAsync();
                         await _emailService.SendTaskAssignmentEmailAsync(
                             task.Assignee.Email,
                             task.Assignee.Name,
                             task.Title,
-                            task.TaskId ?? task.Id.ToString(),
-                            task.Product?.Name ?? "General"
+                            $"https://www.codingeverest.com/milo-board.html?projectId={task.ProjectId}&taskId={task.Id}",
+                            task.Project?.Name ?? "General"
                         );
                     }
                     catch (Exception ex)
@@ -183,20 +205,26 @@ public class TasksController : ControllerBase
             }
         }
 
-        return CreatedAtAction(nameof(GetTask), new { id = task.Id }, new
+            return CreatedAtAction(nameof(GetTask), new { id = task.Id }, new
+            {
+                id = task.Id,
+                title = task.Title,
+                description = task.Description,
+                status = task.Status,
+                label = task.Label,
+                taskId = task.TaskId,
+                assigneeId = task.AssigneeId,
+                productId = task.ProductId,
+                priority = task.Priority,
+                dueDate = task.DueDate,
+                createdAt = task.CreatedAt
+            });
+        }
+        catch (Exception ex)
         {
-            id = task.Id,
-            title = task.Title,
-            description = task.Description,
-            status = task.Status,
-            label = task.Label,
-            taskId = task.TaskId,
-            assigneeId = task.AssigneeId,
-            productId = task.ProductId,
-            priority = task.Priority,
-            dueDate = task.DueDate,
-            createdAt = task.CreatedAt
-        });
+            _logger.LogError(ex, "Error creating task: {Message}", ex.Message);
+            return StatusCode(500, new { message = "An error occurred while creating the task", detail = ex.Message });
+        }
     }
 
     [HttpPut("{id}")]

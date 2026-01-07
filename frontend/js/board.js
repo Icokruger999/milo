@@ -32,9 +32,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const user = authService.getCurrentUser();
     if (user) {
         const userName = user.name || user.email || 'User';
-        document.getElementById('userName').textContent = userName;
+        const userNameEl = document.getElementById('userName');
+        if (userNameEl) {
+            userNameEl.textContent = userName;
+        }
         const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-        document.getElementById('userAvatar').textContent = initials;
+        const userAvatarEl = document.getElementById('userAvatar');
+        if (userAvatarEl) {
+            userAvatarEl.textContent = initials;
+        }
     }
 
     // Setup user menu
