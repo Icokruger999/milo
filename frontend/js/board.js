@@ -49,24 +49,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function setupUserMenu() {
     const userMenu = document.getElementById('userMenu');
+    if (!userMenu) {
+        console.error('User menu element not found');
+        return;
+    }
+    
     const dropdown = document.createElement('div');
     dropdown.className = 'dropdown-menu';
+    dropdown.style.cssText = 'display: none; position: fixed; background: white; border: 1px solid #DFE1E6; border-radius: 4px; box-shadow: 0 4px 8px rgba(9, 30, 66, 0.15); z-index: 1000; min-width: 160px;';
     dropdown.innerHTML = `
-        <div class="dropdown-item" onclick="authService.logout()">Logout</div>
+        <div class="dropdown-item" style="padding: 8px 12px; cursor: pointer; font-size: 14px; color: #172B4D;" onclick="window.logout()">Logout</div>
     `;
     document.body.appendChild(dropdown);
 
     userMenu.addEventListener('click', function(e) {
         e.stopPropagation();
-        dropdown.classList.toggle('show');
+        const isVisible = dropdown.style.display === 'block';
+        dropdown.style.display = isVisible ? 'none' : 'block';
         
-        const rect = userMenu.getBoundingClientRect();
-        dropdown.style.top = (rect.bottom + 4) + 'px';
-        dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+        if (!isVisible) {
+            const rect = userMenu.getBoundingClientRect();
+            dropdown.style.top = (rect.bottom + 4) + 'px';
+            dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+        }
     });
 
-    document.addEventListener('click', function() {
-        dropdown.classList.remove('show');
+    document.addEventListener('click', function(e) {
+        if (!userMenu.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
     });
 }
 
@@ -723,4 +734,15 @@ async function handleDrop(e) {
 async function loadTasks() {
     await loadTasksFromAPI();
 }
+
+// Make functions globally accessible
+window.showCreateTaskModal = function(column = 'todo') {
+    showTaskModal(column);
+};
+window.closeTaskModal = closeTaskModal;
+window.handleTaskSubmit = handleTaskSubmit;
+window.viewTask = viewTask;
+window.showCreateLabelModal = showCreateLabelModal;
+window.closeCreateLabelModal = closeCreateLabelModal;
+window.handleCreateLabel = handleCreateLabel;
 

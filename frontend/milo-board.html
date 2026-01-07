@@ -628,7 +628,7 @@
                 <a href="#" class="global-nav-link">Plans</a>
                 <a href="#" class="global-nav-link">Apps</a>
             </div>
-            <button class="global-nav-create" onclick="createTaskModal()">Create</button>
+            <button class="global-nav-create" onclick="window.showCreateTaskModal()">Create</button>
         </div>
         <div class="global-nav-right">
             <div class="global-nav-icon">
@@ -906,6 +906,18 @@
             }
         }
 
+        // Make logout accessible globally
+        window.logout = function() {
+            if (typeof authService !== 'undefined' && authService.logout) {
+                authService.logout();
+            } else {
+                // Fallback: clear storage and redirect
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = 'milo-login.html';
+            }
+        };
+        
         // Check if project is selected - but wait a moment for it to be set
         setTimeout(() => {
             const currentProject = projectSelector.getCurrentProject();
@@ -913,40 +925,73 @@
                 console.log('No project selected, redirecting to project selector');
                 window.location.href = 'milo-select-project.html';
             }
-        }, 500);
+        }, 1000);
 
         // Load projects and setup selector
         async function setupProjectSelector() {
-            const projects = await projectSelector.loadProjects();
-            const selector = document.getElementById('projectSelector');
-            const currentProject = projectSelector.getCurrentProject();
-            
-            if (projects.length === 0) {
-                selector.innerHTML = '<option>No projects</option>';
-                window.location.href = 'milo-select-project.html';
-                return;
-            }
-
-            selector.innerHTML = projects.map(p => 
-                `<option value="${p.id}" ${currentProject && p.id === currentProject.id ? 'selected' : ''}>${p.name}${p.key ? ` (${p.key})` : ''}</option>`
-            ).join('');
-
-            // Update project name in breadcrumb
-            if (currentProject) {
-                document.getElementById('currentProjectName').textContent = currentProject.name;
-                // Update project sidebar
-                document.querySelector('.project-name').textContent = currentProject.name;
-                document.querySelector('.project-icon').textContent = (currentProject.key || currentProject.name).substring(0, 1).toUpperCase();
-            }
-
-            // Handle project change
-            selector.addEventListener('change', function() {
-                const selectedProject = projectSelector.getProjectById(parseInt(this.value));
-                if (selectedProject) {
-                    projectSelector.setCurrentProject(selectedProject);
-                    window.location.reload(); // Reload to show tasks for new project
+            try {
+                const user = authService.getCurrentUser();
+                if (!user || !user.id) {
+                    console.error('User not found');
+                    window.location.href = 'milo-login.html';
+                    return;
                 }
-            });
+                
+                const projects = await projectSelector.loadProjects(user.id);
+                const selector = document.getElementById('projectSelector');
+                const currentProject = projectSelector.getCurrentProject();
+                
+                if (!selector) {
+                    console.error('Project selector element not found');
+                    return;
+                }
+                
+                if (projects.length === 0) {
+                    selector.innerHTML = '<option>No projects</option>';
+                    const projectNameEl = document.getElementById('currentProjectName');
+                    if (projectNameEl) {
+                        projectNameEl.textContent = 'No projects';
+                    }
+                    return;
+                }
+
+                selector.innerHTML = projects.map(p => 
+                    `<option value="${p.id}" ${currentProject && p.id === currentProject.id ? 'selected' : ''}>${p.name}${p.key ? ` (${p.key})` : ''}</option>`
+                ).join('');
+
+                // Update project name in breadcrumb
+                if (currentProject) {
+                    const projectNameEl = document.getElementById('currentProjectName');
+                    if (projectNameEl) {
+                        projectNameEl.textContent = currentProject.name;
+                    }
+                    // Update project sidebar
+                    const sidebarName = document.querySelector('.project-name');
+                    const sidebarIcon = document.querySelector('.project-icon');
+                    if (sidebarName) sidebarName.textContent = currentProject.name;
+                    if (sidebarIcon) sidebarIcon.textContent = (currentProject.key || currentProject.name).substring(0, 1).toUpperCase();
+                } else if (projects.length > 0) {
+                    // If no current project but projects exist, select first one
+                    const firstProject = projects[0];
+                    projectSelector.setCurrentProject(firstProject);
+                    selector.value = firstProject.id;
+                    const projectNameEl = document.getElementById('currentProjectName');
+                    if (projectNameEl) {
+                        projectNameEl.textContent = firstProject.name;
+                    }
+                }
+
+                // Handle project change
+                selector.addEventListener('change', function() {
+                    const selectedProject = projectSelector.getProjectById(parseInt(this.value));
+                    if (selectedProject) {
+                        projectSelector.setCurrentProject(selectedProject);
+                        window.location.reload(); // Reload to show tasks for new project
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to setup project selector:', error);
+            }
         }
 
         // Set user avatars
@@ -961,6 +1006,21 @@
 
         // Setup project selector
         setupProjectSelector();
+        
+        // Make Create button work
+        document.addEventListener('DOMContentLoaded', function() {
+            const createButton = document.querySelector('.global-nav-create');
+            if (createButton) {
+                createButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (typeof window.showCreateTaskModal === 'function') {
+                        window.showCreateTaskModal('todo');
+                    } else {
+                        console.error('showCreateTaskModal not available');
+                    }
+                });
+            }
+        });
         
         // Load project members for avatars
         setTimeout(() => {
