@@ -745,8 +745,18 @@ async function loadTasksFromAPI() {
             return;
         }
 
-        // Load tasks filtered by project
-        const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
+        // Build query with filters
+        let queryUrl = `/tasks?projectId=${currentProject.id}`;
+        
+        // Check for assignee filter from dropdown
+        const assigneeFilter = document.getElementById('assigneeFilter')?.value;
+        if (assigneeFilter && assigneeFilter !== '' && assigneeFilter !== 'unassigned') {
+            // Filter by specific assignee
+            queryUrl += `&assigneeId=${assigneeFilter}`;
+        }
+        
+        // Load tasks filtered by project and assignee
+        const response = await apiClient.get(queryUrl);
         if (response.ok) {
             const apiTasks = await response.json();
             
@@ -758,7 +768,14 @@ async function loadTasksFromAPI() {
                 done: []
             };
             
-            apiTasks.forEach(task => {
+            // Apply unassigned filter on frontend if needed
+            const assigneeFilterValue = document.getElementById('assigneeFilter')?.value;
+            let filteredApiTasks = apiTasks;
+            if (assigneeFilterValue === 'unassigned') {
+                filteredApiTasks = apiTasks.filter(task => !task.assigneeId || !task.assignee);
+            }
+            
+            filteredApiTasks.forEach(task => {
                 // Calculate assignee initials properly
                 let assigneeInitials = 'UN';
                 let assigneeName = null;
