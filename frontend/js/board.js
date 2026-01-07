@@ -191,7 +191,7 @@ function viewTask(task) {
                 </div>
                 <div>
                     <strong style="font-size: 12px; color: #6B778C; text-transform: uppercase;">Assignee</strong>
-                    <div style="margin-top: 4px;">${fullTask.assignee || 'Unassigned'}</div>
+                    <div style="margin-top: 4px;">${(fullTask.assignee && fullTask.assignee.name) || fullTask.assigneeName || 'Unassigned'}</div>
                 </div>
                 <div>
                     <strong style="font-size: 12px; color: #6B778C; text-transform: uppercase;">Priority</strong>
@@ -224,11 +224,11 @@ function editTask(taskId) {
     // Find task and open edit modal
     let task = null;
     for (const status in tasks) {
-        task = tasks[status].find(t => t.id === taskId || t.taskId === taskId);
+        task = tasks[status].find(t => t.id == taskId || t.taskId == taskId);
         if (task) {
             // Open task modal in edit mode
-            const column = status;
-            openTaskModal(column, task);
+            const column = task.status || status;
+            showTaskModal(column, task);
             break;
         }
     }
@@ -253,16 +253,31 @@ function showTaskModal(column, task = null) {
     }
     
     modal.dataset.column = column;
-    modal.dataset.taskId = task ? task.id : '';
+    modal.dataset.taskId = task ? (task.id || task.taskId) : '';
+    
+    // Update form title and button
+    const formTitle = modal.querySelector('h2');
+    if (formTitle) {
+        formTitle.textContent = task ? 'Edit Task' : 'Create Task';
+    }
+    const submitButton = modal.querySelector('button[type="submit"]');
+    if (submitButton) {
+        submitButton.textContent = task ? 'Update Task' : 'Create Task';
+    }
     
     if (task) {
         document.getElementById('taskTitle').value = task.title || '';
         document.getElementById('taskDescription').value = task.description || '';
-        document.getElementById('taskLabel').value = task.label || 'accounts';
+        document.getElementById('taskLabel').value = task.label || '';
         document.getElementById('taskAssignee').value = task.assigneeId || '';
         document.getElementById('taskProduct').value = task.productId || '';
         document.getElementById('taskPriority').value = task.priority || 0;
-        document.getElementById('taskDueDate').value = task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '';
+        if (task.dueDate) {
+            const dueDate = new Date(task.dueDate);
+            document.getElementById('taskDueDate').value = dueDate.toISOString().split('T')[0];
+        } else {
+            document.getElementById('taskDueDate').value = '';
+        }
     } else {
         document.getElementById('taskForm').reset();
         document.getElementById('taskColumn').value = column;
@@ -627,13 +642,17 @@ async function loadTasksFromAPI() {
             
             apiTasks.forEach(task => {
                 const taskObj = {
-                    id: task.taskId || `TASK-${task.id}`,
+                    id: task.id, // Use numeric ID for editing
+                    taskId: task.taskId || `TASK-${task.id}`, // Display ID
                     title: task.title,
                     description: task.description,
+                    status: task.status,
                     label: task.label || 'accounts',
-                    assignee: task.assignee ? task.assignee.name.substring(0, 2).toUpperCase() : 'UN',
+                    assignee: task.assignee ? task.assignee.name.substring(0, 2).toUpperCase() : 'UN', // For avatar display
+                    assigneeName: task.assignee ? task.assignee.name : null, // Full name for display
                     assigneeId: task.assigneeId,
                     assigneeEmail: task.assignee ? task.assignee.email : null,
+                    assignee: task.assignee, // Store full assignee object
                     productId: task.productId,
                     priority: task.priority,
                     dueDate: task.dueDate,
