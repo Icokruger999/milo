@@ -1,6 +1,3 @@
-# Redirect root domain to www
-/ https://www.codingeverest.com/:splat 301
-
-# Handle SPA routing - redirect all non-file requests to index.html
-/* /index.html 200
+# Handle all routes - serve index.html for SPA
+/*    /index.html   200
 
