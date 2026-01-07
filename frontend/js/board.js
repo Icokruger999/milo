@@ -372,13 +372,13 @@ function closeTaskModal() {
 function createTaskModal() {
     const modal = document.createElement('div');
     modal.id = 'taskModal';
-    modal.style.cssText = 'display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;';
+    modal.style.cssText = 'display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(2px);';
     
     modal.innerHTML = `
-        <div style="background: white; border-radius: 8px; padding: 24px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Create Task</h2>
-                <button onclick="closeTaskModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+        <div style="background: white; border-radius: 8px; padding: 32px; width: 95%; max-width: 1200px; max-height: 95vh; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #DFE1E6;">
+                <h2 id="taskModalTitle" style="margin: 0; font-size: 24px; font-weight: 600; color: #172B4D;">Create Task</h2>
+                <button onclick="closeTaskModal()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: #6B778C; padding: 4px 8px; line-height: 1;">&times;</button>
             </div>
             <form id="taskForm" onsubmit="handleTaskSubmit(event)">
                 <input type="hidden" id="taskColumn" name="column">
@@ -471,19 +471,10 @@ function createTaskModal() {
                     </div>
                 </div>
                 
-                <div style="margin-bottom: 20px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-                        <label style="display: block; font-weight: 500; font-size: 14px;">Checklist</label>
-                        <button type="button" onclick="addChecklistItem()" style="background: none; border: none; color: #0052CC; font-size: 12px; cursor: pointer; padding: 0;">+ Add Item</button>
-                    </div>
-                    <div id="taskChecklist" style="border: 1px solid #ddd; border-radius: 4px; padding: 8px; min-height: 40px; background: #F4F5F7;">
-                        <div style="color: #6B778C; font-size: 12px; text-align: center; padding: 8px;">No checklist items yet</div>
-                    </div>
-                </div>
-                
-                <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                    <button type="button" onclick="closeTaskModal()" style="padding: 10px 20px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 14px;">Cancel</button>
-                    <button type="submit" style="padding: 10px 20px; background: #0052CC; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">Create Task</button>
+                <div style="display: flex; gap: 12px; justify-content: flex-end; border-top: 2px solid #DFE1E6; padding-top: 24px; margin-top: 24px;">
+                    <button type="button" onclick="deleteTaskFromModal()" id="deleteTaskBtn" style="display: none; padding: 12px 24px; border: 2px solid #DE350B; background: white; color: #DE350B; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.background='#FFEBE6'" onmouseout="this.style.background='white'">Delete</button>
+                    <button type="button" onclick="closeTaskModal()" style="padding: 12px 24px; border: 2px solid #DFE1E6; background: white; color: #172B4D; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;" onmouseover="this.style.background='#F4F5F7'" onmouseout="this.style.background='white'">Cancel</button>
+                    <button type="submit" id="taskSubmitBtn" style="padding: 12px 24px; background: #0052CC; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.2s;" onmouseover="this.style.background='#0065FF'" onmouseout="this.style.background='#0052CC'">Save</button>
                 </div>
             </form>
         </div>
