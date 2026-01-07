@@ -628,7 +628,7 @@
                 <a href="#" class="global-nav-link">Plans</a>
                 <a href="#" class="global-nav-link">Apps</a>
             </div>
-            <button class="global-nav-create">Create</button>
+            <button class="global-nav-create" onclick="createTaskModal()">Create</button>
         </div>
         <div class="global-nav-right">
             <div class="global-nav-icon">
@@ -816,10 +816,6 @@
                     </select>
                     <select class="board-filter" id="labelFilter" onchange="applyFilters()">
                         <option value="">Label</option>
-                        <option value="accounts">Accounts</option>
-                        <option value="billing">Billing</option>
-                        <option value="forms">Forms</option>
-                        <option value="feedback">Feedback</option>
                     </select>
                     <select class="board-filter" id="assigneeFilter" onchange="applyFilters()">
                         <option value="">Assignee</option>
@@ -970,6 +966,10 @@
         setTimeout(() => {
             if (typeof loadProjectMembers === 'function') {
                 loadProjectMembers();
+            }
+            // Load labels for filter dropdown
+            if (typeof loadLabelsForFilter === 'function') {
+                loadLabelsForFilter();
             }
         }, 1000);
         

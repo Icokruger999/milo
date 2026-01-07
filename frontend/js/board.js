@@ -282,12 +282,12 @@ function createTaskModal() {
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                     <div>
-                        <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Label</label>
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                            <label style="display: block; font-weight: 500; font-size: 14px;">Label</label>
+                            <button type="button" onclick="showCreateLabelModal()" style="background: none; border: none; color: #0052CC; font-size: 12px; cursor: pointer; padding: 0;">+ New Label</button>
+                        </div>
                         <select id="taskLabel" name="label" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
-                            <option value="accounts">Accounts</option>
-                            <option value="billing">Billing</option>
-                            <option value="forms">Forms</option>
-                            <option value="feedback">Feedback</option>
+                            <option value="">No Label</option>
                         </select>
                     </div>
                     
@@ -369,8 +369,140 @@ async function loadUsersAndProducts() {
                 });
             }
         }
+        
+        // Load labels
+        await loadLabels();
     } catch (error) {
         console.error('Failed to load users/products:', error);
+    }
+}
+
+async function loadLabels() {
+    try {
+        const currentProject = projectSelector.getCurrentProject();
+        let url = '/labels';
+        if (currentProject && currentProject.id) {
+            url += `?projectId=${currentProject.id}`;
+        }
+        
+        const response = await apiClient.get(url);
+        if (response.ok) {
+            const labels = await response.json();
+            const labelSelect = document.getElementById('taskLabel');
+            if (labelSelect) {
+                // Keep "No Label" option
+                const noLabelOption = labelSelect.querySelector('option[value=""]');
+                labelSelect.innerHTML = noLabelOption ? noLabelOption.outerHTML : '<option value="">No Label</option>';
+                
+                labels.forEach(label => {
+                    const option = document.createElement('option');
+                    option.value = label.name.toLowerCase();
+                    option.textContent = label.name;
+                    option.dataset.labelId = label.id;
+                    option.dataset.labelColor = label.color || '#6B778C';
+                    labelSelect.appendChild(option);
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load labels:', error);
+    }
+}
+
+function showCreateLabelModal() {
+    const modal = document.createElement('div');
+    modal.id = 'createLabelModal';
+    modal.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;';
+    
+    modal.innerHTML = `
+        <div style="background: white; border-radius: 8px; padding: 24px; width: 90%; max-width: 400px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Create New Label</h2>
+                <button onclick="closeCreateLabelModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+            </div>
+            <div id="createLabelError" style="display: none; background: #FFEBE6; border: 1px solid #DE350B; border-radius: 4px; padding: 12px; margin-bottom: 16px; color: #DE350B; font-size: 14px;"></div>
+            <form id="createLabelForm" onsubmit="handleCreateLabel(event)">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Label Name *</label>
+                    <input type="text" id="labelName" name="name" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;" placeholder="e.g., Bug, Feature, Enhancement">
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Color</label>
+                    <input type="color" id="labelColor" name="color" value="#6B778C" style="width: 100%; padding: 4px; border: 1px solid #ddd; border-radius: 4px; height: 40px; cursor: pointer;">
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Description (optional)</label>
+                    <textarea id="labelDescription" name="description" rows="2" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box; resize: vertical;"></textarea>
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" onclick="closeCreateLabelModal()" style="padding: 10px 20px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 14px;">Cancel</button>
+                    <button type="submit" style="padding: 10px 20px; background: #0052CC; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">Create Label</button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    document.getElementById('labelName').focus();
+}
+
+function closeCreateLabelModal() {
+    const modal = document.getElementById('createLabelModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+async function handleCreateLabel(event) {
+    event.preventDefault();
+    const errorDiv = document.getElementById('createLabelError');
+    errorDiv.style.display = 'none';
+    
+    const name = document.getElementById('labelName').value.trim();
+    const color = document.getElementById('labelColor').value;
+    const description = document.getElementById('labelDescription').value.trim();
+    
+    if (!name) {
+        errorDiv.textContent = 'Label name is required';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    try {
+        const currentProject = projectSelector.getCurrentProject();
+        const response = await apiClient.post('/labels', {
+            name: name,
+            color: color,
+            description: description || null,
+            projectId: currentProject && currentProject.id ? currentProject.id : null
+        });
+        
+        if (response.ok) {
+            const label = await response.json();
+            
+            // Add to label select dropdown
+            const labelSelect = document.getElementById('taskLabel');
+            if (labelSelect) {
+                const option = document.createElement('option');
+                option.value = label.name.toLowerCase();
+                option.textContent = label.name;
+                option.dataset.labelId = label.id;
+                option.dataset.labelColor = label.color || '#6B778C';
+                option.selected = true; // Select the newly created label
+                labelSelect.appendChild(option);
+            }
+            
+            // Close modal
+            closeCreateLabelModal();
+        } else {
+            const error = await response.json();
+            errorDiv.textContent = error.message || 'Failed to create label';
+            errorDiv.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Failed to create label:', error);
+        errorDiv.textContent = 'Failed to create label. Please try again.';
+        errorDiv.style.display = 'block';
     }
 }
 

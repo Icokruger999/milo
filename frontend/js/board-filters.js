@@ -157,3 +157,35 @@ async function loadProjectMembers() {
     }
 }
 
+// Load labels for filter dropdown
+async function loadLabelsForFilter() {
+    try {
+        const currentProject = projectSelector.getCurrentProject();
+        let url = '/labels';
+        if (currentProject && currentProject.id) {
+            url += `?projectId=${currentProject.id}`;
+        }
+        
+        const response = await apiClient.get(url);
+        if (response.ok) {
+            const labels = await response.json();
+            const labelFilter = document.getElementById('labelFilter');
+            if (labelFilter) {
+                const currentValue = labelFilter.value;
+                labelFilter.innerHTML = '<option value="">Label</option>';
+                
+                labels.forEach(label => {
+                    const option = document.createElement('option');
+                    option.value = label.name.toLowerCase();
+                    option.textContent = label.name;
+                    labelFilter.appendChild(option);
+                });
+                
+                labelFilter.value = currentValue; // Restore selection
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load labels for filter:', error);
+    }
+}
+

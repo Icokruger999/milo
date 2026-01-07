@@ -18,6 +18,7 @@ public class MiloDbContext : DbContext
     public DbSet<Project> Projects { get; set; }
     public DbSet<ProjectInvitation> ProjectInvitations { get; set; }
     public DbSet<ProjectMember> ProjectMembers { get; set; }
+    public DbSet<Label> Labels { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -128,6 +129,17 @@ public class MiloDbContext : DbContext
                 .WithMany(p => p.Tasks)
                 .HasForeignKey(e => e.ProjectId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Label configuration
+        modelBuilder.Entity<Label>(entity =>
+        {
+            entity.HasIndex(e => e.Name);
+            entity.HasIndex(e => e.ProjectId);
+            entity.HasOne(e => e.Project)
+                .WithMany()
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
