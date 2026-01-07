@@ -617,6 +617,23 @@ async function handleTaskSubmit(event) {
         dueDate = date.toISOString();
     }
     
+    // Collect checklist items
+    const checklistItems = [];
+    const checklistDiv = document.getElementById('taskChecklist');
+    if (checklistDiv) {
+        const items = checklistDiv.querySelectorAll('div[style*="display: flex"]');
+        items.forEach(item => {
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            const textInput = item.querySelector('input[type="text"]');
+            if (textInput && textInput.value.trim()) {
+                checklistItems.push({
+                    text: textInput.value.trim(),
+                    completed: checkbox ? checkbox.checked : false
+                });
+            }
+        });
+    }
+    
     const taskData = {
         title: document.getElementById('taskTitle').value,
         description: document.getElementById('taskDescription').value,
@@ -625,7 +642,8 @@ async function handleTaskSubmit(event) {
         assigneeId: document.getElementById('taskAssignee').value ? parseInt(document.getElementById('taskAssignee').value) : null,
         productId: document.getElementById('taskProduct').value ? parseInt(document.getElementById('taskProduct').value) : null,
         priority: parseInt(document.getElementById('taskPriority').value),
-        dueDate: dueDate
+        dueDate: dueDate,
+        checklist: checklistItems.length > 0 ? checklistItems : null
     };
     
     try {
