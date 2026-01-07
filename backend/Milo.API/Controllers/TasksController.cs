@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Milo.API.Data;
 using Milo.API.Models;
 using Milo.API.Services;
@@ -15,12 +16,14 @@ public class TasksController : ControllerBase
     private readonly MiloDbContext _context;
     private readonly EmailService _emailService;
     private readonly ILogger<TasksController> _logger;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public TasksController(MiloDbContext context, EmailService emailService, ILogger<TasksController> logger)
+    public TasksController(MiloDbContext context, EmailService emailService, ILogger<TasksController> logger, IServiceScopeFactory serviceScopeFactory)
     {
         _context = context;
         _emailService = emailService;
         _logger = logger;
+        _serviceScopeFactory = serviceScopeFactory;
     }
 
     [HttpGet]
