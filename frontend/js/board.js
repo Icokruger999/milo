@@ -184,6 +184,51 @@ function viewTask(task) {
                 <span style="margin-left: 8px; color: #6B778C; font-size: 12px; font-family: monospace;">${fullTask.id}</span>
             </div>
             ${fullTask.description ? `<div style="margin-bottom: 16px; padding: 12px; background: #F4F5F7; border-radius: 4px;"><strong>Description:</strong><br>${fullTask.description}</div>` : ''}
+            
+            <div style="margin-bottom: 16px;">
+                <strong style="font-size: 12px; color: #6B778C; text-transform: uppercase; display: block; margin-bottom: 8px;">Checklist</strong>
+                <div id="viewTaskChecklist" style="border: 1px solid #DFE1E6; border-radius: 4px; padding: 12px; background: #F4F5F7; min-height: 40px;">
+                    ${fullTask.checklist && fullTask.checklist.length > 0 ? 
+                        fullTask.checklist.map((item, idx) => `
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 6px; background: white; border-radius: 3px;">
+                                <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="toggleChecklistItem(${fullTask.id}, ${idx}, this.checked)" style="cursor: pointer;">
+                                <span style="flex: 1; ${item.completed ? 'text-decoration: line-through; color: #6B778C;' : ''}">${item.text || 'Untitled item'}</span>
+                                <button onclick="removeChecklistItem(${fullTask.id}, ${idx})" style="background: none; border: none; color: #DE350B; cursor: pointer; font-size: 12px; padding: 4px 8px;">×</button>
+                            </div>
+                        `).join('') : 
+                        '<div style="color: #6B778C; font-size: 13px; text-align: center; padding: 8px;">No checklist items</div>'
+                    }
+                    <button onclick="addChecklistItemToView(${fullTask.id})" style="margin-top: 8px; padding: 6px 12px; background: #0052CC; color: white; border: none; border-radius: 3px; font-size: 12px; cursor: pointer;">+ Add Item</button>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 16px;">
+                <strong style="font-size: 12px; color: #6B778C; text-transform: uppercase; display: block; margin-bottom: 8px;">Comments</strong>
+                <div id="taskComments" style="border: 1px solid #DFE1E6; border-radius: 4px; padding: 12px; background: #F4F5F7; max-height: 300px; overflow-y: auto;">
+                    ${fullTask.comments && fullTask.comments.length > 0 ? 
+                        fullTask.comments.map(comment => `
+                            <div style="margin-bottom: 12px; padding: 10px; background: white; border-radius: 4px; border-left: 3px solid #0052CC;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <div style="width: 24px; height: 24px; border-radius: 50%; background: #0052CC; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">
+                                        ${(comment.authorName || 'U').substring(0, 2).toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 13px; color: #172B4D;">${comment.authorName || 'Unknown'}</div>
+                                        <div style="font-size: 11px; color: #6B778C;">${new Date(comment.createdAt).toLocaleString()}</div>
+                                    </div>
+                                </div>
+                                <div style="font-size: 14px; color: #42526E; line-height: 1.5;">${comment.text}</div>
+                            </div>
+                        `).join('') : 
+                        '<div style="color: #6B778C; font-size: 13px; text-align: center; padding: 8px;">No comments yet</div>'
+                    }
+                </div>
+                <div style="margin-top: 12px; display: flex; gap: 8px;">
+                    <input type="text" id="newCommentInput" placeholder="Add a comment..." style="flex: 1; padding: 8px 12px; border: 1px solid #DFE1E6; border-radius: 4px; font-size: 14px;">
+                    <button onclick="addCommentToTask(${fullTask.id})" style="padding: 8px 16px; background: #0052CC; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer;">Post</button>
+                </div>
+            </div>
+            
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                 <div>
                     <strong style="font-size: 12px; color: #6B778C; text-transform: uppercase;">Status</strong>
@@ -359,6 +404,16 @@ function createTaskModal() {
                 <div style="margin-bottom: 20px;">
                     <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Due Date</label>
                     <input type="date" id="taskDueDate" name="dueDate" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                        <label style="display: block; font-weight: 500; font-size: 14px;">Checklist</label>
+                        <button type="button" onclick="addChecklistItem()" style="background: none; border: none; color: #0052CC; font-size: 12px; cursor: pointer; padding: 0;">+ Add Item</button>
+                    </div>
+                    <div id="taskChecklist" style="border: 1px solid #ddd; border-radius: 4px; padding: 8px; min-height: 40px; background: #F4F5F7;">
+                        <div style="color: #6B778C; font-size: 12px; text-align: center; padding: 8px;">No checklist items yet</div>
+                    </div>
                 </div>
                 
                 <div style="display: flex; gap: 12px; justify-content: flex-end;">
@@ -863,6 +918,66 @@ function debouncedRender() {
     }, 100); // Debounce by 100ms
 }
 
+// Checklist functions
+function addChecklistItem() {
+    const checklistDiv = document.getElementById('taskChecklist');
+    if (!checklistDiv) return;
+    
+    const itemText = prompt('Enter checklist item:');
+    if (!itemText) return;
+    
+    if (checklistDiv.querySelector('div[style*="color: #6B778C"]')) {
+        checklistDiv.innerHTML = '';
+    }
+    
+    const itemDiv = document.createElement('div');
+    itemDiv.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 6px; background: white; border-radius: 3px;';
+    itemDiv.innerHTML = `
+        <input type="checkbox" style="cursor: pointer;">
+        <input type="text" value="${itemText}" style="flex: 1; padding: 4px 8px; border: 1px solid #ddd; border-radius: 3px; font-size: 13px;">
+        <button onclick="removeChecklistItemFromModal(this)" style="background: none; border: none; color: #DE350B; cursor: pointer; font-size: 16px; padding: 0 8px;">×</button>
+    `;
+    checklistDiv.appendChild(itemDiv);
+}
+
+function removeChecklistItemFromModal(button) {
+    button.parentElement.remove();
+    const checklistDiv = document.getElementById('taskChecklist');
+    if (checklistDiv && checklistDiv.children.length === 0) {
+        checklistDiv.innerHTML = '<div style="color: #6B778C; font-size: 12px; text-align: center; padding: 8px;">No checklist items yet</div>';
+    }
+}
+
+function addChecklistItemToView(taskId) {
+    const itemText = prompt('Enter checklist item:');
+    if (!itemText) return;
+    console.log('Adding checklist item to task', taskId, itemText);
+    // TODO: Implement API call
+}
+
+function toggleChecklistItem(taskId, index, completed) {
+    console.log('Toggling checklist item', taskId, index, completed);
+    // TODO: Implement API call
+}
+
+function removeChecklistItem(taskId, index) {
+    if (!confirm('Remove this checklist item?')) return;
+    console.log('Removing checklist item', taskId, index);
+    // TODO: Implement API call
+}
+
+// Comment functions
+function addCommentToTask(taskId) {
+    const input = document.getElementById('newCommentInput');
+    if (!input || !input.value.trim()) return;
+    
+    const commentText = input.value.trim();
+    input.value = '';
+    
+    console.log('Adding comment to task', taskId, commentText);
+    // TODO: Implement API call
+}
+
 // Make functions globally accessible
 window.showCreateTaskModal = function(column = 'todo') {
     showTaskModal(column);
@@ -874,4 +989,10 @@ window.deleteTask = deleteTask;
 window.showCreateLabelModal = showCreateLabelModal;
 window.closeCreateLabelModal = closeCreateLabelModal;
 window.handleCreateLabel = handleCreateLabel;
+window.addChecklistItem = addChecklistItem;
+window.removeChecklistItemFromModal = removeChecklistItemFromModal;
+window.addChecklistItemToView = addChecklistItemToView;
+window.toggleChecklistItem = toggleChecklistItem;
+window.removeChecklistItem = removeChecklistItem;
+window.addCommentToTask = addCommentToTask;
 
