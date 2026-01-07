@@ -132,6 +132,7 @@ async function loadBacklogTasks() {
             // Filter tasks based on selected filter
             if (filter === 'backlog') {
                 // Show only backlog tasks (todo, backlog - not in progress, review, or done)
+                const beforeFilter = apiTasks.length;
                 apiTasks = apiTasks.filter(task => {
                     const status = task.status?.toLowerCase() || '';
                     return status === 'todo' || 
@@ -143,8 +144,10 @@ async function loadBacklogTasks() {
                             status !== 'done' && 
                             status !== 'completed');
                 });
+                console.log(`Filtered to backlog: ${beforeFilter} -> ${apiTasks.length} tasks`);
             } else if (filter === 'all') {
                 // Show backlog (todo/backlog) and in-progress tasks
+                const beforeFilter = apiTasks.length;
                 apiTasks = apiTasks.filter(task => {
                     const status = task.status?.toLowerCase() || '';
                     return status === 'todo' || 
@@ -152,6 +155,7 @@ async function loadBacklogTasks() {
                            status === 'progress' || 
                            status === 'in-progress';
                 });
+                console.log(`Filtered to all: ${beforeFilter} -> ${apiTasks.length} tasks`);
             }
 
             backlogTasks = apiTasks.map(task => ({

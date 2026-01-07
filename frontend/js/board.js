@@ -1,24 +1,11 @@
 // Milo Board functionality
 
-// Sample tasks data
+// Tasks data - initialized as empty, will be loaded from API
 let tasks = {
-    todo: [
-        { id: 'NUC-344', title: 'Optimize experience for mobile web', label: 'billing', assignee: 'OJ' },
-        { id: 'NUC-360', title: 'Onboard workout options (OWO)', label: 'accounts', assignee: 'BL' },
-        { id: 'NUC-337', title: 'Multi-dest search UI mobileweb', label: 'accounts', assignee: 'TE' }
-    ],
-    progress: [
-        { id: 'NUC-342', title: 'Fast trip search', label: 'accounts', assignee: 'YE' },
-        { id: 'NUC-335', title: 'Affelite links integration - frontend', label: 'billing', assignee: 'GR' }
-    ],
-    review: [
-        { id: 'NUC-367', title: 'Revise and streamline booking flow', label: 'accounts', assignee: 'YE' },
-        { id: 'NUC-358', title: 'Travel suggestion experiments', label: 'accounts', assignee: 'TE' }
-    ],
-    done: [
-        { id: 'NUC-344', title: 'Customers reporting shopping cart purchasing issues', label: 'accounts', assignee: 'OJ' },
-        { id: 'NUC-360', title: 'Shopping cart purchasing issues with the BG web store', label: 'accounts', assignee: 'BL' }
-    ]
+    todo: [],
+    progress: [],
+    review: [],
+    done: []
 };
 
 // Initialize board
