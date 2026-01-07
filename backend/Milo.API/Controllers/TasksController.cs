@@ -174,36 +174,55 @@ public class TasksController : ControllerBase
             _context.Tasks.Add(task);
             await _context.SaveChangesAsync();
 
-        // Load assignee for email notification
-        if (task.AssigneeId.HasValue)
-        {
-            await _context.Entry(task).Reference(t => t.Assignee).LoadAsync();
-            await _context.Entry(task).Reference(t => t.Creator).LoadAsync();
-            await _context.Entry(task).Reference(t => t.Product).LoadAsync();
-
-            if (task.Assignee != null)
+            // Load all data needed for email notification BEFORE Task.Run
+            // (DbContext is scoped and will be disposed after request completes)
+            string? assigneeEmail = null;
+            string? assigneeName = null;
+            string? projectName = null;
+            
+            if (task.AssigneeId.HasValue)
             {
-                // Send email notification (fire and forget)
-                _ = System.Threading.Tasks.Task.Run(async () =>
+                await _context.Entry(task).Reference(t => t.Assignee).LoadAsync();
+                await _context.Entry(task).Reference(t => t.Project).LoadAsync();
+                
+                if (task.Assignee != null)
                 {
-                    try
+                    assigneeEmail = task.Assignee.Email;
+                    assigneeName = task.Assignee.Name;
+                    projectName = task.Project?.Name ?? "General";
+                    
+                    // Send email notification (fire and forget)
+                    // Pass all data as parameters to avoid needing DbContext
+                    var taskTitle = task.Title;
+                    var taskIdForEmail = task.TaskId ?? task.Id.ToString();
+                    var taskLink = $"https://www.codingeverest.com/milo-board.html?projectId={task.ProjectId}&taskId={task.Id}";
+                    
+                    _ = System.Threading.Tasks.Task.Run(async () =>
                     {
-                        await _context.Entry(task).Reference(t => t.Project).LoadAsync();
-                        await _emailService.SendTaskAssignmentEmailAsync(
-                            task.Assignee.Email,
-                            task.Assignee.Name,
-                            task.Title,
-                            $"https://www.codingeverest.com/milo-board.html?projectId={task.ProjectId}&taskId={task.Id}",
-                            task.Project?.Name ?? "General"
-                        );
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, $"Failed to send task assignment email to {task.Assignee.Email}");
-                    }
-                });
+                        try
+                        {
+                            // Note: The email service expects taskId as the 4th parameter, but we'll pass the link
+                            // Actually, looking at the signature, it expects: toEmail, toName, taskTitle, taskId, productName
+                            // But the email template uses taskId in the subject and body, and we want to include the link
+                            // Let me check the email service signature again - it's: SendTaskAssignmentEmailAsync(string toEmail, string toName, string taskTitle, string taskId, string productName)
+                            // So taskId is the 4th parameter, and productName is the 5th
+                            await _emailService.SendTaskAssignmentEmailAsync(
+                                assigneeEmail!,
+                                assigneeName!,
+                                taskTitle,
+                                taskIdForEmail, // Pass task ID (e.g., "MILO-1")
+                                projectName!,   // Pass project name as productName parameter
+                                taskLink        // Pass the full task link
+                            );
+                            _logger.LogInformation($"Task assignment email sent successfully to {assigneeEmail} for task {taskIdForEmail}");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, $"Failed to send task assignment email to {assigneeEmail} for task {taskIdForEmail}: {ex.Message}");
+                        }
+                    });
+                }
             }
-        }
 
             return CreatedAtAction(nameof(GetTask), new { id = task.Id }, new
             {
@@ -261,25 +280,35 @@ public class TasksController : ControllerBase
             if (oldAssigneeId != request.AssigneeId && request.AssigneeId.HasValue)
             {
                 await _context.Entry(task).Reference(t => t.Assignee).LoadAsync();
-                await _context.Entry(task).Reference(t => t.Product).LoadAsync();
+                await _context.Entry(task).Reference(t => t.Project).LoadAsync();
                 
                 if (task.Assignee != null)
                 {
+                    // Load all data before Task.Run (DbContext is scoped)
+                    var assigneeEmail = task.Assignee.Email;
+                    var assigneeName = task.Assignee.Name;
+                    var taskTitle = task.Title;
+                    var taskIdForEmail = task.TaskId ?? task.Id.ToString();
+                    var projectName = task.Project?.Name ?? "General";
+                    var taskLink = $"https://www.codingeverest.com/milo-board.html?projectId={task.ProjectId}&taskId={task.Id}";
+                    
                     _ = System.Threading.Tasks.Task.Run(async () =>
                     {
                         try
                         {
                             await _emailService.SendTaskAssignmentEmailAsync(
-                                task.Assignee.Email,
-                                task.Assignee.Name,
-                                task.Title,
-                                task.TaskId ?? task.Id.ToString(),
-                                task.Product?.Name ?? "General"
+                                assigneeEmail,
+                                assigneeName,
+                                taskTitle,
+                                taskIdForEmail,
+                                projectName,
+                                taskLink
                             );
+                            _logger.LogInformation($"Task assignment email sent successfully to {assigneeEmail} for task {taskIdForEmail}");
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogError(ex, $"Failed to send task assignment email to {task.Assignee.Email}");
+                            _logger.LogError(ex, $"Failed to send task assignment email to {assigneeEmail} for task {taskIdForEmail}: {ex.Message}");
                         }
                     });
                 }

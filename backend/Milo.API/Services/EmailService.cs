@@ -217,7 +217,7 @@ The Milo Team
         }
     }
 
-    public async Task<bool> SendTaskAssignmentEmailAsync(string toEmail, string toName, string taskTitle, string taskId, string productName)
+    public async Task<bool> SendTaskAssignmentEmailAsync(string toEmail, string toName, string taskTitle, string taskId, string productName, string? taskLink = null)
     {
         try
         {
@@ -272,7 +272,7 @@ The Milo Team
             </div>
             
             <p style=""text-align: center;"">
-                <a href=""https://www.codingeverest.com/milo-board.html"" class=""button"">View Task</a>
+                <a href=""{(string.IsNullOrEmpty(taskLink) ? "https://www.codingeverest.com/milo-board.html" : taskLink)}"" class=""button"">View Task</a>
             </p>
             
             <p>Best regards,<br>The Milo Team</p>

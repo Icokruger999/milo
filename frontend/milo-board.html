@@ -1003,9 +1003,12 @@
         if (user) {
             const userName = user.name || user.email || 'User';
             const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-            document.getElementById('userAvatar').textContent = initials;
-            document.getElementById('globalUserAvatar').textContent = initials;
-            document.getElementById('sidebarUserAvatar').textContent = initials;
+            const userAvatarEl = document.getElementById('userAvatar');
+            const globalUserAvatarEl = document.getElementById('globalUserAvatar');
+            const sidebarUserAvatarEl = document.getElementById('sidebarUserAvatar');
+            if (userAvatarEl) userAvatarEl.textContent = initials;
+            if (globalUserAvatarEl) globalUserAvatarEl.textContent = initials;
+            if (sidebarUserAvatarEl) sidebarUserAvatarEl.textContent = initials;
         }
 
         // Setup project selector
