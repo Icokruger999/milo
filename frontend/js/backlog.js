@@ -179,15 +179,30 @@ async function loadBacklogTasks() {
             });
 
             renderBacklog();
+        } else {
+            const errorText = await response.text().catch(() => 'Unknown error');
+            console.error('Failed to load backlog tasks: API returned', response.status, errorText);
+            const container = document.getElementById('backlogList');
+            if (container) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <div class="empty-state-text">Failed to load backlog tasks (${response.status})</div>
+                    </div>
+                `;
+            }
         }
     } catch (error) {
         console.error('Failed to load backlog tasks:', error);
-        document.getElementById('backlogList').innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon">⚠️</div>
-                <div class="empty-state-text">Failed to load backlog tasks</div>
-            </div>
-        `;
+        const container = document.getElementById('backlogList');
+        if (container) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">⚠️</div>
+                    <div class="empty-state-text">Failed to load backlog tasks: ${error.message || 'Unknown error'}</div>
+                </div>
+            `;
+        }
     }
 }
 
