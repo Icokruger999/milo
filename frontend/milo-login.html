@@ -283,6 +283,30 @@
                 const result = await authService.login(email, password, rememberMe);
                 
                 if (result.success) {
+                    // Check for pending invitation and accept it
+                    const inviteToken = localStorage.getItem('milo_pending_invitation');
+                    if (inviteToken && result.user && result.user.id) {
+                        try {
+                            const acceptResponse = await apiClient.post('/invitations/accept', {
+                                token: inviteToken,
+                                userId: result.user.id
+                            });
+                            if (acceptResponse.ok) {
+                                const acceptData = await acceptResponse.json();
+                                console.log('Invitation accepted:', acceptData);
+                                // Remove invitation token
+                                localStorage.removeItem('milo_pending_invitation');
+                                // If project is returned, set it as current
+                                if (acceptData.project) {
+                                    projectSelector.setCurrentProject(acceptData.project);
+                                }
+                            }
+                        } catch (inviteError) {
+                            console.error('Failed to accept invitation:', inviteError);
+                            // Continue with normal flow even if invitation acceptance fails
+                        }
+                    }
+                    
                     // Check if password change is required
                     if (result.requiresPasswordChange) {
                         // Redirect to change password page

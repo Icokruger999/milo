@@ -303,6 +303,19 @@
         sessionStorage.removeItem('milo_user');
         localStorage.removeItem('milo_current_project');
         sessionStorage.removeItem('milo_current_project');
+        
+        // Check for invitation token in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const inviteToken = urlParams.get('invite');
+        if (inviteToken) {
+            // Store invitation token for later use after signup/login
+            localStorage.setItem('milo_pending_invitation', inviteToken);
+            // Show message about invitation
+            const infoDiv = document.createElement('div');
+            infoDiv.style.cssText = 'background: #E3FCEF; border-left: 4px solid #36B37E; padding: 12px; margin-bottom: 20px; border-radius: 4px;';
+            infoDiv.innerHTML = '<p style="margin: 0; font-size: 14px; color: #006644;"><strong>You\'ve been invited!</strong> After creating your account and logging in, you\'ll automatically be added to the project.</p>';
+            document.getElementById('signupForm').parentNode.insertBefore(infoDiv, document.getElementById('signupForm'));
+        }
 
         function showError(message) {
             const errorDiv = document.getElementById('errorMessage');
@@ -348,17 +361,25 @@
                 const result = await authService.signup(name, email);
                 
                 if (result.success) {
-                    showSuccess('Account created! Please check your email for your temporary password. You will be redirected to login...');
+                    const hasInvitation = localStorage.getItem('milo_pending_invitation');
+                    if (hasInvitation) {
+                        showSuccess('Account created! Please check your email for your temporary password. After logging in, you\'ll be automatically added to the project.');
+                    } else {
+                        showSuccess('Account created! Please check your email for your temporary password. You will be redirected to login...');
+                    }
                     // IMPORTANT: Signup does NOT authenticate the user
                     // User must login with temporary password first
-                    // Always redirect to login - NEVER to project selector
-                    setTimeout(() => {
-                        // Clear ALL auth state to ensure clean login
-                        localStorage.clear();
-                        sessionStorage.clear();
-                        // Redirect to login page only
-                        window.location.href = 'milo-login.html';
-                    }, 3000);
+                    // Preserve invitation token if present
+                    const inviteToken = localStorage.getItem('milo_pending_invitation');
+                    // Clear ALL auth state to ensure clean login
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    // Restore invitation token if it existed
+                    if (inviteToken) {
+                        localStorage.setItem('milo_pending_invitation', inviteToken);
+                    }
+                    // Redirect to login page only
+                    window.location.href = 'milo-login.html';
                 } else {
                     showError(result.message || 'Signup failed. Please try again.');
                     submitButton.disabled = false;
