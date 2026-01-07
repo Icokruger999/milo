@@ -160,9 +160,11 @@ public class TasksController : ControllerBase
             if (request.DueDate.HasValue)
             {
                 var dueDate = request.DueDate.Value;
+                
+                // Always ensure UTC for PostgreSQL
                 if (dueDate.Kind == DateTimeKind.Unspecified)
                 {
-                    // Treat as UTC if unspecified
+                    // Treat as UTC if unspecified (common when deserializing from JSON)
                     dueDateUtc = DateTime.SpecifyKind(dueDate, DateTimeKind.Utc);
                 }
                 else if (dueDate.Kind == DateTimeKind.Local)
@@ -172,8 +174,14 @@ public class TasksController : ControllerBase
                 }
                 else
                 {
-                    // Already UTC
+                    // Already UTC - ensure it stays UTC
                     dueDateUtc = dueDate;
+                }
+                
+                // Double-check: if somehow still not UTC, force it
+                if (dueDateUtc.HasValue && dueDateUtc.Value.Kind != DateTimeKind.Utc)
+                {
+                    dueDateUtc = DateTime.SpecifyKind(dueDateUtc.Value, DateTimeKind.Utc);
                 }
             }
 

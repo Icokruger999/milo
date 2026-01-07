@@ -536,6 +536,16 @@ async function handleTaskSubmit(event) {
     const column = modal.dataset.column;
     const taskId = modal.dataset.taskId;
     
+    // Convert date to ISO 8601 format with UTC timezone
+    let dueDate = null;
+    const dueDateInput = document.getElementById('taskDueDate').value;
+    if (dueDateInput) {
+        // HTML date input gives YYYY-MM-DD format
+        // Convert to ISO 8601 with UTC timezone (midnight UTC)
+        const date = new Date(dueDateInput + 'T00:00:00Z');
+        dueDate = date.toISOString();
+    }
+    
     const taskData = {
         title: document.getElementById('taskTitle').value,
         description: document.getElementById('taskDescription').value,
@@ -544,7 +554,7 @@ async function handleTaskSubmit(event) {
         assigneeId: document.getElementById('taskAssignee').value ? parseInt(document.getElementById('taskAssignee').value) : null,
         productId: document.getElementById('taskProduct').value ? parseInt(document.getElementById('taskProduct').value) : null,
         priority: parseInt(document.getElementById('taskPriority').value),
-        dueDate: document.getElementById('taskDueDate').value || null
+        dueDate: dueDate
     };
     
     try {
