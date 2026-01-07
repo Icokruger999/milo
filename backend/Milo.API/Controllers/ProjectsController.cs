@@ -37,17 +37,36 @@ public class ProjectsController : ControllerBase
 
         var projects = await query.OrderBy(p => p.Name).ToListAsync();
 
-        return Ok(projects.Select(p => new
+        return Ok(projects.Select(p =>
         {
-            id = p.Id,
-            name = p.Name,
-            description = p.Description,
-            key = p.Key,
-            status = p.Status,
-            owner = new { id = p.Owner.Id, name = p.Owner.Name, email = p.Owner.Email },
-            ownerId = p.OwnerId,
-            memberCount = p.Members.Count + 1, // +1 for owner
-            createdAt = p.CreatedAt
+            // Determine user's role in the project
+            string? userRole = null;
+            if (userId.HasValue)
+            {
+                if (p.OwnerId == userId.Value)
+                {
+                    userRole = "owner";
+                }
+                else
+                {
+                    var member = p.Members.FirstOrDefault(m => m.UserId == userId.Value);
+                    userRole = member?.Role;
+                }
+            }
+
+            return new
+            {
+                id = p.Id,
+                name = p.Name,
+                description = p.Description,
+                key = p.Key,
+                status = p.Status,
+                owner = new { id = p.Owner.Id, name = p.Owner.Name, email = p.Owner.Email },
+                ownerId = p.OwnerId,
+                role = userRole,
+                memberCount = p.Members.Count + 1, // +1 for owner
+                createdAt = p.CreatedAt
+            };
         }));
     }
 

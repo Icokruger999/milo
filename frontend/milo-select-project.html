@@ -222,15 +222,20 @@
         // Load projects
         async function loadProjects() {
             try {
-                const projects = await projectSelector.loadProjects();
+                // Pass user ID to load only projects the user has access to
+                const projects = await projectSelector.loadProjects(user.id);
                 const container = document.getElementById('projectList');
 
                 if (projects.length === 0) {
                     container.innerHTML = `
-                        <p style="text-align: center; color: #6B778C; padding: 40px;">
-                            You don't have access to any projects yet.<br>
-                            <strong>Create a new project</strong> using the button below, or wait for an invitation to join an existing project.
-                        </p>
+                        <div style="text-align: center; color: #6B778C; padding: 40px;">
+                            <p style="margin-bottom: 16px;">
+                                You don't have access to any projects yet.
+                            </p>
+                            <p style="font-size: 14px;">
+                                <strong>Create a new project</strong> using the button below, or wait for an invitation to join an existing project.
+                            </p>
+                        </div>
                     `;
                     return;
                 }
@@ -310,8 +315,8 @@
                     localStorage.setItem('milo_current_project', JSON.stringify(projectData));
                     projectSelector.currentProject = projectData;
                     
-                    // Reload projects list
-                    await projectSelector.loadProjects();
+                    // Reload projects list with user ID
+                    await projectSelector.loadProjects(user.id);
                     
                     // Redirect after a brief moment
                     setTimeout(() => {

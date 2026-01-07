@@ -8,18 +8,38 @@ class ProjectSelectorService {
 
     /**
      * Load projects from API
+     * @param {number} userId - Optional user ID to filter projects
      */
-    async loadProjects() {
+    async loadProjects(userId = null) {
         try {
-            const response = await apiClient.get('/projects');
+            let url = '/projects';
+            if (userId) {
+                url += `?userId=${userId}`;
+            }
+            const response = await apiClient.get(url);
             if (response.ok) {
                 this.projects = await response.json();
+                // Role is now provided by the backend, but ensure it exists
+                const currentUser = authService.getCurrentUser();
+                if (currentUser) {
+                    this.projects = this.projects.map(p => ({
+                        ...p,
+                        role: p.role || (p.ownerId === currentUser.id ? 'owner' : 'member')
+                    }));
+                }
                 return this.projects;
             }
         } catch (error) {
             console.error('Failed to load projects:', error);
         }
         return [];
+    }
+
+    /**
+     * Load projects for a specific user
+     */
+    async loadProjectsForUser(userId) {
+        return this.loadProjects(userId);
     }
 
     /**

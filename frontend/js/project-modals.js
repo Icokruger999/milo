@@ -96,8 +96,11 @@ async function handleCreateProject(event) {
             // Close modal
             closeCreateProjectModal();
             
-            // Reload projects list to include the new project
-            await projectSelector.loadProjects();
+            // Reload projects list to include the new project (with user ID)
+            const currentUser = authService.getCurrentUser();
+            if (currentUser && currentUser.id) {
+                await projectSelector.loadProjects(currentUser.id);
+            }
             
             // Redirect after a brief moment to ensure everything is saved
             setTimeout(() => {
