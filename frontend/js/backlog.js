@@ -120,26 +120,36 @@ async function loadBacklogTasks() {
         }
 
         const filter = document.getElementById('backlogFilter')?.value || 'backlog';
+        // Get all tasks for the project (no status filter on API)
         let queryUrl = `/tasks?projectId=${currentProject.id}`;
-        
-        // If filtering by backlog only, get tasks with status 'todo' or 'backlog'
-        if (filter === 'backlog') {
-            queryUrl += `&status=todo`;
-        }
-        // For 'all', we'll get all tasks and filter client-side
 
         const response = await apiClient.get(queryUrl);
         if (response.ok) {
             let apiTasks = await response.json();
             
-            // If showing all tasks, filter to show backlog (todo/backlog) and in-progress tasks
-            if (filter === 'all') {
-                apiTasks = apiTasks.filter(task => 
-                    task.status === 'todo' || 
-                    task.status === 'backlog' || 
-                    task.status === 'progress' || 
-                    task.status === 'in-progress'
-                );
+            // Filter tasks based on selected filter
+            if (filter === 'backlog') {
+                // Show only backlog tasks (todo, backlog - not in progress, review, or done)
+                apiTasks = apiTasks.filter(task => {
+                    const status = task.status?.toLowerCase() || '';
+                    return status === 'todo' || 
+                           status === 'backlog' ||
+                           (status !== 'progress' && 
+                            status !== 'in-progress' && 
+                            status !== 'review' && 
+                            status !== 'in-review' && 
+                            status !== 'done' && 
+                            status !== 'completed');
+                });
+            } else if (filter === 'all') {
+                // Show backlog (todo/backlog) and in-progress tasks
+                apiTasks = apiTasks.filter(task => {
+                    const status = task.status?.toLowerCase() || '';
+                    return status === 'todo' || 
+                           status === 'backlog' || 
+                           status === 'progress' || 
+                           status === 'in-progress';
+                });
             }
 
             backlogTasks = apiTasks.map(task => ({
