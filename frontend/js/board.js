@@ -54,11 +54,17 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function setupUserMenu() {
-    const userMenu = document.getElementById('userMenu');
+    // Use globalUserAvatar as the clickable user menu element
+    const userMenu = document.getElementById('globalUserAvatar') || 
+                     document.getElementById('userMenu') || 
+                     document.getElementById('sidebarUserAvatar');
     if (!userMenu) {
-        console.error('User menu element not found');
+        // Silently fail - user menu is optional
         return;
     }
+    
+    // Make it look clickable
+    userMenu.style.cursor = 'pointer';
     
     const dropdown = document.createElement('div');
     dropdown.className = 'dropdown-menu';
