@@ -742,7 +742,7 @@ async function loadTasksFromAPI() {
         if (!currentProject) {
             // No project selected - redirect to project selector
             window.location.href = 'milo-select-project.html';
-            return;
+            return Promise.resolve();
         }
 
         // Build query with filters
@@ -829,9 +829,12 @@ async function loadTasksFromAPI() {
                 if (typeof filterTasks === 'function') {
                     filterTasks();
                 }
+                
+                return Promise.resolve();
             }
         } catch (error) {
             console.error('Failed to load tasks:', error);
+            return Promise.reject(error);
         }
     }
 

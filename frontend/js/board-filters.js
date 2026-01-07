@@ -66,10 +66,9 @@ function filterTasks() {
             }
         }
         
-        // Apply epic filter (epic is stored in label for now, or can be a separate field)
-        if (currentFilters.epic && currentFilters.epic !== '') {
+        // Apply epic filter (epic matches label for now)
+        if (currentFilters.epic && currentFilters.epic !== '' && currentFilters.epic !== 'all') {
             // Epic filter - check if task label matches epic name
-            // For now, epic is the same as label, but this can be extended
             const epicName = currentFilters.epic.toLowerCase();
             const taskLabel = (task.label || '').toLowerCase();
             if (taskLabel !== epicName) {
@@ -77,12 +76,13 @@ function filterTasks() {
             }
         }
         
-        // Apply type filter (type can be based on label or a separate field)
+        // Apply type filter (type matches label for now, can be extended later)
         if (currentFilters.type && currentFilters.type !== '') {
-            // Type filter - for now, we'll check if it matches label
-            // This can be extended when we add a proper "type" field to tasks
+            // Type filter - check if task label matches type name
+            // Common types: task, bug, story, epic
             const typeName = currentFilters.type.toLowerCase();
             const taskLabel = (task.label || '').toLowerCase();
+            // For now, type matches label, but this can be extended when we add a proper "type" field
             if (taskLabel !== typeName) {
                 return; // Skip tasks that don't match type
             }
