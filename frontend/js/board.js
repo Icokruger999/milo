@@ -674,10 +674,14 @@ async function handleTaskSubmit(event) {
         });
     }
     
+    // Get status from dropdown, fallback to column if not available
+    const statusSelect = document.getElementById('taskStatus');
+    const selectedStatus = statusSelect ? statusSelect.value : column;
+    
     const taskData = {
         title: document.getElementById('taskTitle').value,
         description: document.getElementById('taskDescription').value,
-        status: column,
+        status: selectedStatus, // Use status from dropdown
         label: document.getElementById('taskLabel').value,
         assigneeId: document.getElementById('taskAssignee').value ? parseInt(document.getElementById('taskAssignee').value) : null,
         productId: document.getElementById('taskProduct').value ? parseInt(document.getElementById('taskProduct').value) : null,
