@@ -9,6 +9,7 @@
 2. **Configured DNS Records:**
    - `www.codingeverest.com` → CNAME to CloudFront
    - `codingeverest.com` → ALIAS to CloudFront (root domain)
+   - `api.codingeverest.com` → A record to EC2 (34.246.3.141)
 
 ## 📋 What You Need to Do in Namecheap
 
@@ -34,7 +35,10 @@
 
 - DNS changes take **5-30 minutes** to propagate
 - You can check status: `nslookup codingeverest.com`
-- Once propagated, both `codingeverest.com` and `www.codingeverest.com` will work
+- Once propagated, all domains will work:
+  - `codingeverest.com` → Frontend (CloudFront)
+  - `www.codingeverest.com` → Frontend (CloudFront)
+  - `api.codingeverest.com` → Backend API (EC2)
 
 ## 💰 Route 53 Costs
 
