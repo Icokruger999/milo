@@ -24,7 +24,7 @@
             overflow: hidden;
         }
 
-        /* Global Navigation - Same as board */
+        /* Global Navigation */
         .global-nav {
             background: #FFFFFF;
             border-bottom: 1px solid #DFE1E6;
@@ -268,18 +268,29 @@
 
         /* Roadmap Header */
         .roadmap-header {
-            padding: 16px 24px;
+            padding: 12px 24px;
             border-bottom: 1px solid #DFE1E6;
             background: #FFFFFF;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .roadmap-header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
         }
 
         .roadmap-title {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 600;
             color: #172B4D;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .roadmap-header-right {
@@ -288,7 +299,7 @@
             gap: 12px;
         }
 
-        .status-dropdown {
+        .roadmap-filter {
             padding: 6px 12px;
             border: 1px solid #DFE1E6;
             border-radius: 3px;
@@ -298,59 +309,157 @@
             cursor: pointer;
         }
 
+        .roadmap-view-toggle {
+            display: flex;
+            gap: 4px;
+            background: #F4F5F7;
+            border-radius: 3px;
+            padding: 2px;
+        }
+
+        .view-toggle-btn {
+            padding: 4px 12px;
+            border: none;
+            background: transparent;
+            border-radius: 3px;
+            font-size: 13px;
+            color: #42526E;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .view-toggle-btn.active {
+            background: white;
+            color: #172B4D;
+            font-weight: 500;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .today-btn {
+            padding: 6px 12px;
+            background: #FF5630;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
         /* Roadmap Content */
         .roadmap-content {
             flex: 1;
             display: flex;
             overflow: hidden;
+            position: relative;
         }
 
-        /* Epic Column */
-        .epic-column {
-            width: 300px;
+        /* Left Tree Panel */
+        .roadmap-tree {
+            width: 400px;
             border-right: 1px solid #DFE1E6;
             background: #FAFBFC;
             overflow-y: auto;
-            padding: 16px;
+            overflow-x: hidden;
         }
 
-        .epic-item {
+        .tree-header {
+            padding: 12px 16px;
+            background: #FFFFFF;
+            border-bottom: 1px solid #DFE1E6;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6B778C;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .tree-item {
+            padding: 8px 16px;
+            border-bottom: 1px solid #F4F5F7;
+            cursor: pointer;
+            transition: background 0.15s;
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 12px;
-            margin-bottom: 8px;
-            border-radius: 3px;
-            cursor: pointer;
-            transition: background 0.15s;
         }
 
-        .epic-item:hover {
-            background: #EBECF0;
+        .tree-item:hover {
+            background: #F4F5F7;
         }
 
-        .epic-item.selected {
+        .tree-item.selected {
             background: #DEEBFF;
-            border-left: 3px solid #0052CC;
         }
 
-        .epic-icon {
+        .tree-item-icon {
             width: 16px;
             height: 16px;
-            background: #6554C0;
             border-radius: 2px;
             flex-shrink: 0;
         }
 
-        .epic-title {
+        .tree-item-icon.epic { background: #6554C0; }
+        .tree-item-icon.task { background: #0052CC; }
+        .tree-item-icon.bug { background: #E53E3E; }
+        .tree-item-icon.story { background: #36B37E; }
+
+        .tree-item-content {
             flex: 1;
-            font-size: 14px;
+            min-width: 0;
+        }
+
+        .tree-item-id {
+            font-size: 12px;
+            font-weight: 600;
+            color: #0052CC;
+            margin-right: 8px;
+        }
+
+        .tree-item-title {
+            font-size: 13px;
             color: #172B4D;
-            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tree-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+            font-size: 11px;
+            color: #6B778C;
+        }
+
+        .tree-item-status {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .tree-item-status.todo { background: #DFE1E6; color: #42526E; }
+        .tree-item-status.progress { background: #FFAB00; color: #172B4D; }
+        .tree-item-status.done { background: #36B37E; color: white; }
+
+        .tree-item-assignees {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tree-item-assignee-count {
+            font-size: 11px;
+            color: #6B778C;
         }
 
         /* Timeline Area */
-        .timeline-area {
+        .roadmap-timeline {
             flex: 1;
             overflow-x: auto;
             overflow-y: auto;
@@ -364,58 +473,52 @@
             background: #FFFFFF;
             border-bottom: 2px solid #DFE1E6;
             z-index: 10;
-            padding: 16px 24px;
+            min-width: 100%;
         }
 
-        .timeline-months {
+        .timeline-header-row {
             display: flex;
-            gap: 0;
-            min-width: 1200px;
+            min-width: 100%;
         }
 
-        .timeline-month {
-            flex: 1;
-            min-width: 200px;
-            padding: 8px 16px;
+        .timeline-header-cell {
+            padding: 8px;
             text-align: center;
+            font-size: 11px;
             font-weight: 600;
-            font-size: 13px;
             color: #42526E;
             border-right: 1px solid #DFE1E6;
+            min-width: 120px;
         }
 
-        .timeline-month:last-child {
-            border-right: none;
+        .timeline-header-cell.weekend {
+            background: #F4F5F7;
         }
 
         .timeline-body {
             position: relative;
             min-height: 100%;
-            padding: 16px 24px;
-        }
-
-        .current-date-line {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: #FF5630;
-            z-index: 5;
-            pointer-events: none;
         }
 
         .timeline-row {
-            display: flex;
-            align-items: center;
-            min-height: 48px;
-            margin-bottom: 8px;
             position: relative;
+            min-height: 40px;
+            border-bottom: 1px solid #F4F5F7;
+        }
+
+        .timeline-row.release {
+            background: #E3FCEF;
+            min-height: 48px;
+        }
+
+        .timeline-row.milestone {
+            background: #E3FCEF;
+            min-height: 44px;
         }
 
         .timeline-bar {
             position: absolute;
             height: 32px;
-            background: #6554C0;
             border-radius: 3px;
             display: flex;
             align-items: center;
@@ -423,200 +526,93 @@
             color: white;
             font-size: 12px;
             font-weight: 500;
-            cursor: pointer;
-            transition: opacity 0.15s;
-            z-index: 1;
+            cursor: move;
+            z-index: 5;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transition: box-shadow 0.2s;
         }
 
         .timeline-bar:hover {
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            z-index: 6;
+        }
+
+        .timeline-bar.dragging {
+            opacity: 0.7;
+            z-index: 100;
+        }
+
+        .timeline-bar.release {
+            background: #36B37E;
+            height: 40px;
+            font-weight: 600;
+        }
+
+        .timeline-bar.milestone {
+            background: #36B37E;
+            height: 36px;
             opacity: 0.8;
         }
 
-        /* Detail Panel */
-        .detail-panel {
-            width: 400px;
-            border-left: 1px solid #DFE1E6;
-            background: #FFFFFF;
-            overflow-y: auto;
-            display: none;
+        .timeline-bar.epic {
+            background: #6554C0;
         }
 
-        .detail-panel.open {
-            display: block;
+        .timeline-bar.task {
+            background: #0052CC;
         }
 
-        .detail-panel-header {
-            padding: 16px;
-            border-bottom: 1px solid #DFE1E6;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        .timeline-bar.bug {
+            background: #E53E3E;
         }
 
-        .detail-panel-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #172B4D;
+        .timeline-bar.story {
+            background: #36B37E;
         }
 
-        .detail-panel-close {
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 3px;
-            cursor: pointer;
-            color: #42526E;
+        .timeline-bar-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
         }
 
-        .detail-panel-close:hover {
-            background: #F4F5F7;
+        /* Current Date Line */
+        .current-date-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #FF5630;
+            z-index: 4;
+            pointer-events: none;
         }
 
-        .detail-panel-content {
-            padding: 16px;
-        }
-
-        .detail-section {
-            margin-bottom: 24px;
-        }
-
-        .detail-section-title {
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            color: #6B778C;
-            margin-bottom: 12px;
-        }
-
-        .detail-field {
-            margin-bottom: 16px;
-        }
-
-        .detail-field-label {
-            font-size: 12px;
-            font-weight: 600;
-            color: #6B778C;
-            margin-bottom: 4px;
-        }
-
-        .detail-field-value {
-            font-size: 14px;
-            color: #172B4D;
-        }
-
-        .detail-select {
-            width: 100%;
-            padding: 6px 8px;
-            border: 1px solid #DFE1E6;
-            border-radius: 3px;
-            font-size: 14px;
-            background: white;
-            cursor: pointer;
-        }
-
-        .issue-list {
-            list-style: none;
-            padding: 0;
-        }
-
-        .issue-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px;
-            border-radius: 3px;
-            cursor: pointer;
-            margin-bottom: 4px;
-        }
-
-        .issue-item:hover {
-            background: #F4F5F7;
-        }
-
-        .issue-id {
-            font-size: 12px;
-            font-weight: 600;
-            color: #0052CC;
-        }
-
-        .issue-title {
-            flex: 1;
-            font-size: 13px;
-            color: #172B4D;
-        }
-
-        .issue-status {
-            font-size: 11px;
+        .current-date-line::before {
+            content: 'Today';
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            background: #FF5630;
+            color: white;
             padding: 2px 6px;
             border-radius: 3px;
-            background: #DFE1E6;
-            color: #42526E;
-        }
-
-        .assignee-avatar {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: #0052CC;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             font-size: 10px;
             font-weight: 600;
+            white-space: nowrap;
         }
 
-        .comment-section {
-            margin-top: 16px;
+        /* Dependency Lines */
+        .dependency-line {
+            position: absolute;
+            pointer-events: none;
+            z-index: 3;
         }
 
-        .comment-input {
-            width: 100%;
-            padding: 8px 12px;
-            border: 1px solid #DFE1E6;
-            border-radius: 3px;
-            font-size: 14px;
-            resize: vertical;
-            min-height: 60px;
-            font-family: inherit;
-        }
-
-        .comment-button {
-            margin-top: 8px;
-            padding: 6px 12px;
-            background: #0052CC;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-        }
-
-        .comment-item {
-            padding: 12px;
-            border-bottom: 1px solid #F4F5F7;
-        }
-
-        .comment-author {
-            font-size: 12px;
-            font-weight: 600;
-            color: #172B4D;
-            margin-bottom: 4px;
-        }
-
-        .comment-text {
-            font-size: 13px;
-            color: #42526E;
-            line-height: 1.5;
-        }
-
-        .comment-date {
-            font-size: 11px;
-            color: #6B778C;
-            margin-top: 4px;
+        .dependency-line svg {
+            stroke: #6B778C;
+            stroke-width: 2;
+            fill: none;
         }
     </style>
 </head>
@@ -699,49 +695,67 @@
         <div class="roadmap-container">
             <!-- Roadmap Header -->
             <div class="roadmap-header">
-                <div class="roadmap-title">Roadmap</div>
+                <div class="roadmap-header-left">
+                    <div class="roadmap-title">
+                        <span id="projectTitle">Milo</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                </div>
                 <div class="roadmap-header-right">
-                    <select class="status-dropdown" id="statusFilter" onchange="loadRoadmap()">
-                        <option value="">All Status</option>
-                        <option value="todo">Backlog</option>
-                        <option value="progress">In Progress</option>
-                        <option value="review">In Review</option>
-                        <option value="done">Done</option>
+                    <select class="roadmap-filter" id="typeFilter" onchange="applyFilters()">
+                        <option value="">All Types</option>
+                        <option value="Epic">Epic</option>
+                        <option value="Task">Task</option>
+                        <option value="Bug">Bug</option>
+                        <option value="Story">Story</option>
                     </select>
+                    <div class="roadmap-view-toggle">
+                        <button class="view-toggle-btn" id="viewDays" onclick="setViewMode('days')">Days</button>
+                        <button class="view-toggle-btn active" id="viewWeeks" onclick="setViewMode('weeks')">Weeks</button>
+                        <button class="view-toggle-btn" id="viewMonths" onclick="setViewMode('months')">Months</button>
+                    </div>
+                    <button class="today-btn" onclick="scrollToToday()">Today</button>
                 </div>
             </div>
 
             <!-- Roadmap Content -->
             <div class="roadmap-content">
-                <!-- Epic Column -->
-                <div class="epic-column" id="epicColumn">
-                    <div style="color: #6B778C; font-size: 13px; margin-bottom: 12px;">Epic</div>
-                    <div id="epicList">Loading...</div>
+                <!-- Left Tree Panel -->
+                <div class="roadmap-tree">
+                    <div class="tree-header">
+                        <span>Releases</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="16"></line>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                        </svg>
+                    </div>
+                    <div id="releasesTree"></div>
+                    <div class="tree-header" style="margin-top: 16px;">
+                        <span>Milestones</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="16"></line>
+                            <line x1="8" y1="12" x2="16" y2="12"></line>
+                        </svg>
+                    </div>
+                    <div id="milestonesTree"></div>
+                    <div class="tree-header" style="margin-top: 16px;">
+                        <span>Tasks</span>
+                    </div>
+                    <div id="tasksTree"></div>
                 </div>
 
                 <!-- Timeline Area -->
-                <div class="timeline-area" id="timelineArea">
-                    <div class="timeline-header">
-                        <div class="timeline-months" id="timelineMonths"></div>
-                    </div>
+                <div class="roadmap-timeline" id="timelineArea">
+                    <div class="timeline-header" id="timelineHeader"></div>
                     <div class="timeline-body" id="timelineBody">
                         <div class="current-date-line" id="currentDateLine"></div>
                         <div id="timelineRows"></div>
+                        <svg id="dependencyLines" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3;"></svg>
                     </div>
-                </div>
-
-                <!-- Detail Panel -->
-                <div class="detail-panel" id="detailPanel">
-                    <div class="detail-panel-header">
-                        <div class="detail-panel-title" id="detailPanelTitle">Task Details</div>
-                        <div class="detail-panel-close" onclick="closeDetailPanel()">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                            </svg>
-                        </div>
-                    </div>
-                    <div class="detail-panel-content" id="detailPanelContent"></div>
                 </div>
             </div>
         </div>
@@ -752,6 +766,6 @@
     <script src="js/auth.js"></script>
     <script src="js/project-selector.js"></script>
     <script src="js/board.js"></script>
-    <script src="js/roadmap.js"></script>
+    <script src="js/roadmap-gantt.js"></script>
 </body>
 </html>

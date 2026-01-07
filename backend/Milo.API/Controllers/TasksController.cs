@@ -74,6 +74,7 @@ public class TasksController : ControllerBase
                 status = t.Status,
                 label = t.Label,
                 taskId = t.TaskId,
+                taskType = t.TaskType,
                 assignee = t.Assignee != null ? new { id = t.Assignee.Id, name = t.Assignee.Name, email = t.Assignee.Email } : null,
                 assigneeId = t.AssigneeId,
                 creator = t.Creator != null ? new { id = t.Creator.Id, name = t.Creator.Name } : null,
@@ -84,6 +85,7 @@ public class TasksController : ControllerBase
                 priority = t.Priority,
                 dueDate = t.DueDate,
                 startDate = t.StartDate,
+                parentTaskId = t.ParentTaskId,
                 createdAt = t.CreatedAt
             }));
         }
@@ -117,6 +119,7 @@ public class TasksController : ControllerBase
             status = task.Status,
             label = task.Label,
             taskId = task.TaskId,
+            taskType = task.TaskType,
             assignee = task.Assignee != null ? new { id = task.Assignee.Id, name = task.Assignee.Name, email = task.Assignee.Email } : null,
             assigneeId = task.AssigneeId,
             creator = task.Creator != null ? new { id = task.Creator.Id, name = task.Creator.Name } : null,
@@ -127,6 +130,7 @@ public class TasksController : ControllerBase
             priority = task.Priority,
             dueDate = task.DueDate,
             startDate = task.StartDate,
+            parentTaskId = task.ParentTaskId,
             createdAt = task.CreatedAt
         });
     }
@@ -235,6 +239,7 @@ public class TasksController : ControllerBase
                 Status = request.Status ?? "todo",
                 Label = request.Label,
                 TaskId = taskId,
+                TaskType = request.TaskType ?? "Task",
                 AssigneeId = request.AssigneeId,
                 CreatorId = request.CreatorId,
                 ProductId = request.ProductId,
@@ -534,6 +539,10 @@ public class TasksController : ControllerBase
         {
             task.ParentTaskId = request.ParentTaskId;
         }
+        if (!string.IsNullOrEmpty(request.TaskType))
+        {
+            task.TaskType = request.TaskType;
+        }
 
             task.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
@@ -597,6 +606,7 @@ public class CreateTaskRequest
     public string? Status { get; set; }
     public string? Label { get; set; }
     public string? TaskId { get; set; }
+    public string? TaskType { get; set; } // Epic, Task, Bug, Story
     public int? AssigneeId { get; set; }
     public int? CreatorId { get; set; }
     public int? ProductId { get; set; }
@@ -613,6 +623,7 @@ public class UpdateTaskRequest
     public string? Description { get; set; }
     public string? Status { get; set; }
     public string? Label { get; set; }
+    public string? TaskType { get; set; } // Epic, Task, Bug, Story
     public int? AssigneeId { get; set; }
     public int? ProductId { get; set; }
     public int? Priority { get; set; }

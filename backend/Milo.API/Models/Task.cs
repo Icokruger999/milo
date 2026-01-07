@@ -25,6 +25,9 @@ public class Task
     [MaxLength(20)]
     public string? TaskId { get; set; } // e.g., NUC-344
     
+    [MaxLength(20)]
+    public string TaskType { get; set; } = "Task"; // Epic, Task, Bug, Story
+    
     [ForeignKey("Assignee")]
     public int? AssigneeId { get; set; }
     public User? Assignee { get; set; }
