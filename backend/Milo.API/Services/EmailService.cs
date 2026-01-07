@@ -246,36 +246,58 @@ The Milo Team
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset=""utf-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
     <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        .header {{ background: #0052CC; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
-        .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
-        .task-box {{ background: #fff; border-left: 4px solid #0052CC; padding: 15px; margin: 20px 0; }}
-        .task-id {{ font-size: 18px; font-weight: bold; color: #0052CC; }}
-        .button {{ display: inline-block; background: #0052CC; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 20px; }}
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; }}
+        .email-wrapper {{ background-color: #F4F5F7; padding: 40px 20px; }}
+        .email-container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
+        .email-header {{ background: linear-gradient(135deg, #0052CC 0%, #0065FF 100%); color: #FFFFFF; padding: 40px 30px; text-align: center; }}
+        .email-header h1 {{ font-size: 28px; font-weight: 600; margin: 0; letter-spacing: -0.5px; }}
+        .email-body {{ padding: 40px 30px; }}
+        .greeting {{ font-size: 16px; color: #172B4D; margin-bottom: 20px; }}
+        .message {{ font-size: 15px; color: #42526E; margin-bottom: 30px; line-height: 1.7; }}
+        .task-card {{ background: #F4F5F7; border-left: 4px solid #0052CC; border-radius: 4px; padding: 20px; margin: 30px 0; }}
+        .task-id {{ font-size: 14px; font-weight: 600; color: #0052CC; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-family: 'Monaco', 'Menlo', monospace; }}
+        .task-title {{ font-size: 20px; font-weight: 600; color: #172B4D; margin: 8px 0 12px 0; line-height: 1.4; }}
+        .task-meta {{ font-size: 14px; color: #6B778C; margin-top: 8px; }}
+        .task-meta strong {{ color: #42526E; }}
+        .cta-button {{ display: inline-block; background: #0052CC; color: #FFFFFF !important; padding: 14px 32px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 15px; margin: 30px 0; text-align: center; transition: background-color 0.2s; }}
+        .cta-button:hover {{ background: #0065FF; }}
+        .button-container {{ text-align: center; margin: 30px 0; }}
+        .email-footer {{ padding: 30px; background-color: #F4F5F7; border-top: 1px solid #DFE1E6; text-align: center; }}
+        .email-footer p {{ font-size: 13px; color: #6B778C; margin: 5px 0; }}
+        .email-footer .brand {{ color: #0052CC; font-weight: 600; }}
+        .divider {{ height: 1px; background-color: #DFE1E6; margin: 30px 0; }}
     </style>
 </head>
 <body>
-    <div class=""container"">
-        <div class=""header"">
-            <h1>New Task Assigned</h1>
-        </div>
-        <div class=""content"">
-            <p>Hi {toName},</p>
-            <p>A new task has been assigned to you in Milo.</p>
-            
-            <div class=""task-box"">
-                <div class=""task-id"">{taskId}</div>
-                <h3 style=""margin: 10px 0;"">{taskTitle}</h3>
-                <p style=""color: #666; margin: 0;""><strong>Product:</strong> {productName}</p>
+    <div class=""email-wrapper"">
+        <div class=""email-container"">
+            <div class=""email-header"">
+                <h1>New Task Assigned</h1>
             </div>
-            
-            <p style=""text-align: center;"">
-                <a href=""{(string.IsNullOrEmpty(taskLink) ? "https://www.codingeverest.com/milo-board.html" : taskLink)}"" class=""button"">View Task</a>
-            </p>
-            
-            <p>Best regards,<br>The Milo Team</p>
+            <div class=""email-body"">
+                <div class=""greeting"">Hi {toName},</div>
+                <div class=""message"">A new task has been assigned to you in Milo. Please review the details below and take action when ready.</div>
+                
+                <div class=""task-card"">
+                    <div class=""task-id"">{taskId}</div>
+                    <div class=""task-title"">{taskTitle}</div>
+                    <div class=""task-meta"">
+                        <strong>Product:</strong> {productName}
+                    </div>
+                </div>
+                
+                <div class=""button-container"">
+                    <a href=""{(string.IsNullOrEmpty(taskLink) ? "https://www.codingeverest.com/milo-board.html" : taskLink)}"" class=""cta-button"">View Task in Milo</a>
+                </div>
+            </div>
+            <div class=""email-footer"">
+                <p><span class=""brand"">Milo</span> - Project Management by Coding Everest</p>
+                <p style=""margin-top: 10px; font-size: 12px; color: #8993A4;"">This is an automated notification. Please do not reply to this email.</p>
+            </div>
         </div>
     </div>
 </body>
@@ -349,41 +371,68 @@ The Milo Team
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset=""utf-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
     <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        .header {{ background: #0052CC; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
-        .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
-        .project-box {{ background: #fff; border-left: 4px solid #0052CC; padding: 15px; margin: 20px 0; }}
-        .button {{ display: inline-block; background: #0052CC; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 20px; }}
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; }}
+        .email-wrapper {{ background-color: #F4F5F7; padding: 40px 20px; }}
+        .email-container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
+        .email-header {{ background: linear-gradient(135deg, #0052CC 0%, #0065FF 100%); color: #FFFFFF; padding: 40px 30px; text-align: center; }}
+        .email-header h1 {{ font-size: 28px; font-weight: 600; margin: 0; letter-spacing: -0.5px; }}
+        .email-body {{ padding: 40px 30px; }}
+        .greeting {{ font-size: 16px; color: #172B4D; margin-bottom: 20px; }}
+        .message {{ font-size: 15px; color: #42526E; margin-bottom: 30px; line-height: 1.7; }}
+        .project-card {{ background: #F4F5F7; border-left: 4px solid #0052CC; border-radius: 4px; padding: 20px; margin: 30px 0; }}
+        .project-name {{ font-size: 22px; font-weight: 600; color: #172B4D; margin-bottom: 10px; }}
+        .project-key {{ font-size: 13px; color: #6B778C; text-transform: uppercase; letter-spacing: 1px; font-family: 'Monaco', 'Menlo', monospace; }}
+        .steps {{ background: #F4F5F7; border-radius: 4px; padding: 20px; margin: 30px 0; }}
+        .steps ol {{ margin-left: 20px; color: #42526E; }}
+        .steps li {{ margin-bottom: 10px; font-size: 14px; line-height: 1.6; }}
+        .cta-button {{ display: inline-block; background: #0052CC; color: #FFFFFF !important; padding: 14px 32px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 15px; margin: 30px 0; text-align: center; transition: background-color 0.2s; }}
+        .cta-button:hover {{ background: #0065FF; }}
+        .button-container {{ text-align: center; margin: 30px 0; }}
+        .email-footer {{ padding: 30px; background-color: #F4F5F7; border-top: 1px solid #DFE1E6; text-align: center; }}
+        .email-footer p {{ font-size: 13px; color: #6B778C; margin: 5px 0; }}
+        .email-footer .brand {{ color: #0052CC; font-weight: 600; }}
     </style>
 </head>
 <body>
-    <div class=""container"">
-        <div class=""header"">
-            <h1>Project Invitation</h1>
-        </div>
-        <div class=""content"">
-            <p>Hi {toName},</p>
-            <p>You've been invited to join a project on Milo!</p>
-            
-            <div class=""project-box"">
-                <h3 style=""margin: 0 0 10px 0; color: #0052CC;"">{projectName}</h3>
-                <p style=""margin: 0; color: #666;"">Project Key: <strong>{projectKey}</strong></p>
+    <div class=""email-wrapper"">
+        <div class=""email-container"">
+            <div class=""email-header"">
+                <h1>You're Invited!</h1>
             </div>
-            
-            <p>To accept this invitation:</p>
-            <ol>
-                <li>Sign up for a Milo account (if you don't have one)</li>
-                <li>Log in and select this project from the project dropdown</li>
-            </ol>
-            
-            <p style=""text-align: center;"">
-                <a href=""{signupUrl}"" class=""button"">Accept Invitation</a>
-            </p>
-            
-            <p>If you have any questions, feel free to reach out to the project owner.</p>
-            <p>Best regards,<br>The Milo Team</p>
+            <div class=""email-body"">
+                <div class=""greeting"">Hi {toName},</div>
+                <div class=""message"">You've been invited to collaborate on a project in Milo, a modern project management platform.</div>
+                
+                <div class=""project-card"">
+                    <div class=""project-name"">{projectName}</div>
+                    <div class=""project-key"">Project Key: {projectKey}</div>
+                </div>
+                
+                <div class=""steps"">
+                    <p style=""font-weight: 600; color: #172B4D; margin-bottom: 12px;"">To get started:</p>
+                    <ol>
+                        <li>Click the button below to create your Milo account (or sign in if you already have one)</li>
+                        <li>Once signed in, you'll automatically be added to this project</li>
+                        <li>Start collaborating with your team!</li>
+                    </ol>
+                </div>
+                
+                <div class=""button-container"">
+                    <a href=""{signupUrl}"" class=""cta-button"">Accept Invitation & Get Started</a>
+                </div>
+                
+                <div style=""font-size: 13px; color: #6B778C; margin-top: 30px; padding-top: 20px; border-top: 1px solid #DFE1E6;"">
+                    <p>If you have any questions or didn't expect this invitation, please contact the project owner.</p>
+                </div>
+            </div>
+            <div class=""email-footer"">
+                <p><span class=""brand"">Milo</span> - Project Management by Coding Everest</p>
+                <p style=""margin-top: 10px; font-size: 12px; color: #8993A4;"">This invitation will expire in 7 days.</p>
+            </div>
         </div>
     </div>
 </body>
