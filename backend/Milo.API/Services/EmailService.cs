@@ -301,12 +301,15 @@ The Milo Team
             message.Body = bodyBuilder.ToMessageBody();
 
             using var client = new SmtpClient();
+            _logger.LogInformation($"Connecting to SMTP server: {smtpHost}:{smtpPort}");
             await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
+            _logger.LogInformation($"Authenticating with SMTP server as: {smtpUser}");
             await client.AuthenticateAsync(smtpUser, smtpPassword);
+            _logger.LogInformation($"Sending email to: {toEmail}");
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
 
-            _logger.LogInformation($"Task assignment email sent successfully to {toEmail}");
+            _logger.LogInformation($"Task assignment email sent successfully to {toEmail} for task {taskId}");
             return true;
         }
         catch (Exception ex)
