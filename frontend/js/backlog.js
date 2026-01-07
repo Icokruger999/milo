@@ -395,7 +395,20 @@ function openTaskModal(taskId) {
 function showCreateTaskModal() {
     if (typeof window.showCreateTaskModal === 'function') {
         // Create task with 'backlog' status when created from backlog page
+        // Store a flag to reload backlog after task creation
+        window.location.hash = 'backlog';
         window.showCreateTaskModal('backlog');
+        
+        // Override the task creation success handler to reload backlog
+        const originalHandler = window.handleTaskSubmit;
+        if (originalHandler) {
+            // The task creation will be handled by board.js, but we'll reload backlog after
+            setTimeout(() => {
+                if (window.location.hash === '#backlog' || window.location.pathname.includes('backlog')) {
+                    loadBacklogTasks();
+                }
+            }, 1000);
+        }
     }
 }
 
