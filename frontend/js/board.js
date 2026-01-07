@@ -139,7 +139,7 @@ function createTaskCard(task) {
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                 </svg>
             </div>
-            <div class="task-assignee">${task.assignee}</div>
+            <div class="task-assignee" title="${task.assigneeName || 'Unassigned'}" style="width: 24px; height: 24px; border-radius: 50%; background: #0052CC; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; cursor: pointer;">${task.assignee || 'UN'}</div>
         </div>
     `;
 
@@ -203,6 +203,7 @@ function viewTask(task) {
                 </div>` : ''}
             </div>
             <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+                <button onclick="deleteTask('${fullTask.id}')" style="padding: 10px 20px; border: 1px solid #DE350B; background: white; color: #DE350B; border-radius: 4px; cursor: pointer; font-size: 14px;">Delete</button>
                 <button onclick="closeViewTaskModal()" style="padding: 10px 20px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 14px;">Close</button>
                 <button onclick="editTask('${fullTask.id}')" style="padding: 10px 20px; background: #0052CC; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">Edit Task</button>
             </div>
@@ -593,8 +594,9 @@ async function handleTaskSubmit(event) {
         
         if (response.ok) {
             closeTaskModal();
-            await loadTasksFromAPI();
-            renderBoard();
+            // Optimize: Update UI immediately, then sync with API
+            debouncedRender();
+            setTimeout(() => loadTasksFromAPI(), 300);
         } else {
             const error = await response.json();
             // Show error in modal instead of alert
@@ -641,6 +643,21 @@ async function loadTasksFromAPI() {
             };
             
             apiTasks.forEach(task => {
+                // Calculate assignee initials properly
+                let assigneeInitials = 'UN';
+                let assigneeName = null;
+                if (task.assignee && task.assignee.name) {
+                    assigneeName = task.assignee.name;
+                    const nameParts = task.assignee.name.trim().split(' ');
+                    if (nameParts.length >= 2) {
+                        // First letter of first name + first letter of last name
+                        assigneeInitials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+                    } else if (nameParts.length === 1) {
+                        // Single name - use first 2 letters
+                        assigneeInitials = nameParts[0].substring(0, 2).toUpperCase();
+                    }
+                }
+                
                 const taskObj = {
                     id: task.id, // Use numeric ID for editing
                     taskId: task.taskId || `TASK-${task.id}`, // Display ID
@@ -648,11 +665,11 @@ async function loadTasksFromAPI() {
                     description: task.description,
                     status: task.status,
                     label: task.label || 'accounts',
-                    assignee: task.assignee ? task.assignee.name.substring(0, 2).toUpperCase() : 'UN', // For avatar display
-                    assigneeName: task.assignee ? task.assignee.name : null, // Full name for display
+                    assignee: assigneeInitials, // Initials for avatar display
+                    assigneeName: assigneeName, // Full name for display
                     assigneeId: task.assigneeId,
                     assigneeEmail: task.assignee ? task.assignee.email : null,
-                    assignee: task.assignee, // Store full assignee object
+                    assigneeObject: task.assignee, // Store full assignee object (renamed to avoid conflict)
                     productId: task.productId,
                     priority: task.priority,
                     dueDate: task.dueDate,
@@ -779,16 +796,29 @@ async function handleDrop(e) {
             status: newStatus
         });
 
-        if (updateResponse.ok) {
-            // Reload tasks from API to get updated status
-            await loadTasksFromAPI();
-            renderBoard();
-        } else {
-            const error = await updateResponse.json();
-            console.error('Failed to update task status:', error);
-            // Revert visual change
-            renderBoard();
-        }
+                if (updateResponse.ok) {
+                    // Update local task status immediately for better UX
+                    task.status = newStatus;
+                    // Move task to correct column
+                    for (const status in tasks) {
+                        const index = tasks[status].findIndex(t => t.id == task.id);
+                        if (index !== -1) {
+                            tasks[status].splice(index, 1);
+                            break;
+                        }
+                    }
+                    if (tasks[newStatus]) {
+                        tasks[newStatus].push(task);
+                    }
+                    debouncedRender();
+                    // Reload from API in background to ensure sync
+                    setTimeout(() => loadTasksFromAPI(), 500);
+                } else {
+                    const error = await updateResponse.json();
+                    console.error('Failed to update task status:', error);
+                    // Revert visual change
+                    renderBoard();
+                }
     } catch (error) {
         console.error('Error updating task:', error);
         // Revert visual change
@@ -800,6 +830,39 @@ async function loadTasks() {
     await loadTasksFromAPI();
 }
 
+// Delete task function
+async function deleteTask(taskId) {
+    if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await apiClient.delete(`/tasks/${taskId}`);
+        if (response.ok) {
+            closeViewTaskModal();
+            await loadTasksFromAPI();
+            renderBoard();
+        } else {
+            const error = await response.json();
+            alert(error.message || 'Failed to delete task');
+        }
+    } catch (error) {
+        console.error('Error deleting task:', error);
+        alert('Failed to delete task. Please try again.');
+    }
+}
+
+// Performance optimization: Debounce render calls
+let renderTimeout = null;
+function debouncedRender() {
+    if (renderTimeout) {
+        clearTimeout(renderTimeout);
+    }
+    renderTimeout = setTimeout(() => {
+        renderBoard();
+    }, 100); // Debounce by 100ms
+}
+
 // Make functions globally accessible
 window.showCreateTaskModal = function(column = 'todo') {
     showTaskModal(column);
@@ -807,6 +870,7 @@ window.showCreateTaskModal = function(column = 'todo') {
 window.closeTaskModal = closeTaskModal;
 window.handleTaskSubmit = handleTaskSubmit;
 window.viewTask = viewTask;
+window.deleteTask = deleteTask;
 window.showCreateLabelModal = showCreateLabelModal;
 window.closeCreateLabelModal = closeCreateLabelModal;
 window.handleCreateLabel = handleCreateLabel;
