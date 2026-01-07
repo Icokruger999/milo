@@ -743,7 +743,8 @@
                         Board
                     </a>
                     <a href="#" class="sidebar-item">Reports</a>
-                    <a href="#" class="sidebar-item">Issues</a>
+                    <a href="milo-flakes.html" class="sidebar-item">Flakes</a>
+                    <a href="milo-incidents.html" class="sidebar-item">Incidents</a>
                 </div>
                 <div class="sidebar-section">
                     <div class="sidebar-section-title">Development</div>
@@ -813,7 +814,7 @@
                 <!-- Board Toolbar -->
                 <div class="board-toolbar">
                     <div class="board-search">
-                        <input type="text" id="boardSearchInput" placeholder="Search issues" onkeyup="handleSearch(event)">
+                        <input type="text" id="boardSearchInput" placeholder="Search tasks" onkeyup="handleSearch(event)">
                         <div class="board-search-icon">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="11" cy="11" r="8"></circle>
@@ -1106,20 +1107,18 @@
             }
         });
         
-        // Load project members for avatars
-        setTimeout(() => {
-            if (typeof loadProjectMembers === 'function') {
-                loadProjectMembers();
-            }
-            // Load labels for filter dropdown
-            if (typeof loadLabelsForFilter === 'function') {
-                loadLabelsForFilter();
-            }
-        }, 1000);
-        
-        // Load tasks
+        // Load tasks immediately (no delay)
         if (typeof loadTasks === 'function') {
-            setTimeout(() => loadTasks(), 500);
+            loadTasks();
+        }
+        
+        // Load project members and labels in parallel (non-blocking)
+        // These don't need to wait for tasks to load
+        if (typeof loadProjectMembers === 'function') {
+            loadProjectMembers(); // Load in parallel, no delay
+        }
+        if (typeof loadLabelsForFilter === 'function') {
+            loadLabelsForFilter(); // Load in parallel, no delay
         }
         })(); // End of IIFE
     </script>

@@ -1,0 +1,18 @@
+{
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "www.codingeverest.com",
+        "Type": "CNAME",
+        "TTL": 300,
+        "ResourceRecords": [
+          {
+            "Value": "d18moh9jxwpfve.cloudfront.net"
+          }
+        ]
+      }
+    }
+  ]
+}
+

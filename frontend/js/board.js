@@ -228,13 +228,43 @@ async function showTaskModal(column, task = null) {
         deleteButton.style.display = task ? 'block' : 'none';
     }
     
+    // Load users/products/labels FIRST, then set values (prevents reset)
+    await loadUsersAndProducts();
+    await loadLabelsForModal();
+    
     if (task) {
+        // Set all form values AFTER dropdowns are populated
         document.getElementById('taskTitle').value = task.title || '';
         document.getElementById('taskDescription').value = task.description || '';
-        document.getElementById('taskLabel').value = task.label || '';
-        document.getElementById('taskAssignee').value = task.assigneeId || '';
-        document.getElementById('taskProduct').value = task.productId || '';
-        document.getElementById('taskPriority').value = task.priority || 0;
+        
+        // Set status BEFORE other dropdowns
+        const statusSelect = document.getElementById('taskStatus');
+        if (statusSelect) {
+            statusSelect.value = task.status || column || 'todo';
+        }
+        
+        // Set assignee
+        const assigneeSelect = document.getElementById('taskAssignee');
+        if (assigneeSelect && task.assigneeId) {
+            assigneeSelect.value = task.assigneeId;
+        }
+        
+        // Set label
+        const labelSelect = document.getElementById('taskLabel');
+        if (labelSelect && task.label) {
+            labelSelect.value = task.label.toLowerCase();
+        }
+        
+        // Set product
+        const productSelect = document.getElementById('taskProduct');
+        if (productSelect && task.productId) {
+            productSelect.value = task.productId;
+        }
+        
+        // Set priority
+        document.getElementById('taskPriority').value = task.priority !== undefined ? task.priority : 0;
+        
+        // Set due date
         if (task.dueDate) {
             const dueDate = new Date(task.dueDate);
             document.getElementById('taskDueDate').value = dueDate.toISOString().split('T')[0];
@@ -246,8 +276,8 @@ async function showTaskModal(column, task = null) {
         await loadTaskComments(task.id);
         
         // Load checklist if exists
+        const checklistDiv = document.getElementById('taskChecklist');
         if (task.checklist && task.checklist.length > 0) {
-            const checklistDiv = document.getElementById('taskChecklist');
             checklistDiv.innerHTML = '';
             task.checklist.forEach((item, idx) => {
                 const itemDiv = document.createElement('div');
@@ -259,18 +289,21 @@ async function showTaskModal(column, task = null) {
                 `;
                 checklistDiv.appendChild(itemDiv);
             });
+        } else {
+            checklistDiv.innerHTML = '<div style="color: #6B778C; font-size: 12px; text-align: center; padding: 8px;">No checklist items yet</div>';
         }
     } else {
         document.getElementById('taskForm').reset();
-        document.getElementById('taskColumn').value = column;
+        const statusSelect = document.getElementById('taskStatus');
+        if (statusSelect) {
+            statusSelect.value = column || 'todo';
+        }
         currentTaskComments = [];
         document.getElementById('taskCommentsList').innerHTML = '<div style="color: #6B778C; font-size: 13px; text-align: center; padding: 8px;">No comments yet</div>';
         document.getElementById('taskChecklist').innerHTML = '<div style="color: #6B778C; font-size: 12px; text-align: center; padding: 8px;">No checklist items yet</div>';
     }
     
     modal.style.display = 'flex';
-    loadUsersAndProducts();
-    loadLabelsForModal();
 }
 
 async function loadTaskComments(taskId) {

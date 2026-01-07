@@ -22,6 +22,7 @@ public class MiloDbContext : DbContext
     public DbSet<Label> Labels { get; set; }
     public DbSet<TaskComment> TaskComments { get; set; }
     public DbSet<TaskLink> TaskLinks { get; set; }
+    public DbSet<Flake> Flakes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -180,6 +181,21 @@ public class MiloDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.AuthorId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // Flake configuration
+        modelBuilder.Entity<Flake>(entity =>
+        {
+            entity.HasIndex(e => e.ProjectId);
+            entity.HasIndex(e => e.AuthorId);
+            entity.HasOne(e => e.Project)
+                .WithMany()
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Author)
+                .WithMany()
+                .HasForeignKey(e => e.AuthorId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

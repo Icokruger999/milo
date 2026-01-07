@@ -1,0 +1,10 @@
+{
+  "commands": [
+    "sudo systemctl start milo-api.service",
+    "sudo systemctl enable milo-api.service",
+    "sleep 5",
+    "sudo systemctl status milo-api.service --no-pager | head -20",
+    "curl -s http://localhost:5001/api/health || echo 'Backend not responding'"
+  ]
+}
+

@@ -339,7 +339,7 @@ function renderDetailPanel(task, childTasks, linkedTasks, comments) {
         </div>
         
         <div class="detail-section">
-            <div class="detail-section-title">Child issues</div>
+            <div class="detail-section-title">Child tasks</div>
             ${childTasks.length > 0 ? `
                 <ul class="issue-list">
                     ${childTasks.map(child => `
@@ -350,11 +350,11 @@ function renderDetailPanel(task, childTasks, linkedTasks, comments) {
                         </li>
                     `).join('')}
                 </ul>
-            ` : '<div style="color: #6B778C; font-size: 13px;">No child issues</div>'}
+            ` : '<div style="color: #6B778C; font-size: 13px;">No child tasks</div>'}
         </div>
         
         <div class="detail-section">
-            <div class="detail-section-title">Linked issues</div>
+            <div class="detail-section-title">Linked tasks</div>
             ${linkedTasks.length > 0 ? `
                 <ul class="issue-list">
                     ${linkedTasks.map(linked => `
@@ -365,7 +365,7 @@ function renderDetailPanel(task, childTasks, linkedTasks, comments) {
                         </li>
                     `).join('')}
                 </ul>
-            ` : '<div style="color: #6B778C; font-size: 13px;">No linked issues</div>'}
+            ` : '<div style="color: #6B778C; font-size: 13px;">No linked tasks</div>'}
         </div>
         
         <div class="detail-section">
