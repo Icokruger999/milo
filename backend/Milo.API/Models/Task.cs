@@ -50,5 +50,8 @@ public class Task
     public DateTime? UpdatedAt { get; set; }
     
     public bool IsDeleted { get; set; } = false;
+    
+    // Navigation property for comments
+    public ICollection<TaskComment> Comments { get; set; } = new List<TaskComment>();
 }
 

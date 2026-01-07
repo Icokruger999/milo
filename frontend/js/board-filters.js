@@ -69,11 +69,17 @@ function filterTasks() {
         
         // Apply assignee filter
         if (currentFilters.assignee) {
-            if (currentFilters.assignee === 'unassigned' && task.assigneeId) {
-                return;
-            }
-            if (currentFilters.assignee !== 'unassigned' && task.assigneeId !== parseInt(currentFilters.assignee)) {
-                return;
+            if (currentFilters.assignee === 'unassigned') {
+                // Show only unassigned tasks
+                if (task.assigneeId) {
+                    return; // Skip assigned tasks
+                }
+            } else {
+                // Show only tasks assigned to selected user
+                const filterAssigneeId = parseInt(currentFilters.assignee);
+                if (!task.assigneeId || task.assigneeId !== filterAssigneeId) {
+                    return; // Skip tasks not assigned to this user
+                }
             }
         }
         

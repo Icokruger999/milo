@@ -155,7 +155,7 @@ function createTaskCard(task) {
     return card;
 }
 
-// View/Edit Task Modal
+// View/Edit Task Modal - Unified Create/Edit View
 function viewTask(task) {
     // Find the actual task object with full details
     let fullTask = null;
@@ -169,93 +169,8 @@ function viewTask(task) {
         return;
     }
     
-    const modal = document.createElement('div');
-    modal.id = 'viewTaskModal';
-    modal.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;';
-    
-    modal.innerHTML = `
-        <div style="background: white; border-radius: 8px; padding: 24px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">${fullTask.title}</h2>
-                <button onclick="closeViewTaskModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
-            </div>
-            <div style="margin-bottom: 16px;">
-                <span class="task-label ${fullTask.label}">${(fullTask.label || 'accounts').toUpperCase()}</span>
-                <span style="margin-left: 8px; color: #6B778C; font-size: 12px; font-family: monospace;">${fullTask.id}</span>
-            </div>
-            ${fullTask.description ? `<div style="margin-bottom: 16px; padding: 12px; background: #F4F5F7; border-radius: 4px;"><strong>Description:</strong><br>${fullTask.description}</div>` : ''}
-            
-            <div style="margin-bottom: 16px;">
-                <strong style="font-size: 12px; color: #6B778C; text-transform: uppercase; display: block; margin-bottom: 8px;">Checklist</strong>
-                <div id="viewTaskChecklist" style="border: 1px solid #DFE1E6; border-radius: 4px; padding: 12px; background: #F4F5F7; min-height: 40px;">
-                    ${fullTask.checklist && fullTask.checklist.length > 0 ? 
-                        fullTask.checklist.map((item, idx) => `
-                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 6px; background: white; border-radius: 3px;">
-                                <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="toggleChecklistItem(${fullTask.id}, ${idx}, this.checked)" style="cursor: pointer;">
-                                <span style="flex: 1; ${item.completed ? 'text-decoration: line-through; color: #6B778C;' : ''}">${item.text || 'Untitled item'}</span>
-                                <button onclick="removeChecklistItem(${fullTask.id}, ${idx})" style="background: none; border: none; color: #DE350B; cursor: pointer; font-size: 12px; padding: 4px 8px;">×</button>
-                            </div>
-                        `).join('') : 
-                        '<div style="color: #6B778C; font-size: 13px; text-align: center; padding: 8px;">No checklist items</div>'
-                    }
-                    <button onclick="addChecklistItemToView(${fullTask.id})" style="margin-top: 8px; padding: 6px 12px; background: #0052CC; color: white; border: none; border-radius: 3px; font-size: 12px; cursor: pointer;">+ Add Item</button>
-                </div>
-            </div>
-            
-            <div style="margin-bottom: 16px;">
-                <strong style="font-size: 12px; color: #6B778C; text-transform: uppercase; display: block; margin-bottom: 8px;">Comments</strong>
-                <div id="taskComments" style="border: 1px solid #DFE1E6; border-radius: 4px; padding: 12px; background: #F4F5F7; max-height: 300px; overflow-y: auto;">
-                    ${fullTask.comments && fullTask.comments.length > 0 ? 
-                        fullTask.comments.map(comment => `
-                            <div style="margin-bottom: 12px; padding: 10px; background: white; border-radius: 4px; border-left: 3px solid #0052CC;">
-                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                                    <div style="width: 24px; height: 24px; border-radius: 50%; background: #0052CC; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">
-                                        ${(comment.authorName || 'U').substring(0, 2).toUpperCase()}
-                                    </div>
-                                    <div>
-                                        <div style="font-weight: 600; font-size: 13px; color: #172B4D;">${comment.authorName || 'Unknown'}</div>
-                                        <div style="font-size: 11px; color: #6B778C;">${new Date(comment.createdAt).toLocaleString()}</div>
-                                    </div>
-                                </div>
-                                <div style="font-size: 14px; color: #42526E; line-height: 1.5;">${comment.text}</div>
-                            </div>
-                        `).join('') : 
-                        '<div style="color: #6B778C; font-size: 13px; text-align: center; padding: 8px;">No comments yet</div>'
-                    }
-                </div>
-                <div style="margin-top: 12px; display: flex; gap: 8px;">
-                    <input type="text" id="newCommentInput" placeholder="Add a comment..." style="flex: 1; padding: 8px 12px; border: 1px solid #DFE1E6; border-radius: 4px; font-size: 14px;">
-                    <button onclick="addCommentToTask(${fullTask.id})" style="padding: 8px 16px; background: #0052CC; color: white; border: none; border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer;">Post</button>
-                </div>
-            </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                <div>
-                    <strong style="font-size: 12px; color: #6B778C; text-transform: uppercase;">Status</strong>
-                    <div style="margin-top: 4px;">${(fullTask.status || 'todo').toUpperCase()}</div>
-                </div>
-                <div>
-                    <strong style="font-size: 12px; color: #6B778C; text-transform: uppercase;">Assignee</strong>
-                    <div style="margin-top: 4px;">${(fullTask.assignee && fullTask.assignee.name) || fullTask.assigneeName || 'Unassigned'}</div>
-                </div>
-                <div>
-                    <strong style="font-size: 12px; color: #6B778C; text-transform: uppercase;">Priority</strong>
-                    <div style="margin-top: 4px;">${['Low', 'Medium', 'High'][fullTask.priority || 0]}</div>
-                </div>
-                ${fullTask.dueDate ? `<div>
-                    <strong style="font-size: 12px; color: #6B778C; text-transform: uppercase;">Due Date</strong>
-                    <div style="margin-top: 4px;">${new Date(fullTask.dueDate).toLocaleDateString()}</div>
-                </div>` : ''}
-            </div>
-            <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
-                <button onclick="deleteTask('${fullTask.id}')" style="padding: 10px 20px; border: 1px solid #DE350B; background: white; color: #DE350B; border-radius: 4px; cursor: pointer; font-size: 14px;">Delete</button>
-                <button onclick="closeViewTaskModal()" style="padding: 10px 20px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 14px;">Close</button>
-                <button onclick="editTask('${fullTask.id}')" style="padding: 10px 20px; background: #0052CC; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">Edit Task</button>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
+    // Open the unified task modal in edit mode
+    showTaskModal(fullTask.status || 'todo', fullTask);
 }
 
 function closeViewTaskModal() {
@@ -291,7 +206,11 @@ function addTask(column) {
     showTaskModal(column);
 }
 
-function showTaskModal(column, task = null) {
+// Store comments for current task
+let currentTaskComments = [];
+let currentTaskId = null;
+
+async function showTaskModal(column, task = null) {
     let modal = document.getElementById('taskModal');
     if (!modal) {
         createTaskModal();
@@ -300,15 +219,21 @@ function showTaskModal(column, task = null) {
     
     modal.dataset.column = column;
     modal.dataset.taskId = task ? (task.id || task.taskId) : '';
+    currentTaskId = task ? task.id : null;
     
     // Update form title and button
-    const formTitle = modal.querySelector('h2');
+    const formTitle = document.getElementById('taskModalTitle');
+    const submitButton = document.getElementById('taskSubmitBtn');
+    const deleteButton = document.getElementById('deleteTaskBtn');
+    
     if (formTitle) {
         formTitle.textContent = task ? 'Edit Task' : 'Create Task';
     }
-    const submitButton = modal.querySelector('button[type="submit"]');
     if (submitButton) {
-        submitButton.textContent = task ? 'Update Task' : 'Create Task';
+        submitButton.textContent = 'Save';
+    }
+    if (deleteButton) {
+        deleteButton.style.display = task ? 'block' : 'none';
     }
     
     if (task) {
@@ -324,12 +249,125 @@ function showTaskModal(column, task = null) {
         } else {
             document.getElementById('taskDueDate').value = '';
         }
+        
+        // Load comments for this task
+        await loadTaskComments(task.id);
+        
+        // Load checklist if exists
+        if (task.checklist && task.checklist.length > 0) {
+            const checklistDiv = document.getElementById('taskChecklist');
+            checklistDiv.innerHTML = '';
+            task.checklist.forEach((item, idx) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 6px; background: white; border-radius: 3px;';
+                itemDiv.innerHTML = `
+                    <input type="checkbox" ${item.completed ? 'checked' : ''} style="cursor: pointer;">
+                    <input type="text" value="${item.text || ''}" style="flex: 1; padding: 4px 8px; border: 1px solid #ddd; border-radius: 3px; font-size: 13px;">
+                    <button onclick="removeChecklistItemFromModal(this)" style="background: none; border: none; color: #DE350B; cursor: pointer; font-size: 16px; padding: 0 8px;">×</button>
+                `;
+                checklistDiv.appendChild(itemDiv);
+            });
+        }
     } else {
         document.getElementById('taskForm').reset();
         document.getElementById('taskColumn').value = column;
+        currentTaskComments = [];
+        document.getElementById('taskCommentsList').innerHTML = '<div style="color: #6B778C; font-size: 13px; text-align: center; padding: 8px;">No comments yet</div>';
+        document.getElementById('taskChecklist').innerHTML = '<div style="color: #6B778C; font-size: 12px; text-align: center; padding: 8px;">No checklist items yet</div>';
     }
     
     modal.style.display = 'flex';
+    loadUsersAndProducts();
+    loadLabelsForModal();
+}
+
+async function loadTaskComments(taskId) {
+    try {
+        const response = await apiClient.get(`/comments/task/${taskId}`);
+        if (response.ok) {
+            currentTaskComments = await response.json();
+            renderTaskComments();
+        }
+    } catch (error) {
+        console.error('Failed to load comments:', error);
+        currentTaskComments = [];
+        renderTaskComments();
+    }
+}
+
+function renderTaskComments() {
+    const commentsDiv = document.getElementById('taskCommentsList');
+    if (!commentsDiv) return;
+    
+    if (currentTaskComments.length === 0) {
+        commentsDiv.innerHTML = '<div style="color: #6B778C; font-size: 13px; text-align: center; padding: 8px;">No comments yet</div>';
+        return;
+    }
+    
+    commentsDiv.innerHTML = currentTaskComments.map(comment => {
+        const authorName = comment.author ? comment.author.name : 'Unknown';
+        const initials = authorName.substring(0, 2).toUpperCase();
+        return `
+            <div style="margin-bottom: 12px; padding: 10px; background: white; border-radius: 4px; border-left: 3px solid #0052CC;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <div style="width: 24px; height: 24px; border-radius: 50%; background: #0052CC; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600;">
+                        ${initials}
+                    </div>
+                    <div>
+                        <div style="font-weight: 600; font-size: 13px; color: #172B4D;">${authorName}</div>
+                        <div style="font-size: 11px; color: #6B778C;">${new Date(comment.createdAt).toLocaleString()}</div>
+                    </div>
+                </div>
+                <div style="font-size: 14px; color: #42526E; line-height: 1.5;">${comment.text}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function addCommentToTaskModal() {
+    const input = document.getElementById('newCommentInput');
+    if (!input || !input.value.trim()) return;
+    
+    if (!currentTaskId) {
+        alert('Please save the task first before adding comments');
+        return;
+    }
+    
+    const commentText = input.value.trim();
+    input.value = '';
+    
+    try {
+        const user = authService.getCurrentUser();
+        if (!user || !user.id) {
+            alert('You must be logged in to add comments');
+            return;
+        }
+        
+        const response = await apiClient.post('/comments', {
+            taskId: currentTaskId,
+            text: commentText,
+            authorId: user.id
+        });
+        
+        if (response.ok) {
+            const newComment = await response.json();
+            currentTaskComments.push(newComment);
+            renderTaskComments();
+        } else {
+            const error = await response.json();
+            alert(error.message || 'Failed to add comment');
+        }
+    } catch (error) {
+        console.error('Failed to add comment:', error);
+        alert('Failed to add comment. Please try again.');
+    }
+}
+
+function deleteTaskFromModal() {
+    const taskId = document.getElementById('taskId').value;
+    if (taskId && confirm('Are you sure you want to delete this task?')) {
+        deleteTask(taskId);
+    }
 }
 
 function closeTaskModal() {
@@ -1013,4 +1051,7 @@ window.addChecklistItemToView = addChecklistItemToView;
 window.toggleChecklistItem = toggleChecklistItem;
 window.removeChecklistItem = removeChecklistItem;
 window.addCommentToTask = addCommentToTask;
+window.addCommentToTaskModal = addCommentToTaskModal;
+window.deleteTaskFromModal = deleteTaskFromModal;
+window.loadTaskComments = loadTaskComments;
 

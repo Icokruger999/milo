@@ -27,7 +27,7 @@ public class TasksController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetTasks([FromQuery] string? status, [FromQuery] int? productId, [FromQuery] int? projectId)
+    public async Task<IActionResult> GetTasks([FromQuery] string? status, [FromQuery] int? productId, [FromQuery] int? projectId, [FromQuery] int? assigneeId)
     {
         try
         {
@@ -52,6 +52,11 @@ public class TasksController : ControllerBase
             if (projectId.HasValue)
             {
                 query = query.Where(t => t.ProjectId == projectId);
+            }
+
+            if (assigneeId.HasValue)
+            {
+                query = query.Where(t => t.AssigneeId == assigneeId);
             }
 
             var tasks = await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
