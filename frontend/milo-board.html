@@ -1035,10 +1035,25 @@
 
                 // Handle project change
                 selector.addEventListener('change', function() {
-                    const selectedProject = projectSelector.getProjectById(parseInt(this.value));
-                    if (selectedProject) {
-                        projectSelector.setCurrentProject(selectedProject);
-                        window.location.reload(); // Reload to show tasks for new project
+                    if (this.value === 'create') {
+                        // Create new project
+                        if (typeof showCreateProjectModal === 'function') {
+                            showCreateProjectModal();
+                            // Reset selector to current project after a moment
+                            setTimeout(() => {
+                                if (currentProject) {
+                                    this.value = currentProject.id;
+                                }
+                            }, 100);
+                        } else {
+                            window.location.href = 'milo-select-project.html';
+                        }
+                    } else if (this.value) {
+                        const selectedProject = projectSelector.getProjectById(parseInt(this.value));
+                        if (selectedProject) {
+                            projectSelector.setCurrentProject(selectedProject);
+                            window.location.reload(); // Reload to show tasks for new project
+                        }
                     }
                 });
             } catch (error) {
