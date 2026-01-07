@@ -417,18 +417,28 @@ function createTaskModal() {
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
                     <div>
+                        <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Status *</label>
+                        <select id="taskStatus" name="status" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+                            <option value="todo">Backlog</option>
+                            <option value="progress">In Progress</option>
+                            <option value="review">In Review</option>
+                            <option value="done">Done</option>
+                        </select>
+                    </div>
+                    
+                    <div>
                         <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Assignee</label>
                         <select id="taskAssignee" name="assigneeId" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
                             <option value="">Unassigned</option>
                         </select>
                     </div>
-                    
-                    <div>
-                        <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Product</label>
-                        <select id="taskProduct" name="productId" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
-                            <option value="">General</option>
-                        </select>
-                    </div>
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Product</label>
+                    <select id="taskProduct" name="productId" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
+                        <option value="">General</option>
+                    </select>
                 </div>
                 
                 <div style="margin-bottom: 20px;">
