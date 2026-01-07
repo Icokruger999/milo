@@ -155,6 +155,28 @@ public class TasksController : ControllerBase
                 taskId = $"{taskPrefix}-{nextNumber}";
             }
 
+            // Ensure DueDate is UTC if provided
+            DateTime? dueDateUtc = null;
+            if (request.DueDate.HasValue)
+            {
+                var dueDate = request.DueDate.Value;
+                if (dueDate.Kind == DateTimeKind.Unspecified)
+                {
+                    // Treat as UTC if unspecified
+                    dueDateUtc = DateTime.SpecifyKind(dueDate, DateTimeKind.Utc);
+                }
+                else if (dueDate.Kind == DateTimeKind.Local)
+                {
+                    // Convert local to UTC
+                    dueDateUtc = dueDate.ToUniversalTime();
+                }
+                else
+                {
+                    // Already UTC
+                    dueDateUtc = dueDate;
+                }
+            }
+
             var task = new Models.Task
             {
                 Title = request.Title,
@@ -167,7 +189,7 @@ public class TasksController : ControllerBase
                 ProductId = request.ProductId,
                 ProjectId = request.ProjectId,
                 Priority = request.Priority ?? 0,
-                DueDate = request.DueDate,
+                DueDate = dueDateUtc,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -324,7 +346,23 @@ public class TasksController : ControllerBase
         }
         if (request.DueDate.HasValue)
         {
-            task.DueDate = request.DueDate;
+            // Ensure DueDate is UTC for PostgreSQL
+            var dueDate = request.DueDate.Value;
+            if (dueDate.Kind == DateTimeKind.Unspecified)
+            {
+                // Treat as UTC if unspecified
+                task.DueDate = DateTime.SpecifyKind(dueDate, DateTimeKind.Utc);
+            }
+            else if (dueDate.Kind == DateTimeKind.Local)
+            {
+                // Convert local to UTC
+                task.DueDate = dueDate.ToUniversalTime();
+            }
+            else
+            {
+                // Already UTC
+                task.DueDate = dueDate;
+            }
         }
 
         task.UpdatedAt = DateTime.UtcNow;
