@@ -279,11 +279,13 @@ public class TasksController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateTask(int id, [FromBody] UpdateTaskRequest request)
     {
-        var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == id && !t.IsDeleted);
-        if (task == null)
+        try
         {
-            return NotFound(new { message = "Task not found" });
-        }
+            var task = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == id && !t.IsDeleted);
+            if (task == null)
+            {
+                return NotFound(new { message = "Task not found" });
+            }
 
         if (!string.IsNullOrEmpty(request.Title))
         {
@@ -373,16 +375,42 @@ public class TasksController : ControllerBase
             }
         }
 
-        task.UpdatedAt = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
+            task.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
 
-        return Ok(new
+            // Reload task with related data for response
+            await _context.Entry(task).Reference(t => t.Assignee).LoadAsync();
+            await _context.Entry(task).Reference(t => t.Creator).LoadAsync();
+            await _context.Entry(task).Reference(t => t.Product).LoadAsync();
+            await _context.Entry(task).Reference(t => t.Project).LoadAsync();
+
+            return Ok(new
+            {
+                id = task.Id,
+                title = task.Title,
+                description = task.Description,
+                status = task.Status,
+                label = task.Label,
+                taskId = task.TaskId,
+                assignee = task.Assignee != null ? new { id = task.Assignee.Id, name = task.Assignee.Name, email = task.Assignee.Email } : null,
+                assigneeId = task.AssigneeId,
+                creator = task.Creator != null ? new { id = task.Creator.Id, name = task.Creator.Name } : null,
+                productId = task.ProductId,
+                product = task.Product != null ? new { id = task.Product.Id, name = task.Product.Name } : null,
+                projectId = task.ProjectId,
+                project = task.Project != null ? new { id = task.Project.Id, name = task.Project.Name, key = task.Project.Key } : null,
+                priority = task.Priority,
+                dueDate = task.DueDate,
+                createdAt = task.CreatedAt,
+                updatedAt = task.UpdatedAt,
+                message = "Task updated successfully"
+            });
+        }
+        catch (Exception ex)
         {
-            id = task.Id,
-            title = task.Title,
-            status = task.Status,
-            message = "Task updated successfully"
-        });
+            _logger.LogError(ex, "Error updating task {TaskId}: {Message}", id, ex.Message);
+            return StatusCode(500, new { message = "An error occurred while updating the task", detail = ex.Message });
+        }
     }
 
     [HttpDelete("{id}")]
