@@ -41,8 +41,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (sidebarUserAvatarEl) sidebarUserAvatarEl.textContent = initials;
     }
 
-    // Load backlog tasks
-    loadBacklogTasks();
+    // Load backlog tasks after a short delay to ensure project is loaded
+    setTimeout(() => {
+        loadBacklogTasks();
+    }, 500);
 
     // Setup user menu
     setupUserMenu();
@@ -191,13 +193,18 @@ async function loadBacklogTasks() {
 
 function renderBacklog() {
     const container = document.getElementById('backlogList');
-    if (!container) return;
+    if (!container) {
+        console.error('Backlog list container not found');
+        return;
+    }
 
+    console.log('Rendering backlog with', backlogTasks.length, 'tasks');
+    
     if (backlogTasks.length === 0) {
         container.innerHTML = `
             <div class="empty-state">
                 <div class="empty-state-icon">📋</div>
-                <div class="empty-state-text">No tasks in backlog</div>
+                <div class="empty-state-text">No tasks in backlog. Click "Create Task" to add one.</div>
             </div>
         `;
         return;
