@@ -14,8 +14,20 @@ function getAssigneeColor(assigneeId, assigneeName) {
         return { bg: '#DFE1E6', text: '#42526E' }; // Unassigned - gray
     }
     
+    // Specific user color mappings (by name or ID)
+    const name = (assigneeName || '').toLowerCase().trim();
+    const id = assigneeId ? assigneeId.toString() : '';
+    
+    // Check for specific user mappings first
+    if (name.includes('rn') || name.includes('robert') || id === '2' || id === '3') {
+        return { bg: '#36B37E', text: '#FFFFFF' }; // Green for RN
+    }
+    if (name.includes('ik') || name.includes('ico') || id === '1') {
+        return { bg: '#DE350B', text: '#FFFFFF' }; // Red for IK
+    }
+    
     // Use ID if available, otherwise use name
-    const seed = assigneeId ? assigneeId.toString() : (assigneeName || '');
+    const seed = id || name;
     
     // Generate consistent hash from seed
     let hash = 0;
