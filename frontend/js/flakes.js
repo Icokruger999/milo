@@ -214,12 +214,26 @@ function openFlake(flakeId) {
     window.location.href = `milo-flake-view.html?id=${flakeId}`;
 }
 
-// Share flake by email
-async function shareFlakeByEmail(flakeId) {
-    const flake = flakes.find(f => f.id === flakeId);
-    if (!flake) return;
+// Share flake by email - show modal
+let currentShareFlakeId = null;
 
-    const toEmail = prompt('Enter email address to share with:');
+function shareFlakeByEmail(flakeId) {
+    currentShareFlakeId = flakeId;
+    const modal = document.getElementById('shareEmailModal');
+    modal.style.display = 'flex';
+    document.getElementById('shareEmailInput').value = '';
+    document.getElementById('shareEmailInput').focus();
+}
+
+function closeShareEmailModal() {
+    const modal = document.getElementById('shareEmailModal');
+    modal.style.display = 'none';
+    currentShareFlakeId = null;
+}
+
+async function confirmShareEmail() {
+    const toEmail = document.getElementById('shareEmailInput').value.trim();
+    
     if (!toEmail || !toEmail.includes('@')) {
         alert('Please enter a valid email address');
         return;
@@ -232,13 +246,14 @@ async function shareFlakeByEmail(flakeId) {
     }
 
     try {
-        const response = await apiClient.post(`/flakes/${flakeId}/share/email`, {
+        const response = await apiClient.post(`/flakes/${currentShareFlakeId}/share/email`, {
             toEmail: toEmail,
             email: user.email,
             baseUrl: window.location.origin
         });
 
         if (response.ok) {
+            closeShareEmailModal();
             alert(`Flake shared successfully to ${toEmail}`);
         } else {
             try {
@@ -254,50 +269,143 @@ async function shareFlakeByEmail(flakeId) {
     }
 }
 
-// Share flake to board
+// Share flake to board - show task picker
+let currentLinkFlakeId = null;
+let allTasks = [];
+
 async function shareFlakeToBoard(flakeId) {
-    const flake = flakes.find(f => f.id === flakeId);
-    if (!flake) return;
-
-    const action = confirm('Would you like to:\n\nOK = Create a new task from this flake\nCancel = Link to existing task');
+    currentLinkFlakeId = flakeId;
+    const modal = document.getElementById('linkTaskModal');
+    modal.style.display = 'flex';
     
-    try {
-        let response;
-        if (action) {
-            // Create new task
-            response = await apiClient.post(`/flakes/${flakeId}/share/board`, {
-                baseUrl: window.location.origin
-            });
-        } else {
-            // Link to existing task
-            const taskId = prompt('Enter the task ID to link this flake to:');
-            if (!taskId) return;
+    // Load all tasks
+    await loadTasksForLinking();
+}
 
-            response = await apiClient.post(`/flakes/${flakeId}/share/board`, {
-                taskId: parseInt(taskId),
-                baseUrl: window.location.origin
-            });
+function closeLinkTaskModal() {
+    const modal = document.getElementById('linkTaskModal');
+    modal.style.display = 'none';
+    currentLinkFlakeId = null;
+    allTasks = [];
+}
+
+async function loadTasksForLinking() {
+    try {
+        const currentProject = projectSelector.getCurrentProject();
+        if (!currentProject) return;
+
+        const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
+        if (response.ok) {
+            allTasks = await response.json();
+            renderTaskList(allTasks);
+        } else {
+            document.getElementById('taskSearchResults').innerHTML = '<div style="text-align: center; color: #E2372D; padding: 40px;">Failed to load tasks</div>';
         }
+    } catch (error) {
+        console.error('Error loading tasks:', error);
+        document.getElementById('taskSearchResults').innerHTML = '<div style="text-align: center; color: #E2372D; padding: 40px;">Error loading tasks</div>';
+    }
+}
+
+function searchTasks() {
+    const searchTerm = document.getElementById('taskSearchInput').value.toLowerCase();
+    
+    if (!searchTerm) {
+        renderTaskList(allTasks);
+        return;
+    }
+    
+    const filtered = allTasks.filter(task => 
+        (task.title && task.title.toLowerCase().includes(searchTerm)) ||
+        (task.taskId && task.taskId.toLowerCase().includes(searchTerm)) ||
+        (task.description && task.description.toLowerCase().includes(searchTerm))
+    );
+    
+    renderTaskList(filtered);
+}
+
+function renderTaskList(tasks) {
+    const container = document.getElementById('taskSearchResults');
+    
+    if (!tasks || tasks.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #6B778C; padding: 40px;">No tasks found</div>';
+        return;
+    }
+    
+    container.innerHTML = tasks.map(task => `
+        <div style="padding: 12px; border-bottom: 1px solid #DFE1E6; cursor: pointer; transition: background 0.15s;" 
+             onmouseover="this.style.background='#F4F5F7'"
+             onmouseout="this.style.background='white'"
+             onclick="linkFlakeToTask(${task.id})">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div style="flex: 1;">
+                    <div style="font-weight: 500; color: #172B4D; margin-bottom: 4px;">
+                        ${task.taskId || `TASK-${task.id}`}: ${task.title || 'Untitled'}
+                    </div>
+                    <div style="font-size: 12px; color: #6B778C;">
+                        ${task.status || 'todo'} • ${task.assigneeName || 'Unassigned'}
+                    </div>
+                </div>
+                <div style="padding: 2px 8px; background: #DFE1E6; border-radius: 3px; font-size: 11px; color: #42526E; text-transform: uppercase;">
+                    ${task.priority === 1 ? 'High' : task.priority === 2 ? 'Medium' : 'Low'}
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function linkFlakeToTask(taskId) {
+    try {
+        const response = await apiClient.post(`/flakes/${currentLinkFlakeId}/share/board`, {
+            taskId: taskId,
+            baseUrl: window.location.origin
+        });
 
         if (response.ok) {
             const result = await response.json();
-            alert(result.message || 'Flake shared to board successfully!');
-            if (result.taskId) {
-                if (confirm('Would you like to view the task on the board?')) {
-                    window.location.href = 'milo-board.html';
-                }
+            closeLinkTaskModal();
+            alert(result.message || 'Flake linked to task successfully!');
+            if (confirm('Would you like to view the task on the board?')) {
+                window.location.href = 'milo-board.html';
             }
         } else {
             try {
                 const error = await response.json();
-                alert(error.message || 'Failed to share flake to board');
+                alert(error.message || 'Failed to link flake to task');
             } catch (parseError) {
-                alert(`Failed to share flake to board (${response.status}). Please ensure the API server is running.`);
+                alert(`Failed to link flake (${response.status}). Please ensure the API server is running.`);
             }
         }
     } catch (error) {
-        console.error('Error sharing flake to board:', error);
-        alert('Failed to share flake to board. Please try again.');
+        console.error('Error linking flake:', error);
+        alert('Failed to link flake. Please try again.');
+    }
+}
+
+async function createNewTaskFromFlake() {
+    try {
+        const response = await apiClient.post(`/flakes/${currentLinkFlakeId}/share/board`, {
+            baseUrl: window.location.origin
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            closeLinkTaskModal();
+            alert(result.message || 'Task created from flake successfully!');
+            if (confirm('Would you like to view the task on the board?')) {
+                window.location.href = 'milo-board.html';
+            }
+        } else {
+            try {
+                const error = await response.json();
+                alert(error.message || 'Failed to create task');
+            } catch (parseError) {
+                alert(`Failed to create task (${response.status}). Please ensure the API server is running.`);
+            }
+        }
+    } catch (error) {
+        console.error('Error creating task:', error);
+        alert('Failed to create task. Please try again.');
     }
 }
 
@@ -309,4 +417,10 @@ window.openFlake = openFlake;
 window.loadFlakes = loadFlakes;
 window.shareFlakeByEmail = shareFlakeByEmail;
 window.shareFlakeToBoard = shareFlakeToBoard;
+window.closeShareEmailModal = closeShareEmailModal;
+window.confirmShareEmail = confirmShareEmail;
+window.closeLinkTaskModal = closeLinkTaskModal;
+window.searchTasks = searchTasks;
+window.linkFlakeToTask = linkFlakeToTask;
+window.createNewTaskFromFlake = createNewTaskFromFlake;
 

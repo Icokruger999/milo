@@ -639,6 +639,44 @@
         </div>
     </div>
 
+    <!-- Share via Email Modal -->
+    <div id="shareEmailModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 8px; padding: 24px; width: 90%; max-width: 500px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Share Flake via Email</h2>
+                <button onclick="closeShareEmailModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6B778C;">&times;</button>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Email Address *</label>
+                <input type="email" id="shareEmailInput" required style="width: 100%; padding: 8px 12px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px; box-sizing: border-box;" placeholder="colleague@example.com">
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button type="button" onclick="closeShareEmailModal()" style="padding: 8px 16px; border: 1px solid #DFE1E6; background: white; border-radius: 3px; cursor: pointer; font-size: 14px;">Cancel</button>
+                <button onclick="confirmShareEmail()" class="btn-primary">Share</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Link to Task Modal -->
+    <div id="linkTaskModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 8px; padding: 24px; width: 90%; max-width: 600px; max-height: 80vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Link to Task</h2>
+                <button onclick="closeLinkTaskModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6B778C;">&times;</button>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <input type="text" id="taskSearchInput" placeholder="Search tasks..." style="width: 100%; padding: 8px 12px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px; box-sizing: border-box;" oninput="searchTasks()">
+            </div>
+            <div id="taskSearchResults" style="flex: 1; overflow-y: auto; border: 1px solid #DFE1E6; border-radius: 3px; padding: 8px; min-height: 200px; max-height: 400px;">
+                <div style="text-align: center; color: #6B778C; padding: 40px;">Loading tasks...</div>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: space-between; margin-top: 16px;">
+                <button onclick="createNewTaskFromFlake()" style="padding: 8px 16px; border: 1px solid #0052CC; background: white; color: #0052CC; border-radius: 3px; cursor: pointer; font-size: 14px;">+ Create New Task</button>
+                <button onclick="closeLinkTaskModal()" style="padding: 8px 16px; border: 1px solid #DFE1E6; background: white; border-radius: 3px; cursor: pointer; font-size: 14px;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/config.js"></script>
     <script src="js/api-client.js"></script>
     <script src="js/auth.js"></script>
