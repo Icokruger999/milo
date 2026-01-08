@@ -133,34 +133,8 @@ async function loadBacklogTasks() {
         if (response.ok) {
             let apiTasks = await response.json();
             
-            // Filter tasks based on selected filter
-            if (filter === 'backlog') {
-                // Show only backlog tasks (todo, backlog - not in progress, review, or done)
-                const beforeFilter = apiTasks.length;
-                apiTasks = apiTasks.filter(task => {
-                    const status = task.status?.toLowerCase() || '';
-                    return status === 'todo' || 
-                           status === 'backlog' ||
-                           (status !== 'progress' && 
-                            status !== 'in-progress' && 
-                            status !== 'review' && 
-                            status !== 'in-review' && 
-                            status !== 'done' && 
-                            status !== 'completed');
-                });
-                console.log(`Filtered to backlog: ${beforeFilter} -> ${apiTasks.length} tasks`);
-            } else if (filter === 'all') {
-                // Show backlog (todo/backlog) and in-progress tasks
-                const beforeFilter = apiTasks.length;
-                apiTasks = apiTasks.filter(task => {
-                    const status = task.status?.toLowerCase() || '';
-                    return status === 'todo' || 
-                           status === 'backlog' || 
-                           status === 'progress' || 
-                           status === 'in-progress';
-                });
-                console.log(`Filtered to all: ${beforeFilter} -> ${apiTasks.length} tasks`);
-            }
+            // Show ALL tasks on backlog page (no filtering)
+            console.log(`Loaded ${apiTasks.length} tasks for backlog page`);
 
             backlogTasks = apiTasks.map(task => ({
                 id: task.id,
@@ -260,8 +234,11 @@ function renderBacklog() {
                 <div class="backlog-item-footer">
                     <div class="backlog-item-actions">
                         <select onchange="changeTaskStatus(${task.id}, this.value)" onclick="event.stopPropagation()" style="padding: 4px 8px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 12px;">
-                            <option value="todo" ${task.status === 'todo' || task.status === 'backlog' ? 'selected' : ''}>Backlog</option>
+                            <option value="backlog" ${task.status === 'backlog' ? 'selected' : ''}>Backlog</option>
+                            <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>To Do</option>
                             <option value="progress" ${task.status === 'progress' || task.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
+                            <option value="review" ${task.status === 'review' || task.status === 'in-review' ? 'selected' : ''}>In Review</option>
+                            <option value="done" ${task.status === 'done' || task.status === 'completed' ? 'selected' : ''}>Done</option>
                         </select>
                         <select onchange="changeTaskAssignee(${task.id}, this.value)" onclick="event.stopPropagation()" style="padding: 4px 8px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 12px;">
                             <option value="">Unassigned</option>
@@ -303,17 +280,47 @@ async function loadAssigneesForDropdowns() {
     }
 }
 
-function changeTaskStatus(taskId, newStatus) {
+async function changeTaskStatus(taskId, newStatus) {
     const task = backlogTasks.find(t => t.id === taskId);
     if (!task) return;
 
     const originalStatus = originalTaskStates[taskId]?.status;
+    
+    // If status hasn't changed, do nothing
+    if (originalStatus === newStatus) return;
+    
+    // Update task status immediately
     task.status = newStatus;
     
-    // Mark as changed if different from original
-    if (originalStatus !== newStatus) {
-        hasUnsavedChanges = true;
-        updateSaveButton();
+    // Save immediately to backend
+    try {
+        const response = await apiClient.put(`/tasks/${taskId}`, {
+            status: newStatus
+        });
+        
+        if (response.ok) {
+            // Update original state
+            originalTaskStates[taskId].status = newStatus;
+            
+            // If status changed to "in progress", refresh the board (if board page is open)
+            if (newStatus === 'progress' || newStatus === 'in-progress') {
+                // Check if board page is open in another tab/window and refresh it
+                // We'll use localStorage to signal board refresh
+                localStorage.setItem('boardNeedsRefresh', 'true');
+                localStorage.setItem('boardRefreshTime', Date.now().toString());
+            }
+            
+            // Re-render backlog to show updated status
+            renderBacklog();
+        } else {
+            // Revert on error
+            task.status = originalStatus;
+            console.error('Failed to update task status');
+        }
+    } catch (error) {
+        // Revert on error
+        task.status = originalStatus;
+        console.error('Error updating task status:', error);
     }
 }
 

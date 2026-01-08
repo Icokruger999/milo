@@ -38,6 +38,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load tasks from API (when available)
     loadTasks();
+    
+    // Listen for status changes from backlog page
+    setInterval(() => {
+        const needsRefresh = localStorage.getItem('boardNeedsRefresh');
+        const refreshTime = localStorage.getItem('boardRefreshTime');
+        if (needsRefresh === 'true' && refreshTime) {
+            const timeDiff = Date.now() - parseInt(refreshTime);
+            // Only refresh if signal is recent (within last 5 seconds)
+            if (timeDiff < 5000) {
+                localStorage.removeItem('boardNeedsRefresh');
+                localStorage.removeItem('boardRefreshTime');
+                // Reload tasks and re-render board
+                loadTasksFromAPI().then(() => {
+                    renderBoard();
+                });
+            }
+        }
+    }, 1000); // Check every second
 });
 
 function setupUserMenu() {
@@ -333,7 +351,8 @@ async function showTaskModal(column, task = null) {
         document.getElementById('taskForm').reset();
         const statusSelect = document.getElementById('taskStatus');
         if (statusSelect) {
-            statusSelect.value = column || 'todo';
+            // Default new tasks to "backlog" status
+            statusSelect.value = column === 'backlog' ? 'backlog' : (column || 'backlog');
         }
         currentTaskComments = [];
         document.getElementById('taskCommentsList').innerHTML = '<div style="color: #6B778C; font-size: 13px; text-align: center; padding: 8px;">No comments yet</div>';
@@ -514,7 +533,8 @@ function createTaskModal() {
                         <div style="margin-bottom: 20px;">
                             <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #172B4D;">Status *</label>
                             <select id="taskStatus" name="status" required style="width: 100%; padding: 10px 12px; border: 2px solid #DFE1E6; border-radius: 4px; font-size: 14px; box-sizing: border-box; background: white; cursor: pointer; transition: border-color 0.2s;" onfocus="this.style.borderColor='#0052CC'" onblur="this.style.borderColor='#DFE1E6'">
-                                <option value="todo">Backlog</option>
+                                <option value="backlog">Backlog</option>
+                                <option value="todo">To Do</option>
                                 <option value="progress">In Progress</option>
                                 <option value="review">In Review</option>
                                 <option value="done">Done</option>
@@ -870,6 +890,10 @@ async function handleTaskSubmit(event) {
             const currentProject = projectSelector.getCurrentProject();
             if (currentProject && currentProject.id) {
                 taskData.projectId = currentProject.id;
+            }
+            // New tasks default to "backlog" status
+            if (!taskData.status || taskData.status === 'todo') {
+                taskData.status = 'backlog';
             }
             response = await apiClient.post('/tasks', taskData);
         }
