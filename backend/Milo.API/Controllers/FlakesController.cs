@@ -213,12 +213,18 @@ public class FlakesController : ControllerBase
             var dateNow = DateTime.UtcNow.ToLocalTime();
             var dateStr = dateNow.ToString("MMM dd, yyyy");
             var timeStr = dateNow.ToString("hh:mm tt");
-            var flakeContent = string.IsNullOrWhiteSpace(flake.Content) 
-                ? "<p style='color: #6B778C; font-style: italic; padding: 20px; background: #F4F5F7; border-radius: 4px; text-align: center;'>This flake doesn't have any content yet. Click the button below to view the full flake.</p>" 
-                : flake.Content;
+            // Handle empty content with proper HTML encoding
+            var hasContent = !string.IsNullOrWhiteSpace(flake.Content);
+            var flakeContentHtml = hasContent 
+                ? System.Net.WebUtility.HtmlEncode(flake.Content).Replace("\n", "<br>").Replace("\r", "")
+                : "<div style='color: #6B778C; font-style: italic; padding: 20px; background: #F4F5F7; border-radius: 4px; text-align: center; margin: 16px 0;'>This flake doesn't have any content yet. Click the button below to view the full flake.</div>";
+            
+            var flakeContentText = hasContent 
+                ? flake.Content 
+                : "This flake doesn't have any content yet. Click the link below to view the full flake.";
 
             var emailBody = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>" +
-                "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #172B4D; }" +
+                "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #172B4D; margin: 0; padding: 0; }" +
                 ".email-container { max-width: 600px; margin: 0 auto; background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }" +
                 ".email-header { background: linear-gradient(135deg, #0052CC 0%, #0065FF 100%); color: #FFFFFF; padding: 30px; text-align: center; }" +
                 ".email-body { padding: 30px; }" +
@@ -227,10 +233,10 @@ public class FlakesController : ControllerBase
                 ".flake-meta { font-size: 13px; color: #6B778C; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #DFE1E6; }" +
                 ".cta-button { display: inline-block; background: #0052CC; color: #FFFFFF !important; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: 600; margin-top: 16px; }" +
                 ".email-footer { padding: 20px; background: #F4F5F7; border-top: 1px solid #DFE1E6; text-align: center; font-size: 12px; color: #6B778C; }" +
-                "</style></head><body><div class=\"email-container\"><div class=\"email-header\"><h1>Shared Flake: " + flake.Title + "</h1></div>" +
-                "<div class=\"email-body\"><p>Hello,</p><p><strong>" + authorName + "</strong> has shared a flake from <strong>" + projectName + "</strong> with you.</p>" +
-                "<div class=\"flake-meta\"><strong>Project:</strong> " + projectName + "<br><strong>Shared by:</strong> " + authorName + "<br><strong>Date:</strong> " + dateStr + " at " + timeStr + "</div>" +
-                "<div class=\"flake-title\">" + flake.Title + "</div><div class=\"flake-content\">" + flakeContent + "</div>" +
+                "</style></head><body><div class=\"email-container\"><div class=\"email-header\"><h1>Shared Flake: " + System.Net.WebUtility.HtmlEncode(flake.Title) + "</h1></div>" +
+                "<div class=\"email-body\"><p>Hello,</p><p><strong>" + System.Net.WebUtility.HtmlEncode(authorName) + "</strong> has shared a flake from <strong>" + System.Net.WebUtility.HtmlEncode(projectName) + "</strong> with you.</p>" +
+                "<div class=\"flake-meta\"><strong>Project:</strong> " + System.Net.WebUtility.HtmlEncode(projectName) + "<br><strong>Shared by:</strong> " + System.Net.WebUtility.HtmlEncode(authorName) + "<br><strong>Date:</strong> " + dateStr + " at " + timeStr + "</div>" +
+                "<div class=\"flake-title\">" + System.Net.WebUtility.HtmlEncode(flake.Title) + "</div><div class=\"flake-content\">" + flakeContentHtml + "</div>" +
                 "<div style=\"text-align: center; margin-top: 24px;\"><a href=\"" + flakeUrl + "\" class=\"cta-button\">View Full Flake</a></div></div>" +
                 "<div class=\"email-footer\"><p>This flake was shared from Milo - Coding Everest</p><p><a href=\"" + flakeUrl + "\" style=\"color: #0052CC;\">" + flakeUrl + "</a></p></div>" +
                 "</div></body></html>";
@@ -246,8 +252,8 @@ public class FlakesController : ControllerBase
                 "Project: " + projectName + "\n" +
                 "Shared by: " + authorName + "\n" +
                 "Date: " + dateStr + " at " + timeStr + "\n\n" +
-                flake.Title + "\n\n" +
-                flakeContent + "\n\n" +
+                "Flake: " + flake.Title + "\n\n" +
+                flakeContentText + "\n\n" +
                 "View full flake: " + flakeUrl + "\n\n" +
                 "---\n" +
                 "This flake was shared from Milo - Coding Everest";
