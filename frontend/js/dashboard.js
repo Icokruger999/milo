@@ -47,8 +47,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup user menu dropdown
     setupUserMenu();
 
-    // Load project info
-    const currentProject = projectSelector.getCurrentProject();
+    // Load project info - wait for projectSelector to be available
+    let currentProject = null;
+    if (typeof projectSelector !== 'undefined' && projectSelector.getCurrentProject) {
+        currentProject = projectSelector.getCurrentProject();
+    } else {
+        // Fallback: try to get from localStorage
+        const projectsStr = localStorage.getItem('milo_user_projects') || sessionStorage.getItem('milo_user_projects');
+        if (projectsStr) {
+            try {
+                const projects = JSON.parse(projectsStr);
+                if (projects && projects.length > 0) {
+                    currentProject = projects[0];
+                }
+            } catch (e) {
+                console.error('Error parsing projects:', e);
+            }
+        }
+    }
+    
     if (currentProject) {
         const nameEl = document.getElementById('projectName');
         const iconEl = document.getElementById('projectIcon');
@@ -57,7 +74,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (nameEl) nameEl.textContent = currentProject.name;
         if (iconEl) iconEl.textContent = (currentProject.key || currentProject.name).substring(0, 1).toUpperCase();
         if (titleEl) titleEl.textContent = currentProject.name + ' Dashboard';
+        
+        console.log('Project loaded:', currentProject.name, 'ID:', currentProject.id);
     } else {
+        console.error('No project found, redirecting to project selection');
         window.location.href = 'milo-select-project.html';
         return;
     }
@@ -133,12 +153,31 @@ function setupUserMenu() {
 // Load dashboard data with caching and error handling
 async function loadDashboardData() {
     try {
-        const currentProject = projectSelector.getCurrentProject();
+        let currentProject = null;
+        if (typeof projectSelector !== 'undefined' && projectSelector.getCurrentProject) {
+            currentProject = projectSelector.getCurrentProject();
+        } else {
+            // Fallback: try to get from localStorage
+            const projectsStr = localStorage.getItem('milo_user_projects') || sessionStorage.getItem('milo_user_projects');
+            if (projectsStr) {
+                try {
+                    const projects = JSON.parse(projectsStr);
+                    if (projects && projects.length > 0) {
+                        currentProject = projects[0];
+                    }
+                } catch (e) {
+                    console.error('Error parsing projects:', e);
+                }
+            }
+        }
+        
         if (!currentProject) {
             console.error('No project selected');
             showErrorState();
             return;
         }
+        
+        console.log('Loading dashboard for project:', currentProject.name, 'ID:', currentProject.id);
 
         // Check cache first (but always reload if data is empty)
         const now = Date.now();

@@ -180,13 +180,13 @@ body {
 
 /* Buttons - Glassmorphism */
 .btn-primary {
-    background: var(--primary-blue);
+    background: var(--primary-blue) !important;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     color: white !important;
     padding: 8px 16px;
     border-radius: 12px;
-    border: none;
+    border: none !important;
     text-decoration: none;
     font-weight: 600;
     font-size: 14px;
@@ -197,10 +197,15 @@ body {
 }
 
 .btn-primary:hover {
-    background: var(--primary-blue-hover);
+    background: var(--primary-blue-hover) !important;
     color: white !important;
     transform: translateY(-2px);
     box-shadow: 0 6px 20px 0 rgba(0, 82, 204, 0.35);
+}
+
+.btn-large {
+    padding: 12px 24px !important;
+    font-size: 16px !important;
 }
 
 .btn-secondary {
