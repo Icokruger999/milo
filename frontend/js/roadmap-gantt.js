@@ -44,10 +44,10 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    // Initialize timeline (show 6 months back to 18 months forward for scrollable view)
+    // Initialize timeline (show from beginning of last year to end of next year for scrollable view)
     const now = new Date();
-    timelineStartDate = new Date(now.getFullYear(), now.getMonth() - 6, 1); // 6 months ago
-    timelineEndDate = new Date(now.getFullYear(), now.getMonth() + 18, 1); // 18 months forward
+    timelineStartDate = new Date(now.getFullYear() - 1, 0, 1); // January 1st of last year
+    timelineEndDate = new Date(now.getFullYear() + 2, 0, 1); // January 1st two years from now (3 years total)
     
     // Load roadmap data
     loadRoadmapData();
@@ -177,6 +177,12 @@ function renderTimeline() {
     renderTimelineHeader();
     renderTimelineBody();
     updateCurrentDateLine();
+    
+    // Reset scroll to beginning to show tasks from the start
+    const timelineArea = document.getElementById('timelineArea');
+    if (timelineArea) {
+        timelineArea.scrollLeft = 0;
+    }
 }
 
 // Get cell width based on view mode
