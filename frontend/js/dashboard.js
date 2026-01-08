@@ -130,20 +130,30 @@ async function loadDashboardData() {
 // Load assignees for filter dropdown
 async function loadAssignees() {
     try {
-        const currentProject = projectSelector.getCurrentProject();
-        const response = await apiClient.get(`/users?projectId=${currentProject.id}`);
-        if (response.ok) {
-            const users = await response.json();
-            const assigneeFilter = document.getElementById('assigneeFilter');
-            
-            // Add assignees to dropdown
-            users.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user.id;
-                option.textContent = user.name || user.email;
-                assigneeFilter.appendChild(option);
-            });
-        }
+        const assigneeFilter = document.getElementById('assigneeFilter');
+        
+        // Extract unique assignees from tasks
+        const assigneeMap = new Map();
+        dashboardData.tasks.forEach(task => {
+            if (task.assignee && task.assigneeId) {
+                assigneeMap.set(task.assigneeId, task.assignee.name || task.assignee.email);
+            }
+        });
+        
+        // Sort assignees by name
+        const sortedAssignees = Array.from(assigneeMap.entries()).sort((a, b) => 
+            a[1].localeCompare(b[1])
+        );
+        
+        // Add assignees to dropdown
+        sortedAssignees.forEach(([id, name]) => {
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = name;
+            assigneeFilter.appendChild(option);
+        });
+        
+        console.log('Loaded assignees:', sortedAssignees.length);
     } catch (error) {
         console.error('Error loading assignees:', error);
     }
