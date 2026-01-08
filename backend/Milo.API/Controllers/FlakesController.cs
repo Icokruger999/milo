@@ -331,10 +331,11 @@ public class FlakesController : ControllerBase
                 // Create a new task with flake content
                 var baseUrl = request.BaseUrl ?? "https://www.codingeverest.com";
                 var flakeLink = $"{baseUrl}/milo-flake-view.html?id={flake.Id}";
+                var flakeContentForTask = flake.Content ?? "";
                 var task = new Milo.API.Models.Task
                 {
                     Title = $"Review: {flake.Title}",
-                    Description = $"**Flake Shared from Documentation:**\n\n{flakeLink}\n\n{flake.Content ?? ""}",
+                    Description = $"**Flake Shared from Documentation:**\n\n{flakeLink}\n\n{flakeContentForTask}",
                     ProjectId = flake.ProjectId,
                     CreatorId = flake.AuthorId,
                     Status = "todo",
