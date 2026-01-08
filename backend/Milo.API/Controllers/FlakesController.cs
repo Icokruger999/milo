@@ -209,7 +209,7 @@ public class FlakesController : ControllerBase
             var projectName = flake.Project?.Name ?? "Unknown Project";
             var authorName = flake.Author?.Name ?? "Unknown Author";
             var fromEmail = configuration["Email:FromEmail"] ?? "info@streamyo.net";
-            var fromName = configuration["Email:FromName"] ?? "Milo - Coding Everest";
+            var fromName = configuration["Email:FromName"] ?? "Milo";
             var dateNow = DateTime.UtcNow.ToLocalTime();
             var dateStr = dateNow.ToString("MMM dd, yyyy");
             var timeStr = dateNow.ToString("hh:mm tt");
@@ -237,8 +237,9 @@ public class FlakesController : ControllerBase
                 "<div class=\"email-body\"><p>Hello,</p><p><strong>" + System.Net.WebUtility.HtmlEncode(authorName) + "</strong> has shared a flake from <strong>" + System.Net.WebUtility.HtmlEncode(projectName) + "</strong> with you.</p>" +
                 "<div class=\"flake-meta\"><strong>Project:</strong> " + System.Net.WebUtility.HtmlEncode(projectName) + "<br><strong>Shared by:</strong> " + System.Net.WebUtility.HtmlEncode(authorName) + "<br><strong>Date:</strong> " + dateStr + " at " + timeStr + "</div>" +
                 "<div class=\"flake-title\">" + System.Net.WebUtility.HtmlEncode(flake.Title) + "</div><div class=\"flake-content\">" + flakeContentHtml + "</div>" +
-                "<div style=\"text-align: center; margin-top: 24px;\"><a href=\"" + flakeUrl + "\" class=\"cta-button\">View Full Flake</a></div></div>" +
-                "<div class=\"email-footer\"><p>This flake was shared from Milo - Coding Everest</p><p><a href=\"" + flakeUrl + "\" style=\"color: #0052CC;\">" + flakeUrl + "</a></p></div>" +
+                "<div style=\"text-align: center; margin-top: 24px; margin-bottom: 24px;\"><a href=\"" + flakeUrl + "\" class=\"cta-button\" style=\"display: inline-block; background: #0052CC; color: #FFFFFF !important; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 15px;\">View Full Flake</a></div>" +
+                "<div style=\"text-align: center; margin-bottom: 16px; padding: 16px; background: #F4F5F7; border-radius: 4px;\"><p style=\"margin: 0; font-size: 13px; color: #6B778C;\">Or copy and paste this link into your browser:</p><p style=\"margin: 8px 0 0 0; font-size: 12px; color: #0052CC; word-break: break-all;\"><a href=\"" + flakeUrl + "\" style=\"color: #0052CC; text-decoration: underline;\">" + flakeUrl + "</a></p></div></div>" +
+                "<div class=\"email-footer\"><p>This flake was shared from Milo</p><p><a href=\"" + flakeUrl + "\" style=\"color: #0052CC; text-decoration: underline;\">" + flakeUrl + "</a></p></div>" +
                 "</div></body></html>";
 
             var message = new MimeMessage();
@@ -256,7 +257,7 @@ public class FlakesController : ControllerBase
                 flakeContentText + "\n\n" +
                 "View full flake: " + flakeUrl + "\n\n" +
                 "---\n" +
-                "This flake was shared from Milo - Coding Everest";
+                "This flake was shared from Milo";
 
             var bodyBuilder = new BodyBuilder
             {
@@ -343,7 +344,7 @@ public class FlakesController : ControllerBase
                         var projectName = task.Project?.Name ?? "Unknown Project";
                         var sharedByName = flake.Author?.Name ?? "Someone";
                         var fromEmail = configuration["Email:FromEmail"] ?? "info@streamyo.net";
-                        var fromName = configuration["Email:FromName"] ?? "Milo - Coding Everest";
+                        var fromName = configuration["Email:FromName"] ?? "Milo";
 
                         var emailBody = $@"
 <!DOCTYPE html>
@@ -379,7 +380,7 @@ public class FlakesController : ControllerBase
             </div>
         </div>
         <div class='footer'>
-            <p>This notification was sent from Milo - Coding Everest</p>
+            <p>This notification was sent from Milo</p>
         </div>
     </div>
 </body>

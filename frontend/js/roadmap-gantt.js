@@ -350,7 +350,25 @@ function createTimelineRow(item, type, dates, timelineWidth) {
     bar.dataset.startDate = startDate.toISOString();
     bar.dataset.endDate = endDate.toISOString();
     
+    // Add status-based class for coloring
+    const status = (item.status || '').toLowerCase();
+    if (status === 'backlog' || !status) {
+        bar.classList.add('status-backlog');
+    } else if (status === 'todo') {
+        bar.classList.add('status-todo');
+    } else if (status === 'progress' || status === 'in-progress' || status === 'inprogress') {
+        bar.classList.add('status-progress');
+    } else if (status === 'review' || status === 'in-review' || status === 'inreview') {
+        bar.classList.add('status-review');
+    } else if (status === 'done' || status === 'completed' || status === 'complete') {
+        bar.classList.add('status-done');
+    }
+    
     const title = item.title.length > 30 ? item.title.substring(0, 30) + '...' : item.title;
+    const fullTitle = `${item.taskId}: ${item.title}`;
+    
+    // Add title attribute for hover tooltip
+    bar.setAttribute('title', fullTitle);
     
     // Add resize handles and title
     bar.innerHTML = `
