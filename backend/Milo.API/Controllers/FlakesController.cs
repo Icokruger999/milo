@@ -271,7 +271,7 @@ Hello,
 
 Project: {projectName}
 Shared by: {authorName}
-Date: {DateTime.UtcNow.ToLocalTime():MMMM dd, yyyy 'at' hh:mm tt}
+Date: {DateTime.UtcNow.ToLocalTime().ToString(""MMMM dd, yyyy 'at' hh:mm tt"")}
 
 {flake.Title}
 
