@@ -152,11 +152,13 @@ async function loadDashboardData() {
         }
 
         // Load data with timeout protection
+        console.log('Fetching tasks for project:', currentProject.id);
         const apiPromise = (async () => {
             const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
             
             if (response.ok) {
                 const tasks = await response.json();
+                console.log('✓ Loaded tasks:', tasks.length, 'tasks');
                 
                 // Cache the data
                 dataCache.tasks = tasks;
@@ -165,11 +167,18 @@ async function loadDashboardData() {
                 dashboardData.tasks = tasks || [];
                 dashboardData.filteredTasks = [...dashboardData.tasks];
                 
+                console.log('Dashboard data set:', {
+                    totalTasks: dashboardData.tasks.length,
+                    filteredTasks: dashboardData.filteredTasks.length
+                });
+                
                 // Load assignees for filter
                 await loadAssignees();
                 
                 // Apply initial filters and render
+                console.log('Applying filters and updating UI...');
                 applyFiltersImmediate();
+                console.log('✓ Dashboard loaded successfully');
             } else {
                 const errorText = await response.text().catch(() => 'Unknown error');
                 console.error('Failed to load tasks. Status:', response.status, 'Response:', errorText);
@@ -375,6 +384,13 @@ function updateStats() {
     }).length;
     
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    
+    console.log('Updating stats:', {
+        total: totalTasks,
+        inProgress: inProgressTasks,
+        completed: completedTasks,
+        rate: completionRate + '%'
+    });
     
     // Update with null checks
     const totalTasksEl = document.getElementById('totalTasks');
