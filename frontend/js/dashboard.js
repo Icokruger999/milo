@@ -92,11 +92,17 @@ function setupUserMenu() {
 async function loadDashboardData() {
     try {
         const currentProject = projectSelector.getCurrentProject();
-        if (!currentProject) return;
+        if (!currentProject) {
+            console.error('No project selected');
+            return;
+        }
 
+        console.log('Loading dashboard data for project:', currentProject.id);
         const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
+        
         if (response.ok) {
             dashboardData.tasks = await response.json();
+            console.log('Loaded tasks:', dashboardData.tasks.length);
             dashboardData.filteredTasks = [...dashboardData.tasks];
             
             // Load assignees for filter
@@ -105,10 +111,19 @@ async function loadDashboardData() {
             // Apply initial filters and render
             applyFilters();
         } else {
-            console.error('Failed to load tasks');
+            const errorText = await response.text();
+            console.error('Failed to load tasks. Status:', response.status, 'Response:', errorText);
+            
+            // Show error message to user
+            document.getElementById('totalTasks').textContent = 'Error';
+            document.getElementById('totalTasks').style.color = '#DE350B';
         }
     } catch (error) {
         console.error('Error loading dashboard data:', error);
+        
+        // Show error message to user
+        document.getElementById('totalTasks').textContent = 'Error';
+        document.getElementById('totalTasks').style.color = '#DE350B';
     }
 }
 
