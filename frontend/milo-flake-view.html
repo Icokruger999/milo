@@ -145,30 +145,8 @@
         let currentFlakeId = null;
 
         function goBack() {
-            // Check if we came from a task/board context (from email link)
-            const referrer = document.referrer;
-            const urlParams = new URLSearchParams(window.location.search);
-            const readonly = urlParams.get('readonly');
-            
-            // If in read-only mode (from email), go to board
-            if (readonly === 'true') {
-                window.location.href = 'milo-board.html';
-                return;
-            }
-            
-            // If referrer is from board or task page, go back there
-            if (referrer && (referrer.includes('milo-board') || referrer.includes('task'))) {
-                window.location.href = 'milo-board.html';
-                return;
-            }
-            
-            // If authenticated, go to flakes page
-            if (authService.isAuthenticated()) {
-                window.location.href = 'milo-flakes.html';
-                return;
-            }
-            
-            // Default: go to board (public access)
+            // Always go to board - it's public and doesn't require login
+            // This prevents redirect to login page
             window.location.href = 'milo-board.html';
         }
 

@@ -274,7 +274,14 @@ function renderTimelineBody() {
     // Calculate cell width based on view mode
     const cellWidth = getCellWidth();
     const timelineWidth = dates.length * cellWidth;
+    
+    // Set width on both rows container and body to ensure scrolling works
     rows.style.width = timelineWidth + 'px';
+    rows.style.minWidth = timelineWidth + 'px';
+    if (body) {
+        body.style.width = timelineWidth + 'px';
+        body.style.minWidth = timelineWidth + 'px';
+    }
     
     // Clear existing rows
     rows.innerHTML = '';
