@@ -171,19 +171,26 @@ async function loadDashboardData() {
                 dataCache.timestamp = now;
                 
                 dashboardData.tasks = tasks || [];
+                // Start with all tasks visible (no filtering yet)
                 dashboardData.filteredTasks = [...dashboardData.tasks];
                 
                 console.log('Dashboard data set:', {
                     totalTasks: dashboardData.tasks.length,
-                    filteredTasks: dashboardData.filteredTasks.length
+                    filteredTasks: dashboardData.filteredTasks.length,
+                    sampleTask: dashboardData.tasks[0] || 'No tasks'
                 });
                 
                 // Load assignees for filter
                 await loadAssignees();
                 
-                // Apply initial filters and render
+                // Apply initial filters and render (this will update stats)
                 console.log('Applying filters and updating UI...');
                 applyFiltersImmediate();
+                
+                // Force update stats even if filters didn't change
+                updateStats();
+                updateCharts();
+                
                 console.log('✓ Dashboard loaded successfully');
             } else {
                 const errorText = await response.text().catch(() => 'Unknown error');
@@ -250,7 +257,7 @@ async function loadAssignees() {
         }
         
         // Clear existing options except "All Assignees"
-        assigneeFilter.innerHTML = '<option value="all">All Assignees</option>';
+        assigneeFilter.innerHTML = '<option value="all" selected>All Assignees</option>';
         
         // Load all users from API (not just from tasks)
         const usersResponse = await apiClient.get('/auth/users');
@@ -325,21 +332,35 @@ function applyFiltersImmediate() {
     const statusFilter = statusFilterEl.value;
     const timeRangeFilter = timeRangeFilterEl.value;
     
-    // Filter tasks
+    // Filter tasks - treat empty string as "all"
+    const assigneeValue = assigneeFilter === '' ? 'all' : assigneeFilter;
+    const statusValue = statusFilter === '' ? 'all' : statusFilter;
+    
+    console.log('Applying filters:', {
+        assignee: assigneeValue,
+        status: statusValue,
+        timeRange: timeRangeFilter,
+        totalTasks: dashboardData.tasks.length
+    });
+    
     dashboardData.filteredTasks = dashboardData.tasks.filter(task => {
         // Filter by assignee
-        if (assigneeFilter && assigneeFilter !== 'all' && assigneeFilter !== '' && task.assigneeId != assigneeFilter) {
-            return false;
+        if (assigneeValue && assigneeValue !== 'all') {
+            const taskAssigneeId = task.assigneeId ? String(task.assigneeId) : null;
+            const filterAssigneeId = String(assigneeValue);
+            if (taskAssigneeId !== filterAssigneeId) {
+                return false;
+            }
         }
         
         // Filter by status (handle variations)
-        if (statusFilter && statusFilter !== 'all' && statusFilter !== '') {
+        if (statusValue && statusValue !== 'all') {
             const taskStatus = (task.status || '').toLowerCase();
-            const filterStatus = statusFilter.toLowerCase();
+            const filterStatus = statusValue.toLowerCase();
             
             // Map status variations
             const statusMap = {
-                'todo': ['todo', 'backlog'],
+                'todo': ['todo', 'backlog', ''],
                 'progress': ['progress', 'in-progress', 'inprogress'],
                 'review': ['review', 'in-review', 'inreview'],
                 'done': ['done', 'completed', 'complete']
@@ -352,20 +373,33 @@ function applyFiltersImmediate() {
         }
         
         // Filter by time range
-        if (timeRangeFilter !== 'all') {
+        if (timeRangeFilter && timeRangeFilter !== 'all') {
             const daysAgo = parseInt(timeRangeFilter);
-            if (!isNaN(daysAgo) && task.createdAt) {
+            if (!isNaN(daysAgo)) {
                 const cutoffDate = new Date();
                 cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
-                const taskDate = new Date(task.createdAt);
-                if (taskDate < cutoffDate) {
-                    return false;
+                cutoffDate.setHours(0, 0, 0, 0);
+                
+                // Try different date fields
+                const taskDate = task.createdAt ? new Date(task.createdAt) : 
+                               task.createdDate ? new Date(task.createdDate) :
+                               task.dateCreated ? new Date(task.dateCreated) : null;
+                
+                if (taskDate) {
+                    taskDate.setHours(0, 0, 0, 0);
+                    if (taskDate < cutoffDate) {
+                        return false;
+                    }
+                } else {
+                    // If no date field, include it (don't filter out)
                 }
             }
         }
         
         return true;
     });
+    
+    console.log('Filtered tasks:', dashboardData.filteredTasks.length, 'out of', dashboardData.tasks.length);
     
     // Update stats and charts
     updateStats();
