@@ -237,6 +237,11 @@ async function showTaskModal(column, task = null) {
         document.getElementById('taskTitle').value = task.title || '';
         document.getElementById('taskDescription').value = task.description || '';
         
+        // Update description preview if description exists
+        if (task.description && task.description.trim()) {
+            updateDescriptionPreview();
+        }
+        
         // Set status BEFORE other dropdowns
         const statusSelect = document.getElementById('taskStatus');
         if (statusSelect) {
@@ -435,7 +440,10 @@ function createTaskModal() {
                         
                         <div style="margin-bottom: 20px;">
                             <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #172B4D;">Description</label>
-                            <textarea id="taskDescription" name="description" rows="8" style="width: 100%; padding: 10px 12px; border: 2px solid #DFE1E6; border-radius: 4px; font-size: 14px; box-sizing: border-box; resize: vertical; font-family: inherit; line-height: 1.5; transition: border-color 0.2s;" onfocus="this.style.borderColor='#0052CC'" onblur="this.style.borderColor='#DFE1E6'"></textarea>
+                            <!-- Description Preview (read-only with rendered links) -->
+                            <div id="taskDescriptionPreview" style="display: none; width: 100%; padding: 12px; border: 2px solid #DFE1E6; border-radius: 4px; font-size: 14px; background: #FAFBFC; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; margin-bottom: 8px;"></div>
+                            <textarea id="taskDescription" name="description" rows="8" style="width: 100%; padding: 10px 12px; border: 2px solid #DFE1E6; border-radius: 4px; font-size: 14px; box-sizing: border-box; resize: vertical; font-family: inherit; line-height: 1.5; transition: border-color 0.2s;" onfocus="this.style.borderColor='#0052CC'; document.getElementById('taskDescriptionPreview').style.display='none'; this.style.display='block';" onblur="this.style.borderColor='#DFE1E6'; updateDescriptionPreview();"></textarea>
+                            <button type="button" onclick="editDescription()" id="editDescriptionBtn" style="display: none; font-size: 12px; color: #0052CC; background: none; border: none; cursor: pointer; margin-top: 4px;">Edit description</button>
                         </div>
                         
                         <div style="margin-bottom: 20px;">
@@ -1158,6 +1166,51 @@ function addCommentToTask(taskId) {
     // TODO: Implement API call
 }
 
+// Convert Markdown links to HTML
+function renderMarkdownLinks(text) {
+    if (!text) return '';
+    
+    // Convert Markdown links [text](url) to HTML links
+    return text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color: #0052CC; text-decoration: underline; cursor: pointer;">$1</a>');
+}
+
+// Update description preview
+function updateDescriptionPreview() {
+    const descriptionTextarea = document.getElementById('taskDescription');
+    const descriptionPreview = document.getElementById('taskDescriptionPreview');
+    const editBtn = document.getElementById('editDescriptionBtn');
+    
+    if (!descriptionTextarea || !descriptionPreview) return;
+    
+    const description = descriptionTextarea.value || '';
+    
+    if (description.trim()) {
+        // Show preview with rendered Markdown links
+        descriptionPreview.innerHTML = renderMarkdownLinks(description);
+        descriptionPreview.style.display = 'block';
+        descriptionTextarea.style.display = 'none';
+        if (editBtn) editBtn.style.display = 'inline-block';
+    } else {
+        descriptionPreview.style.display = 'none';
+        descriptionTextarea.style.display = 'block';
+        if (editBtn) editBtn.style.display = 'none';
+    }
+}
+
+// Edit description (switch from preview to edit mode)
+function editDescription() {
+    const descriptionTextarea = document.getElementById('taskDescription');
+    const descriptionPreview = document.getElementById('taskDescriptionPreview');
+    const editBtn = document.getElementById('editDescriptionBtn');
+    
+    if (descriptionTextarea && descriptionPreview) {
+        descriptionPreview.style.display = 'none';
+        descriptionTextarea.style.display = 'block';
+        descriptionTextarea.focus();
+        if (editBtn) editBtn.style.display = 'none';
+    }
+}
+
 // Make functions globally accessible
 window.showCreateTaskModal = function(column = 'todo') {
     showTaskModal(column);
@@ -1166,6 +1219,8 @@ window.closeTaskModal = closeTaskModal;
 window.handleTaskSubmit = handleTaskSubmit;
 window.viewTask = viewTask;
 window.deleteTask = deleteTask;
+window.updateDescriptionPreview = updateDescriptionPreview;
+window.editDescription = editDescription;
 window.showCreateLabelModal = showCreateLabelModal;
 window.closeCreateLabelModal = closeCreateLabelModal;
 window.handleCreateLabel = handleCreateLabel;
