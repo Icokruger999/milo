@@ -238,27 +238,22 @@ public class FlakesController : ControllerBase
             message.To.Add(new MailboxAddress("", request.ToEmail));
             message.Subject = $"Shared Flake: {flake.Title}";
 
+            var textBody = "Shared Flake: " + flake.Title + "\n\n" +
+                "Hello,\n\n" +
+                authorName + " has shared a flake from " + projectName + " with you.\n\n" +
+                "Project: " + projectName + "\n" +
+                "Shared by: " + authorName + "\n" +
+                "Date: " + dateStr + " at " + timeStr + "\n\n" +
+                flake.Title + "\n\n" +
+                flakeContent + "\n\n" +
+                "View full flake: " + flakeUrl + "\n\n" +
+                "---\n" +
+                "This flake was shared from Milo - Coding Everest";
+
             var bodyBuilder = new BodyBuilder
             {
                 HtmlBody = emailBody,
-                TextBody = $@"Shared Flake: {flake.Title}
-
-Hello,
-
-{authorName} has shared a flake from {projectName} with you.
-
-Project: {projectName}
-Shared by: {authorName}
-Date: {dateStr} at {timeStr}
-
-{flake.Title}
-
-{flakeContent}
-
-View full flake: {flakeUrl}
-
----
-This flake was shared from Milo - Coding Everest"
+                TextBody = textBody
             };
 
             message.Body = bodyBuilder.ToMessageBody();
