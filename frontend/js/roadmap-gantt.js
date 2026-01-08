@@ -12,6 +12,11 @@ let currentDatePosition = 0;
 let draggedBar = null;
 let dragOffset = { x: 0, y: 0 };
 
+// Timeline panning state
+let isPanningTimeline = false;
+let panStartX = 0;
+let panStartScrollLeft = 0;
+
 // Initialize roadmap
 document.addEventListener('DOMContentLoaded', function() {
     if (!authService.isAuthenticated()) {
@@ -51,6 +56,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load roadmap data
     loadRoadmapData();
+
+    // Enable mouse drag panning on the timeline
+    setupTimelinePanning();
 });
 
 // Load roadmap data
@@ -614,6 +622,38 @@ function scrollToToday() {
     if (timelineArea) {
         timelineArea.scrollLeft = currentDatePosition - 200;
     }
+}
+
+// Enable mouse drag panning for the entire timeline
+function setupTimelinePanning() {
+    const timelineArea = document.getElementById('timelineArea');
+    if (!timelineArea) return;
+
+    timelineArea.addEventListener('mousedown', (e) => {
+        // Only left mouse button and avoid starting pan when dragging a task bar
+        if (e.button !== 0) return;
+        if (e.target.closest('.timeline-bar')) return;
+
+        isPanningTimeline = true;
+        panStartX = e.clientX;
+        panStartScrollLeft = timelineArea.scrollLeft;
+        timelineArea.classList.add('timeline-panning');
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isPanningTimeline) return;
+        const dx = e.clientX - panStartX;
+        timelineArea.scrollLeft = panStartScrollLeft - dx;
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (!isPanningTimeline) return;
+        isPanningTimeline = false;
+        const timelineArea = document.getElementById('timelineArea');
+        if (timelineArea) {
+            timelineArea.classList.remove('timeline-panning');
+        }
+    });
 }
 
 // Get status label
