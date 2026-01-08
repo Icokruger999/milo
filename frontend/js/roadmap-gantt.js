@@ -5,7 +5,7 @@ let roadmapData = {
     milestones: [],
     tasks: []
 };
-let currentViewMode = 'weeks'; // days, weeks, months
+let currentViewMode = 'days'; // days, weeks, months (default to days)
 let timelineStartDate = null;
 let timelineEndDate = null;
 let currentDatePosition = 0;
@@ -178,10 +178,13 @@ function renderTimeline() {
     renderTimelineBody();
     updateCurrentDateLine();
     
-    // Reset scroll to beginning to show tasks from the start
+    // Auto-scroll to Today on initial load (only if not already scrolled)
     const timelineArea = document.getElementById('timelineArea');
-    if (timelineArea) {
-        timelineArea.scrollLeft = 0;
+    if (timelineArea && timelineArea.scrollLeft === 0) {
+        // Small delay to ensure layout is complete
+        setTimeout(() => {
+            scrollToToday();
+        }, 100);
     }
 }
 
