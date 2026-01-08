@@ -215,49 +215,23 @@ public class FlakesController : ControllerBase
             var timeStr = dateNow.ToString("hh:mm tt");
             var flakeContent = flake.Content ?? "(No content)";
 
-            var emailBody = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset=""utf-8"">
-    <style>
-        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #172B4D; }}
-        .email-container {{ max-width: 600px; margin: 0 auto; background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
-        .email-header {{ background: linear-gradient(135deg, #0052CC 0%, #0065FF 100%); color: #FFFFFF; padding: 30px; text-align: center; }}
-        .email-body {{ padding: 30px; }}
-        .flake-title {{ font-size: 24px; font-weight: 600; color: #172B4D; margin-bottom: 16px; }}
-        .flake-content {{ font-size: 15px; color: #42526E; line-height: 1.7; margin-bottom: 24px; white-space: pre-wrap; }}
-        .flake-meta {{ font-size: 13px; color: #6B778C; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #DFE1E6; }}
-        .cta-button {{ display: inline-block; background: #0052CC; color: #FFFFFF !important; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: 600; margin-top: 16px; }}
-        .email-footer {{ padding: 20px; background: #F4F5F7; border-top: 1px solid #DFE1E6; text-align: center; font-size: 12px; color: #6B778C; }}
-    </style>
-</head>
-<body>
-    <div class=""email-container"">
-        <div class=""email-header"">
-            <h1>Shared Flake: {flake.Title}</h1>
-        </div>
-        <div class=""email-body"">
-            <p>Hello,</p>
-            <p><strong>{authorName}</strong> has shared a flake from <strong>{projectName}</strong> with you.</p>
-            <div class=""flake-meta"">
-                <strong>Project:</strong> {projectName}<br>
-                <strong>Shared by:</strong> {authorName}<br>
-                <strong>Date:</strong> {dateStr} at {timeStr}
-            </div>
-            <div class=""flake-title"">{flake.Title}</div>
-            <div class=""flake-content"">{flakeContent}</div>
-            <div style=""text-align: center; margin-top: 24px;"">
-                <a href=""{flakeUrl}"" class=""cta-button"">View Full Flake</a>
-            </div>
-        </div>
-        <div class=""email-footer"">
-            <p>This flake was shared from Milo - Coding Everest</p>
-            <p><a href=""{flakeUrl}"" style=""color: #0052CC;"">{flakeUrl}</a></p>
-        </div>
-    </div>
-</body>
-</html>";
+            var emailBody = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>" +
+                "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #172B4D; }" +
+                ".email-container { max-width: 600px; margin: 0 auto; background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }" +
+                ".email-header { background: linear-gradient(135deg, #0052CC 0%, #0065FF 100%); color: #FFFFFF; padding: 30px; text-align: center; }" +
+                ".email-body { padding: 30px; }" +
+                ".flake-title { font-size: 24px; font-weight: 600; color: #172B4D; margin-bottom: 16px; }" +
+                ".flake-content { font-size: 15px; color: #42526E; line-height: 1.7; margin-bottom: 24px; white-space: pre-wrap; }" +
+                ".flake-meta { font-size: 13px; color: #6B778C; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #DFE1E6; }" +
+                ".cta-button { display: inline-block; background: #0052CC; color: #FFFFFF !important; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: 600; margin-top: 16px; }" +
+                ".email-footer { padding: 20px; background: #F4F5F7; border-top: 1px solid #DFE1E6; text-align: center; font-size: 12px; color: #6B778C; }" +
+                "</style></head><body><div class=\"email-container\"><div class=\"email-header\"><h1>Shared Flake: " + flake.Title + "</h1></div>" +
+                "<div class=\"email-body\"><p>Hello,</p><p><strong>" + authorName + "</strong> has shared a flake from <strong>" + projectName + "</strong> with you.</p>" +
+                "<div class=\"flake-meta\"><strong>Project:</strong> " + projectName + "<br><strong>Shared by:</strong> " + authorName + "<br><strong>Date:</strong> " + dateStr + " at " + timeStr + "</div>" +
+                "<div class=\"flake-title\">" + flake.Title + "</div><div class=\"flake-content\">" + flakeContent + "</div>" +
+                "<div style=\"text-align: center; margin-top: 24px;\"><a href=\"" + flakeUrl + "\" class=\"cta-button\">View Full Flake</a></div></div>" +
+                "<div class=\"email-footer\"><p>This flake was shared from Milo - Coding Everest</p><p><a href=\"" + flakeUrl + "\" style=\"color: #0052CC;\">" + flakeUrl + "</a></p></div>" +
+                "</div></body></html>";
 
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress(fromName, fromEmail));
