@@ -1,0 +1,19 @@
+{
+  "InstanceIds": ["i-06bc5b2218c041802"],
+  "DocumentName": "AWS-RunShellScript",
+  "Comment": "Check email configuration",
+  "Parameters": {
+    "commands": [
+      "echo '=== Email Configuration ==='",
+      "cd /var/www/milo-api",
+      "cat appsettings.json | python3 -m json.tool | grep -A 15 Email || echo 'No Email config'",
+      "echo ''",
+      "echo '=== Recent Email/SMTP Logs ==='",
+      "sudo journalctl -u milo-api --no-pager -n 100 | grep -i email | tail -20",
+      "echo ''",
+      "echo '=== Test Email Endpoint ==='",
+      "curl -s -X POST http://localhost:5001/api/email-test/test -H 'Content-Type: application/json' -d '{\"toEmail\":\"ico@astutetech.co.za\"}'"
+    ]
+  }
+}
+

@@ -1,0 +1,24 @@
+{
+  "InstanceIds": ["i-06bc5b2218c041802"],
+  "DocumentName": "AWS-RunShellScript",
+  "Comment": "Check backend endpoints",
+  "Parameters": {
+    "commands": [
+      "echo '=== Service Status ==='",
+      "sudo systemctl status milo-api --no-pager | head -15",
+      "echo ''",
+      "echo '=== Health Endpoint ==='",
+      "curl -s http://localhost:5001/api/health",
+      "echo ''",
+      "echo '=== Flakes Endpoint (lowercase) ==='",
+      "curl -s http://localhost:5001/api/flakes",
+      "echo ''",
+      "echo '=== Flakes Endpoint (capital F) ==='",
+      "curl -s http://localhost:5001/api/Flakes",
+      "echo ''",
+      "echo '=== Recent Logs ==='",
+      "sudo journalctl -u milo-api --no-pager | tail -30"
+    ]
+  }
+}
+

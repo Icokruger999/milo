@@ -1,0 +1,12 @@
+{
+  "InstanceIds": ["i-06bc5b2218c041802"],
+  "DocumentName": "AWS-RunShellScript",
+  "Comment": "Check recent email logs",
+  "Parameters": {
+    "commands": [
+      "echo '=== Last 30 lines with email/SMTP ==='",
+      "sudo journalctl -u milo-api --no-pager -n 200 | grep -i 'email\\|smtp\\|mail' | tail -30"
+    ]
+  }
+}
+

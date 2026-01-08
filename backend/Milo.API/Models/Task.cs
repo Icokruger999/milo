@@ -69,5 +69,9 @@ public class Task
     
     // Start date for roadmap timeline
     public DateTime? StartDate { get; set; }
+    
+    // Checklist items stored as JSON string
+    [Column(TypeName = "text")]
+    public string? Checklist { get; set; } // JSON array: [{"text": "...", "completed": false}]
 }
 

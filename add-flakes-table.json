@@ -1,0 +1,29 @@
+{
+  "InstanceIds": ["i-06bc5b2218c041802"],
+  "DocumentName": "AWS-RunShellScript",
+  "Comment": "Add Flakes table to database",
+  "Parameters": {
+    "commands": [
+      "#!/bin/bash",
+      "echo 'Adding Flakes table to database...'",
+      "export HOME=/home/ec2-user",
+      "export DOTNET_CLI_HOME=/home/ec2-user",
+      "cd ~/milo-repo/backend/Milo.API",
+      "echo 'Creating migration...'",
+      "dotnet ef migrations add AddFlakesTable",
+      "echo ''",
+      "echo 'Applying migration...'",
+      "dotnet ef database update",
+      "echo ''",
+      "echo 'Restarting service...'",
+      "sudo systemctl restart milo-api",
+      "sleep 3",
+      "echo ''",
+      "echo 'Testing flakes endpoint...'",
+      "curl -s http://localhost:5001/api/flakes",
+      "echo ''",
+      "echo 'Done!'"
+    ]
+  }
+}
+

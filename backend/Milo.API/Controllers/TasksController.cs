@@ -66,27 +66,44 @@ public class TasksController : ControllerBase
 
             var tasks = await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
 
-            return Ok(tasks.Select(t => new
-            {
-                id = t.Id,
-                title = t.Title,
-                description = t.Description,
-                status = t.Status,
-                label = t.Label,
-                taskId = t.TaskId,
-                taskType = t.TaskType,
-                assignee = t.Assignee != null ? new { id = t.Assignee.Id, name = t.Assignee.Name, email = t.Assignee.Email } : null,
-                assigneeId = t.AssigneeId,
-                creator = t.Creator != null ? new { id = t.Creator.Id, name = t.Creator.Name } : null,
-                productId = t.ProductId,
-                product = t.Product != null ? new { id = t.Product.Id, name = t.Product.Name } : null,
-                projectId = t.ProjectId,
-                project = t.Project != null ? new { id = t.Project.Id, name = t.Project.Name, key = t.Project.Key } : null,
-                priority = t.Priority,
-                dueDate = t.DueDate,
-                startDate = t.StartDate,
-                parentTaskId = t.ParentTaskId,
-                createdAt = t.CreatedAt
+            return Ok(tasks.Select(t => {
+                // Parse checklist JSON if present
+                object? checklist = null;
+                if (!string.IsNullOrEmpty(t.Checklist))
+                {
+                    try
+                    {
+                        checklist = System.Text.Json.JsonSerializer.Deserialize<object>(t.Checklist);
+                    }
+                    catch
+                    {
+                        // If parsing fails, leave as null
+                    }
+                }
+                
+                return new
+                {
+                    id = t.Id,
+                    title = t.Title,
+                    description = t.Description,
+                    status = t.Status,
+                    label = t.Label,
+                    taskId = t.TaskId,
+                    taskType = t.TaskType,
+                    assignee = t.Assignee != null ? new { id = t.Assignee.Id, name = t.Assignee.Name, email = t.Assignee.Email } : null,
+                    assigneeId = t.AssigneeId,
+                    creator = t.Creator != null ? new { id = t.Creator.Id, name = t.Creator.Name } : null,
+                    productId = t.ProductId,
+                    product = t.Product != null ? new { id = t.Product.Id, name = t.Product.Name } : null,
+                    projectId = t.ProjectId,
+                    project = t.Project != null ? new { id = t.Project.Id, name = t.Project.Name, key = t.Project.Key } : null,
+                    priority = t.Priority,
+                    dueDate = t.DueDate,
+                    startDate = t.StartDate,
+                    parentTaskId = t.ParentTaskId,
+                    checklist = checklist,
+                    createdAt = t.CreatedAt
+                };
             }));
         }
         catch (Exception ex)
@@ -111,6 +128,20 @@ public class TasksController : ControllerBase
             return NotFound(new { message = "Task not found" });
         }
 
+        // Parse checklist JSON if present
+        object? checklist = null;
+        if (!string.IsNullOrEmpty(task.Checklist))
+        {
+            try
+            {
+                checklist = System.Text.Json.JsonSerializer.Deserialize<object>(task.Checklist);
+            }
+            catch
+            {
+                // If parsing fails, leave as null
+            }
+        }
+        
         return Ok(new
         {
             id = task.Id,
@@ -131,6 +162,7 @@ public class TasksController : ControllerBase
             dueDate = task.DueDate,
             startDate = task.StartDate,
             parentTaskId = task.ParentTaskId,
+            checklist = checklist,
             createdAt = task.CreatedAt
         });
     }
@@ -232,6 +264,13 @@ public class TasksController : ControllerBase
                 }
             }
 
+            // Serialize checklist to JSON string
+            string? checklistJson = null;
+            if (request.Checklist != null)
+            {
+                checklistJson = System.Text.Json.JsonSerializer.Serialize(request.Checklist);
+            }
+
             var task = new Models.Task
             {
                 Title = request.Title,
@@ -248,6 +287,7 @@ public class TasksController : ControllerBase
                 DueDate = dueDateUtc,
                 StartDate = startDateUtc,
                 ParentTaskId = request.ParentTaskId,
+                Checklist = checklistJson,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -342,6 +382,7 @@ public class TasksController : ControllerBase
                             {
                                 // Last resort: write to console
                                 Console.WriteLine($"[EMAIL ERROR] Failed to send to {assigneeEmail}: {ex.Message}");
+                                Console.WriteLine($"[LOGGING ERROR] {logEx.Message}");
                             }
                         }
                     }).ContinueWith(t =>
@@ -543,6 +584,11 @@ public class TasksController : ControllerBase
         {
             task.TaskType = request.TaskType;
         }
+        if (request.Checklist != null)
+        {
+            // Serialize checklist to JSON string
+            task.Checklist = System.Text.Json.JsonSerializer.Serialize(request.Checklist);
+        }
 
             task.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
@@ -615,6 +661,7 @@ public class CreateTaskRequest
     public DateTime? DueDate { get; set; }
     public DateTime? StartDate { get; set; }
     public int? ParentTaskId { get; set; }
+    public object? Checklist { get; set; } // Array of {text: string, completed: bool}
 }
 
 public class UpdateTaskRequest
@@ -630,6 +677,6 @@ public class UpdateTaskRequest
     public DateTime? DueDate { get; set; }
     public DateTime? StartDate { get; set; }
     public int? ParentTaskId { get; set; }
+    public object? Checklist { get; set; } // Array of {text: string, completed: bool}
 }
-
 

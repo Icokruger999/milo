@@ -228,9 +228,14 @@ async function showTaskModal(column, task = null) {
         deleteButton.style.display = task ? 'block' : 'none';
     }
     
-    // Load users/products/labels FIRST, then set values (prevents reset)
-    await loadUsersAndProducts();
-    await loadLabels();
+    // Show modal immediately for better UX
+    modal.style.display = 'flex';
+    
+    // Load data in parallel for better performance
+    await Promise.all([
+        loadUsersAndProducts(),
+        loadLabels()
+    ]);
     
     if (task) {
         // Set all form values AFTER dropdowns are populated
@@ -285,8 +290,8 @@ async function showTaskModal(column, task = null) {
             document.getElementById('taskDueDate').value = '';
         }
         
-        // Load comments for this task
-        await loadTaskComments(task.id);
+        // Load comments asynchronously (non-blocking)
+        loadTaskComments(task.id).catch(err => console.error('Error loading comments:', err));
         
         // Load checklist if exists
         const checklistDiv = document.getElementById('taskChecklist');
@@ -315,8 +320,6 @@ async function showTaskModal(column, task = null) {
         document.getElementById('taskCommentsList').innerHTML = '<div style="color: #6B778C; font-size: 13px; text-align: center; padding: 8px;">No comments yet</div>';
         document.getElementById('taskChecklist').innerHTML = '<div style="color: #6B778C; font-size: 12px; text-align: center; padding: 8px;">No checklist items yet</div>';
     }
-    
-    modal.style.display = 'flex';
 }
 
 async function loadTaskComments(taskId) {
@@ -550,13 +553,54 @@ function createTaskModal() {
     loadUsersAndProducts();
 }
 
+// Cache for users and products (5 minute TTL)
+let usersProductsCache = {
+    users: null,
+    products: null,
+    timestamp: null,
+    ttl: 5 * 60 * 1000 // 5 minutes
+};
+
 async function loadUsersAndProducts() {
     try {
-        // Load users
-        const usersResponse = await apiClient.get('/auth/users');
+        const now = Date.now();
+        const assigneeSelect = document.getElementById('taskAssignee');
+        const productSelect = document.getElementById('taskProduct');
+        
+        // Check cache first
+        if (usersProductsCache.users && usersProductsCache.timestamp && 
+            (now - usersProductsCache.timestamp) < usersProductsCache.ttl) {
+            // Use cached data
+            if (assigneeSelect) {
+                assigneeSelect.innerHTML = '<option value="">Unassigned</option>';
+                usersProductsCache.users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = user.name;
+                    assigneeSelect.appendChild(option);
+                });
+            }
+            if (productSelect) {
+                productSelect.innerHTML = '<option value="">General</option>';
+                usersProductsCache.products.forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product.id;
+                    option.textContent = product.name;
+                    productSelect.appendChild(option);
+                });
+            }
+            return;
+        }
+        
+        // Load users and products in parallel
+        const [usersResponse, productsResponse] = await Promise.all([
+            apiClient.get('/auth/users'),
+            apiClient.get('/products')
+        ]);
+        
         if (usersResponse.ok) {
             const users = await usersResponse.json();
-            const assigneeSelect = document.getElementById('taskAssignee');
+            usersProductsCache.users = users; // Cache users
             if (assigneeSelect) {
                 assigneeSelect.innerHTML = '<option value="">Unassigned</option>';
                 users.forEach(user => {
@@ -568,11 +612,9 @@ async function loadUsersAndProducts() {
             }
         }
         
-        // Load products
-        const productsResponse = await apiClient.get('/products');
         if (productsResponse.ok) {
             const products = await productsResponse.json();
-            const productSelect = document.getElementById('taskProduct');
+            usersProductsCache.products = products; // Cache products
             if (productSelect) {
                 productSelect.innerHTML = '<option value="">General</option>';
                 products.forEach(product => {
@@ -584,8 +626,9 @@ async function loadUsersAndProducts() {
             }
         }
         
-        // Load labels
-        await loadLabels();
+        // Update cache timestamp
+        usersProductsCache.timestamp = Date.now();
+        
     } catch (error) {
         console.error('Failed to load users/products:', error);
     }
