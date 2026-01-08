@@ -80,12 +80,29 @@ function renderFlakes() {
     container.innerHTML = `
         <div class="flakes-list">
             ${flakes.map(flake => `
-                <div class="flake-card" onclick="openFlake(${flake.id})">
-                    <div class="flake-card-title">${flake.title || 'Untitled'}</div>
-                    <div class="flake-card-meta">
-                        Updated ${new Date(flake.updatedAt || flake.createdAt).toLocaleDateString()} by ${flake.authorName || 'Unknown'}
+                <div class="flake-card">
+                    <div onclick="openFlake(${flake.id})" style="cursor: pointer;">
+                        <div class="flake-card-title">${flake.title || 'Untitled'}</div>
+                        <div class="flake-card-meta">
+                            Updated ${new Date(flake.updatedAt || flake.createdAt).toLocaleDateString()} by ${flake.authorName || 'Unknown'}
+                        </div>
+                        <div class="flake-card-preview">${(flake.content || '').substring(0, 150)}${(flake.content || '').length > 150 ? '...' : ''}</div>
                     </div>
-                    <div class="flake-card-preview">${(flake.content || '').substring(0, 150)}${(flake.content || '').length > 150 ? '...' : ''}</div>
+                    <div class="flake-card-actions">
+                        <button onclick="event.stopPropagation(); shareFlakeByEmail(${flake.id})" title="Email" class="flake-action-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                        </button>
+                        <button onclick="event.stopPropagation(); shareFlakeToBoard(${flake.id})" title="Share to Board" class="flake-action-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="3" y1="9" x2="21" y2="9"></line>
+                                <line x1="9" y1="21" x2="9" y2="9"></line>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             `).join('')}
         </div>
@@ -166,10 +183,91 @@ function openFlake(flakeId) {
     window.location.href = `milo-flake-view.html?id=${flakeId}`;
 }
 
+// Share flake by email
+async function shareFlakeByEmail(flakeId) {
+    const flake = flakes.find(f => f.id === flakeId);
+    if (!flake) return;
+
+    const toEmail = prompt('Enter email address to share with:');
+    if (!toEmail || !toEmail.includes('@')) {
+        alert('Please enter a valid email address');
+        return;
+    }
+
+    const user = authService.getCurrentUser();
+    if (!user) {
+        alert('You must be logged in to share flakes');
+        return;
+    }
+
+    try {
+        const response = await apiClient.post(`/flakes/${flakeId}/share/email`, {
+            toEmail: toEmail,
+            email: user.email,
+            baseUrl: window.location.origin
+        });
+
+        if (response.ok) {
+            alert(`Flake shared successfully to ${toEmail}`);
+        } else {
+            const error = await response.json();
+            alert(error.message || 'Failed to share flake');
+        }
+    } catch (error) {
+        console.error('Error sharing flake:', error);
+        alert('Failed to share flake. Please try again.');
+    }
+}
+
+// Share flake to board
+async function shareFlakeToBoard(flakeId) {
+    const flake = flakes.find(f => f.id === flakeId);
+    if (!flake) return;
+
+    const action = confirm('Would you like to:\n\nOK = Create a new task from this flake\nCancel = Link to existing task');
+    
+    try {
+        let response;
+        if (action) {
+            // Create new task
+            response = await apiClient.post(`/flakes/${flakeId}/share/board`, {
+                baseUrl: window.location.origin
+            });
+        } else {
+            // Link to existing task
+            const taskId = prompt('Enter the task ID to link this flake to:');
+            if (!taskId) return;
+
+            response = await apiClient.post(`/flakes/${flakeId}/share/board`, {
+                taskId: parseInt(taskId),
+                baseUrl: window.location.origin
+            });
+        }
+
+        if (response.ok) {
+            const result = await response.json();
+            alert(result.message || 'Flake shared to board successfully!');
+            if (result.taskId) {
+                if (confirm('Would you like to view the task on the board?')) {
+                    window.location.href = 'milo-board.html';
+                }
+            }
+        } else {
+            const error = await response.json();
+            alert(error.message || 'Failed to share flake to board');
+        }
+    } catch (error) {
+        console.error('Error sharing flake to board:', error);
+        alert('Failed to share flake to board. Please try again.');
+    }
+}
+
 // Make functions globally available
 window.showCreateFlakeModal = showCreateFlakeModal;
 window.closeCreateFlakeModal = closeCreateFlakeModal;
 window.handleCreateFlake = handleCreateFlake;
 window.openFlake = openFlake;
 window.loadFlakes = loadFlakes;
+window.shareFlakeByEmail = shareFlakeByEmail;
+window.shareFlakeToBoard = shareFlakeToBoard;
 

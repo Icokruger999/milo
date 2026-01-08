@@ -1,0 +1,13 @@
+{
+  "commands": [
+    "cd ~/milo || cd /home/ec2-user/milo",
+    "git pull origin main",
+    "cd backend/Milo.API",
+    "dotnet ef migrations add AddFlakesAndTaskType --output-dir Data/Migrations || echo 'Migration may already exist'",
+    "sudo systemctl restart milo-api.service",
+    "sleep 5",
+    "sudo systemctl status milo-api.service --no-pager | head -15",
+    "curl -s http://localhost:5001/api/health || echo 'Backend check'"
+  ]
+}
+

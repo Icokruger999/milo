@@ -321,13 +321,40 @@
             border: 1px solid #DFE1E6;
             border-radius: 3px;
             padding: 16px;
-            cursor: pointer;
             transition: all 0.15s;
+            position: relative;
         }
 
         .flake-card:hover {
             border-color: #0052CC;
             box-shadow: 0 2px 8px rgba(0, 82, 204, 0.1);
+        }
+
+        .flake-card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #F4F5F7;
+        }
+
+        .flake-action-btn {
+            background: none;
+            border: 1px solid #DFE1E6;
+            border-radius: 3px;
+            padding: 6px 10px;
+            cursor: pointer;
+            color: #42526E;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .flake-action-btn:hover {
+            background: #F4F5F7;
+            border-color: #0052CC;
+            color: #0052CC;
         }
 
         .flake-card-title {
