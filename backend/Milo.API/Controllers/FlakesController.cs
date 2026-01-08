@@ -271,7 +271,7 @@ Hello,
 
 Project: {projectName}
 Shared by: {authorName}
-Date: {DateTime.UtcNow.ToLocalTime():MMM dd, yyyy 'at' hh:mm tt}
+Date: {DateTime.UtcNow.ToLocalTime():MMMM dd, yyyy 'at' hh:mm tt}
 
 {flake.Title}
 
@@ -332,11 +332,13 @@ This flake was shared from Milo - Coding Everest"
                 
                 if (string.IsNullOrEmpty(task.Description))
                 {
-                    task.Description = $"**Shared Flake:**\n{flakeLink}\n\n{flake.Content?.Substring(0, Math.Min(500, flake.Content.Length ?? 0)) ?? ""}";
+                    var contentPreview = flake.Content?.Length > 500 ? flake.Content.Substring(0, 500) : flake.Content ?? "";
+                    task.Description = $"**Shared Flake:**\n{flakeLink}\n\n{contentPreview}";
                 }
                 else
                 {
-                    task.Description += $"\n\n---\n**Shared Flake:**\n{flakeLink}\n\n{flake.Content?.Substring(0, Math.Min(500, flake.Content.Length ?? 0)) ?? ""}";
+                    var contentPreview = flake.Content?.Length > 500 ? flake.Content.Substring(0, 500) : flake.Content ?? "";
+                    task.Description += $"\n\n---\n**Shared Flake:**\n{flakeLink}\n\n{contentPreview}";
                 }
 
                 await _context.SaveChangesAsync();
