@@ -338,7 +338,7 @@ public class TasksController : ControllerBase
                                     logger.LogError($"[EMAIL] Stack Trace: {ex.StackTrace}");
                                 }
                             }
-                            catch (LogException)
+                            catch (Exception logEx)
                             {
                                 // Last resort: write to console
                                 Console.WriteLine($"[EMAIL ERROR] Failed to send to {assigneeEmail}: {ex.Message}");
@@ -631,4 +631,5 @@ public class UpdateTaskRequest
     public DateTime? StartDate { get; set; }
     public int? ParentTaskId { get; set; }
 }
+
 
