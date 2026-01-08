@@ -290,20 +290,43 @@ function closeLinkTaskModal() {
 }
 
 async function loadTasksForLinking() {
+    const container = document.getElementById('taskSearchResults');
+    container.innerHTML = '<div style="text-align: center; color: #6B778C; padding: 40px;">Loading tasks...</div>';
+    
     try {
         const currentProject = projectSelector.getCurrentProject();
-        if (!currentProject) return;
+        if (!currentProject) {
+            container.innerHTML = '<div style="text-align: center; color: #E2372D; padding: 40px;">No project selected</div>';
+            return;
+        }
 
+        console.log('Loading tasks for project:', currentProject.id);
         const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
+        
+        console.log('Tasks response status:', response.status);
+        
         if (response.ok) {
-            allTasks = await response.json();
-            renderTaskList(allTasks);
+            const data = await response.json();
+            console.log('Tasks loaded:', data);
+            
+            // Handle both array response and object with tasks property
+            allTasks = Array.isArray(data) ? data : (data.tasks || []);
+            
+            console.log('Total tasks:', allTasks.length);
+            
+            if (allTasks.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #6B778C; padding: 40px;">No tasks in this project yet.<br><br>Create your first task!</div>';
+            } else {
+                renderTaskList(allTasks);
+            }
         } else {
-            document.getElementById('taskSearchResults').innerHTML = '<div style="text-align: center; color: #E2372D; padding: 40px;">Failed to load tasks</div>';
+            const errorText = await response.text();
+            console.error('Failed to load tasks:', response.status, errorText);
+            container.innerHTML = '<div style="text-align: center; color: #E2372D; padding: 40px;">Failed to load tasks<br><small>' + response.status + '</small></div>';
         }
     } catch (error) {
         console.error('Error loading tasks:', error);
-        document.getElementById('taskSearchResults').innerHTML = '<div style="text-align: center; color: #E2372D; padding: 40px;">Error loading tasks</div>';
+        container.innerHTML = '<div style="text-align: center; color: #E2372D; padding: 40px;">Error loading tasks<br><small>' + error.message + '</small></div>';
     }
 }
 
@@ -328,30 +351,50 @@ function renderTaskList(tasks) {
     const container = document.getElementById('taskSearchResults');
     
     if (!tasks || tasks.length === 0) {
-        container.innerHTML = '<div style="text-align: center; color: #6B778C; padding: 40px;">No tasks found</div>';
+        container.innerHTML = '<div style="text-align: center; color: #6B778C; padding: 40px;">No tasks match your search</div>';
         return;
     }
     
-    container.innerHTML = tasks.map(task => `
-        <div style="padding: 12px; border-bottom: 1px solid #DFE1E6; cursor: pointer; transition: background 0.15s;" 
-             onmouseover="this.style.background='#F4F5F7'"
-             onmouseout="this.style.background='white'"
-             onclick="linkFlakeToTask(${task.id})">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-                <div style="flex: 1;">
-                    <div style="font-weight: 500; color: #172B4D; margin-bottom: 4px;">
-                        ${task.taskId || `TASK-${task.id}`}: ${task.title || 'Untitled'}
+    console.log('Rendering tasks:', tasks.length);
+    
+    container.innerHTML = tasks.map(task => {
+        // Get assignee name from different possible properties
+        const assigneeName = task.assigneeName || 
+                            (task.assignee && task.assignee.name) || 
+                            'Unassigned';
+        
+        // Handle priority display
+        let priorityLabel = 'Low';
+        let priorityColor = '#DFE1E6';
+        if (task.priority === 1 || task.priority === '1') {
+            priorityLabel = 'High';
+            priorityColor = '#FFEBE6';
+        } else if (task.priority === 2 || task.priority === '2') {
+            priorityLabel = 'Medium';
+            priorityColor = '#FFF0B3';
+        }
+        
+        return `
+            <div style="padding: 12px; border-bottom: 1px solid #DFE1E6; cursor: pointer; transition: background 0.15s;" 
+                 onmouseover="this.style.background='#F4F5F7'"
+                 onmouseout="this.style.background='white'"
+                 onclick="linkFlakeToTask(${task.id})">
+                <div style="display: flex; justify-content: space-between; align-items: start; gap: 12px;">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-weight: 500; color: #172B4D; margin-bottom: 4px;">
+                            ${task.taskId || `TASK-${task.id}`}: ${task.title || 'Untitled'}
+                        </div>
+                        <div style="font-size: 12px; color: #6B778C;">
+                            ${task.status || 'todo'} • ${assigneeName}
+                        </div>
                     </div>
-                    <div style="font-size: 12px; color: #6B778C;">
-                        ${task.status || 'todo'} • ${task.assigneeName || 'Unassigned'}
+                    <div style="padding: 2px 8px; background: ${priorityColor}; border-radius: 3px; font-size: 11px; color: #42526E; text-transform: uppercase; white-space: nowrap;">
+                        ${priorityLabel}
                     </div>
-                </div>
-                <div style="padding: 2px 8px; background: #DFE1E6; border-radius: 3px; font-size: 11px; color: #42526E; text-transform: uppercase;">
-                    ${task.priority === 1 ? 'High' : task.priority === 2 ? 'Medium' : 'Low'}
                 </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 async function linkFlakeToTask(taskId) {
