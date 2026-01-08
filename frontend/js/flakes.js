@@ -159,27 +159,12 @@ async function handleCreateFlake(event) {
         }
     } catch (error) {
         console.error('Error creating flake:', error);
-        // For now, create locally until backend is ready
-        const newFlake = {
-            id: Date.now(),
-            title: title,
-            content: content,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            authorName: authService.getCurrentUser()?.name || 'You'
-        };
-        flakes.push(newFlake);
-        renderFlakes();
-        closeCreateFlakeModal();
+        alert('Failed to create flake. Please check your connection and try again.');
     }
 }
 
 // Open flake for viewing/editing
 function openFlake(flakeId) {
-    const flake = flakes.find(f => f.id === flakeId);
-    if (!flake) return;
-    
-    // For now, show in alert - will implement full editor later
     window.location.href = `milo-flake-view.html?id=${flakeId}`;
 }
 
