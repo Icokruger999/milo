@@ -264,6 +264,14 @@ async function showTaskModal(column, task = null) {
         // Set priority
         document.getElementById('taskPriority').value = task.priority !== undefined ? task.priority : 0;
         
+        // Set start date
+        if (task.startDate) {
+            const startDate = new Date(task.startDate);
+            document.getElementById('taskStartDate').value = startDate.toISOString().split('T')[0];
+        } else {
+            document.getElementById('taskStartDate').value = '';
+        }
+        
         // Set due date
         if (task.dueDate) {
             const dueDate = new Date(task.dueDate);
@@ -498,6 +506,11 @@ function createTaskModal() {
                         </div>
                         
                         <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #172B4D;">Start Date</label>
+                            <input type="date" id="taskStartDate" name="startDate" style="width: 100%; padding: 10px 12px; border: 2px solid #DFE1E6; border-radius: 4px; font-size: 14px; box-sizing: border-box; transition: border-color 0.2s;" onfocus="this.style.borderColor='#0052CC'" onblur="this.style.borderColor='#DFE1E6'">
+                        </div>
+                        
+                        <div style="margin-bottom: 20px;">
                             <label style="display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: #172B4D;">Due Date</label>
                             <input type="date" id="taskDueDate" name="dueDate" style="width: 100%; padding: 10px 12px; border: 2px solid #DFE1E6; border-radius: 4px; font-size: 14px; box-sizing: border-box; transition: border-color 0.2s;" onfocus="this.style.borderColor='#0052CC'" onblur="this.style.borderColor='#DFE1E6'">
                         </div>
@@ -696,7 +709,16 @@ async function handleTaskSubmit(event) {
     const column = modal.dataset.column;
     const taskId = modal.dataset.taskId;
     
-    // Convert date to ISO 8601 format with UTC timezone
+    // Convert dates to ISO 8601 format with UTC timezone
+    let startDate = null;
+    const startDateInput = document.getElementById('taskStartDate').value;
+    if (startDateInput) {
+        // HTML date input gives YYYY-MM-DD format
+        // Convert to ISO 8601 with UTC timezone (midnight UTC)
+        const date = new Date(startDateInput + 'T00:00:00Z');
+        startDate = date.toISOString();
+    }
+    
     let dueDate = null;
     const dueDateInput = document.getElementById('taskDueDate').value;
     if (dueDateInput) {
@@ -735,6 +757,7 @@ async function handleTaskSubmit(event) {
         assigneeId: document.getElementById('taskAssignee').value ? parseInt(document.getElementById('taskAssignee').value) : null,
         productId: document.getElementById('taskProduct').value ? parseInt(document.getElementById('taskProduct').value) : null,
         priority: parseInt(document.getElementById('taskPriority').value),
+        startDate: startDate,
         dueDate: dueDate,
         checklist: checklistItems.length > 0 ? checklistItems : null
     };
