@@ -44,10 +44,10 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
 
-    // Initialize timeline (start from January of current year)
+    // Initialize timeline (show 6 months back to 18 months forward for scrollable view)
     const now = new Date();
-    timelineStartDate = new Date(now.getFullYear(), 0, 1); // January 1st
-    timelineEndDate = new Date(now.getFullYear() + 1, 0, 1); // January 1st next year
+    timelineStartDate = new Date(now.getFullYear(), now.getMonth() - 6, 1); // 6 months ago
+    timelineEndDate = new Date(now.getFullYear(), now.getMonth() + 18, 1); // 18 months forward
     
     // Load roadmap data
     loadRoadmapData();
