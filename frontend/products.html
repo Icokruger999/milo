@@ -27,16 +27,22 @@
             </div>
             <div class="nav-links">
                 <a href="index.html#solutions">Solutions</a>
-                <a href="products.html">Products</a>
+                <div class="nav-dropdown">
+                    <a href="products.html" class="nav-dropdown-trigger">Products ▾</a>
+                    <div class="nav-dropdown-menu">
+                        <a href="milo-login.html">Milo</a>
+                        <a href="https://www.insuranceloom.com" target="_blank">Insurance Loom</a>
+                    </div>
+                </div>
                 <a href="index.html#resources">Resources</a>
                 <a href="index.html#contact">Contact</a>
-                <a href="milo-login.html" class="btn-primary">Login to Milo</a>
+                <a href="milo-login.html" class="btn-primary">Sign In</a>
             </div>
         </div>
     </nav>
 
-    <!-- Products Section -->
-    <section class="products-section" style="padding: 100px 0; background: var(--bg-primary);">
+    <!-- Products Section - Glassmorphism -->
+    <section class="products-section" style="padding: 100px 0; background: transparent;">
         <div class="container">
             <div class="section-header" style="text-align: center; margin-bottom: 64px;">
                 <h1 style="font-size: 48px; font-weight: 700; margin-bottom: 16px; color: var(--text-primary); letter-spacing: -0.02em;">Our Products</h1>
@@ -45,8 +51,8 @@
 
             <div class="products-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 32px; max-width: 1000px; margin: 0 auto;">
                 <!-- Milo Product Card -->
-                <div class="product-card" style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 40px; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;">
-                    <div class="product-icon" style="width: 64px; height: 64px; background: var(--primary-blue-light); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+                <div class="product-card" style="background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border: 1px solid rgba(223, 225, 230, 0.5); border-radius: 16px; padding: 40px; box-shadow: 0 4px 12px rgba(9, 30, 66, 0.1); transition: all 0.3s ease; cursor: pointer;">
+                    <div class="product-icon" style="width: 64px; height: 64px; background: var(--primary-blue-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--primary-blue)" stroke-width="2">
                             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                             <line x1="9" y1="3" x2="9" y2="21"></line>
@@ -56,16 +62,16 @@
                     <h2 style="font-size: 28px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary); letter-spacing: -0.01em;">Milo</h2>
                     <p style="font-size: 16px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px;">Project management tool for agile teams. Organize tasks, track progress, and deliver projects faster with boards, sprints, and real-time collaboration.</p>
                     <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px;">
-                        <span style="padding: 4px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; font-weight: 500; color: var(--text-secondary);">Project Management</span>
-                        <span style="padding: 4px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; font-weight: 500; color: var(--text-secondary);">Agile Boards</span>
-                        <span style="padding: 4px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; font-weight: 500; color: var(--text-secondary);">Team Collaboration</span>
+                        <span style="padding: 4px 12px; background: rgba(222, 235, 255, 0.6); border: 1px solid var(--primary-blue-light); border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--primary-blue);">Project Management</span>
+                        <span style="padding: 4px 12px; background: rgba(222, 235, 255, 0.6); border: 1px solid var(--primary-blue-light); border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--primary-blue);">Agile Boards</span>
+                        <span style="padding: 4px 12px; background: rgba(222, 235, 255, 0.6); border: 1px solid var(--primary-blue-light); border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--primary-blue);">Team Collaboration</span>
                     </div>
                     <a href="milo-login.html" class="btn-primary" style="display: inline-block; text-decoration: none; cursor: pointer;">Login to Milo →</a>
                 </div>
 
                 <!-- Insurance Loom Product Card -->
-                <div class="product-card" style="background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 40px; transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease; cursor: pointer;" onclick="window.open('https://www.insuranceloom.com', '_blank')">
-                    <div class="product-icon" style="width: 64px; height: 64px; background: var(--primary-blue-light); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+                <div class="product-card" style="background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border: 1px solid rgba(223, 225, 230, 0.5); border-radius: 16px; padding: 40px; box-shadow: 0 4px 12px rgba(9, 30, 66, 0.1); transition: all 0.3s ease; cursor: pointer;" onclick="window.open('https://www.insuranceloom.com', '_blank')">
+                    <div class="product-icon" style="width: 64px; height: 64px; background: var(--primary-blue-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--primary-blue)" stroke-width="2">
                             <path d="M12 2L2 7L12 12L22 7L12 2Z"></path>
                             <path d="M2 17L12 22L22 17V12L12 17L2 12V17Z"></path>
@@ -74,9 +80,9 @@
                     <h2 style="font-size: 28px; font-weight: 600; margin-bottom: 12px; color: var(--text-primary); letter-spacing: -0.01em;">Insurance Loom</h2>
                     <p style="font-size: 16px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px;">Comprehensive insurance management platform. Streamline insurance operations, manage policies, and provide better service to your clients.</p>
                     <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px;">
-                        <span style="padding: 4px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; font-weight: 500; color: var(--text-secondary);">Insurance Management</span>
-                        <span style="padding: 4px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; font-weight: 500; color: var(--text-secondary);">Policy Tracking</span>
-                        <span style="padding: 4px 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 3px; font-size: 12px; font-weight: 500; color: var(--text-secondary);">Client Portal</span>
+                        <span style="padding: 4px 12px; background: rgba(222, 235, 255, 0.6); border: 1px solid var(--primary-blue-light); border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--primary-blue);">Insurance Management</span>
+                        <span style="padding: 4px 12px; background: rgba(222, 235, 255, 0.6); border: 1px solid var(--primary-blue-light); border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--primary-blue);">Policy Tracking</span>
+                        <span style="padding: 4px 12px; background: rgba(222, 235, 255, 0.6); border: 1px solid var(--primary-blue-light); border-radius: 6px; font-size: 12px; font-weight: 500; color: var(--primary-blue);">Client Portal</span>
                     </div>
                     <a href="https://www.insuranceloom.com" target="_blank" class="btn-primary" style="display: inline-block; text-decoration: none;">Visit Insurance Loom →</a>
                 </div>
