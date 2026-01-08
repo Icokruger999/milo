@@ -203,12 +203,13 @@ public class FlakesController : ControllerBase
 
             // Use EmailService to send the flake
             var emailService = HttpContext.RequestServices.GetRequiredService<Milo.API.Services.EmailService>();
+            var configuration = HttpContext.RequestServices.GetRequiredService<IConfiguration>();
             
             var flakeUrl = $"{request.BaseUrl ?? "https://www.codingeverest.com"}/milo-flake-view.html?id={flake.Id}";
             var projectName = flake.Project?.Name ?? "Unknown Project";
             var authorName = flake.Author?.Name ?? "Unknown Author";
-            var fromEmail = HttpContext.RequestServices.GetRequiredService<IConfiguration>()["Email:FromEmail"] ?? "info@streamyo.net";
-            var fromName = HttpContext.RequestServices.GetRequiredService<IConfiguration>()["Email:FromName"] ?? "Milo - Coding Everest";
+            var fromEmail = configuration["Email:FromEmail"] ?? "info@streamyo.net";
+            var fromName = configuration["Email:FromName"] ?? "Milo - Coding Everest";
 
             var emailBody = $@"
 <!DOCTYPE html>
@@ -254,12 +255,12 @@ public class FlakesController : ControllerBase
 </body>
 </html>";
 
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(fromName, fromEmail));
-            message.To.Add(new MailboxAddress("", request.ToEmail));
+            var message = new MimeKit.MimeMessage();
+            message.From.Add(new MimeKit.MailboxAddress(fromName, fromEmail));
+            message.To.Add(new MimeKit.MailboxAddress("", request.ToEmail));
             message.Subject = $"Shared Flake: {flake.Title}";
 
-            var bodyBuilder = new BodyBuilder
+            var bodyBuilder = new MimeKit.BodyBuilder
             {
                 HtmlBody = emailBody,
                 TextBody = $@"Shared Flake: {flake.Title}
