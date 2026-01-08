@@ -105,7 +105,7 @@ function setupUserMenu() {
         <div style="padding: 8px 12px; cursor: pointer; font-size: 14px; color: #172B4D; transition: background 0.15s;" 
              onmouseover="this.style.background='#F4F5F7'" 
              onmouseout="this.style.background='white'"
-             onclick="window.logout()">Logout</div>
+             onclick="if(typeof window.logout === 'function') { window.logout(); } else if(typeof authService !== 'undefined' && authService.logout) { authService.logout(); } else { window.location.href = 'milo-login.html'; }">Logout</div>
     `;
     document.body.appendChild(dropdown);
 
