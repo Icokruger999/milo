@@ -330,14 +330,16 @@ This flake was shared from Milo - Coding Everest"
                 // Add flake link to task description or create a comment
                 var flakeLink = $"[Flake: {flake.Title}]({request.BaseUrl ?? "https://www.codingeverest.com"}/milo-flake-view.html?id={flake.Id})";
                 
+                var contentPreview = string.IsNullOrEmpty(flake.Content) 
+                    ? "" 
+                    : (flake.Content.Length > 500 ? flake.Content.Substring(0, 500) : flake.Content);
+                
                 if (string.IsNullOrEmpty(task.Description))
                 {
-                    var contentPreview = flake.Content?.Length > 500 ? flake.Content.Substring(0, 500) : flake.Content ?? "";
                     task.Description = $"**Shared Flake:**\n{flakeLink}\n\n{contentPreview}";
                 }
                 else
                 {
-                    var contentPreview = flake.Content?.Length > 500 ? flake.Content.Substring(0, 500) : flake.Content ?? "";
                     task.Description += $"\n\n---\n**Shared Flake:**\n{flakeLink}\n\n{contentPreview}";
                 }
 
