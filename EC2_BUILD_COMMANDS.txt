@@ -1,0 +1,13 @@
+# EC2 Build Commands - Copy and Paste
+
+cd ~/milo
+git pull origin main
+cd backend/Milo.API
+dotnet restore
+dotnet build
+
+# If build succeeds:
+dotnet ef migrations add AddFlakesAndTaskType --output-dir Data/Migrations
+dotnet build
+sudo systemctl restart milo-api.service
+
