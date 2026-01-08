@@ -23,6 +23,8 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             height: 100vh;
             overflow: hidden;
+            visibility: visible !important;
+            display: block !important;
         }
 
         /* Top Global Navigation */
@@ -209,8 +211,9 @@
             margin-top: 48px;
             height: calc(100vh - 48px);
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             background: #FFFFFF;
+            overflow: hidden;
         }
 
         /* Project Sidebar */
@@ -294,6 +297,8 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            min-width: 0;
+            background: #FFFFFF;
         }
 
         .backlog-header {

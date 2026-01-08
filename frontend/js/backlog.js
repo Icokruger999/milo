@@ -1,10 +1,13 @@
 // Backlog Page Functionality
+console.log('Backlog.js script loaded');
+
 let backlogTasks = [];
 let hasUnsavedChanges = false;
 let originalTaskStates = {};
 
 // Initialize backlog page
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Backlog page DOMContentLoaded fired');
     // Check authentication
     if (!authService.isAuthenticated()) {
         window.location.href = 'milo-login.html';
@@ -43,7 +46,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load backlog tasks after a short delay to ensure project is loaded
     setTimeout(() => {
-        loadBacklogTasks();
+        console.log('Starting to load backlog tasks...');
+        try {
+            loadBacklogTasks();
+        } catch (error) {
+            console.error('Error in loadBacklogTasks:', error);
+            const container = document.getElementById('backlogList');
+            if (container) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">⚠️</div>
+                        <div class="empty-state-text">Error loading backlog: ${error.message}</div>
+                    </div>
+                `;
+            }
+        }
     }, 500);
 
     // Setup user menu
@@ -196,12 +213,23 @@ async function loadBacklogTasks() {
 function renderBacklog() {
     const container = document.getElementById('backlogList');
     if (!container) {
-        console.error('Backlog list container not found');
+        console.error('Backlog list container not found - checking DOM...');
+        // Try to find it with a delay in case DOM isn't ready
+        setTimeout(() => {
+            const retryContainer = document.getElementById('backlogList');
+            if (retryContainer) {
+                console.log('Found container on retry');
+                renderBacklog();
+            } else {
+                console.error('Container still not found after retry');
+            }
+        }, 100);
         return;
     }
 
     console.log('Rendering backlog with', backlogTasks.length, 'tasks');
     console.log('Tasks data:', backlogTasks);
+    console.log('Container found:', container);
     
     if (backlogTasks.length === 0) {
         container.innerHTML = `
