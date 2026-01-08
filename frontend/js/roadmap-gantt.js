@@ -183,12 +183,15 @@ function renderTimeline() {
 function renderTimelineHeader() {
     const header = document.getElementById('timelineHeader');
     const dates = generateTimelineDates();
+    const timelineWidth = dates.length * 120; // 120px per cell
     
-    header.innerHTML = dates.map(date => {
+    const cells = dates.map(date => {
         const isWeekend = date.getDay() === 0 || date.getDay() === 6;
         const label = formatDateLabel(date);
         return `<div class="timeline-header-cell ${isWeekend ? 'weekend' : ''}">${label}</div>`;
     }).join('');
+    
+    header.innerHTML = `<div class="timeline-header-row" style="width: ${timelineWidth}px; display: flex;">${cells}</div>`;
 }
 
 // Generate timeline dates based on view mode
