@@ -97,11 +97,22 @@ body {
 /* Products Dropdown */
 .nav-dropdown {
     position: relative;
+    display: inline-block;
 }
 
 .nav-dropdown-trigger {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    transition: all 0.3s ease;
     cursor: pointer;
     user-select: none;
+    display: inline-block;
+}
+
+.nav-dropdown-trigger:hover {
+    color: var(--text-primary);
 }
 
 .nav-dropdown-menu {
@@ -123,6 +134,18 @@ body {
 
 .nav-dropdown:hover .nav-dropdown-menu {
     display: block;
+    animation: dropdownFadeIn 0.2s ease;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .nav-dropdown-menu a {
