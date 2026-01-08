@@ -135,6 +135,11 @@ async function loadBacklogTasks() {
             
             // Show ALL tasks on backlog page (no filtering)
             console.log(`Loaded ${apiTasks.length} tasks for backlog page`);
+            console.log('API Tasks:', apiTasks);
+            
+            if (apiTasks.length === 0) {
+                console.warn('No tasks returned from API. Check project ID and task status.');
+            }
 
             backlogTasks = apiTasks.map(task => ({
                 id: task.id,
@@ -196,6 +201,7 @@ function renderBacklog() {
     }
 
     console.log('Rendering backlog with', backlogTasks.length, 'tasks');
+    console.log('Tasks data:', backlogTasks);
     
     if (backlogTasks.length === 0) {
         container.innerHTML = `
@@ -207,44 +213,84 @@ function renderBacklog() {
         return;
     }
 
-    container.innerHTML = backlogTasks.map(task => {
+    // Group tasks by status for better organization
+    const tasksByStatus = {
+        backlog: backlogTasks.filter(t => t.status === 'backlog' || !t.status || t.status === ''),
+        todo: backlogTasks.filter(t => t.status === 'todo'),
+        progress: backlogTasks.filter(t => t.status === 'progress' || t.status === 'in-progress'),
+        review: backlogTasks.filter(t => t.status === 'review' || t.status === 'in-review'),
+        done: backlogTasks.filter(t => t.status === 'done' || t.status === 'completed')
+    };
+    
+    // Render all tasks in a Jira-style list
+    container.innerHTML = backlogTasks.map((task, index) => {
         const assigneeInitials = task.assignee 
             ? (task.assignee.name || 'UN').substring(0, 2).toUpperCase()
             : 'UN';
         
         const priorityLabels = ['Low', 'Medium', 'High'];
         const priorityLabel = priorityLabels[task.priority] || 'Low';
+        const priorityColors = ['#36B37E', '#FFAB00', '#DE350B'];
+        const priorityColor = priorityColors[task.priority] || '#36B37E';
+        
+        // Get label color based on label name
+        const labelColors = {
+            'billing': '#0052CC',
+            'accounts': '#36B37E',
+            'aws spike': '#DE350B',
+            'feedback': '#FFAB00',
+            'forms': '#6554C0',
+            'sorbet': '#00B8D9'
+        };
+        const labelName = (task.label || 'accounts').toLowerCase();
+        const labelColor = labelColors[labelName] || '#DFE1E6';
+        const labelTextColor = labelName in labelColors ? '#FFFFFF' : '#42526E';
+        
+        // Status display
+        const statusDisplay = task.status === 'backlog' ? 'Backlog' :
+                             task.status === 'todo' ? 'To Do' :
+                             task.status === 'progress' ? 'In Progress' :
+                             task.status === 'review' ? 'In Review' :
+                             task.status === 'done' ? 'Done' : 'Backlog';
         
         return `
-            <div class="backlog-item" onclick="openTaskModal(${task.id})">
-                <div class="backlog-item-header">
-                    <div class="backlog-item-icon"></div>
+            <div class="backlog-item" data-task-id="${task.id}" onclick="openTaskModal(${task.id})">
+                <div class="backlog-item-left">
+                    <div class="backlog-item-icon" style="color: ${priorityColor};">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                            <path d="M2 17l10 5 10-5"></path>
+                            <path d="M2 12l10 5 10-5"></path>
+                        </svg>
+                    </div>
                     <div class="backlog-item-content">
-                        <div class="backlog-item-title">${task.title}</div>
-                        <div class="backlog-item-meta">
-                            <span class="backlog-item-label" style="background: #DFE1E6; color: #42526E;">${(task.label || 'accounts').toUpperCase()}</span>
-                            <span>${task.taskId}</span>
-                            <span>•</span>
-                            <span>Priority: ${priorityLabel}</span>
-                            ${task.dueDate ? `<span>•</span><span>Due: ${new Date(task.dueDate).toLocaleDateString()}</span>` : ''}
+                        <div class="backlog-item-title-row">
+                            <span class="backlog-item-key">${task.taskId}</span>
+                            <span class="backlog-item-title">${task.title || 'Untitled Task'}</span>
                         </div>
-                        ${task.description ? `<div style="margin-top: 8px; font-size: 13px; color: #6B778C;">${task.description.substring(0, 100)}${task.description.length > 100 ? '...' : ''}</div>` : ''}
+                        ${task.description ? `<div class="backlog-item-description">${task.description.substring(0, 150)}${task.description.length > 150 ? '...' : ''}</div>` : ''}
+                        <div class="backlog-item-meta">
+                            <span class="backlog-item-label" style="background: ${labelColor}; color: ${labelTextColor};">
+                                ${(task.label || 'ACCOUNTS').toUpperCase()}
+                            </span>
+                            <span class="backlog-item-priority" style="color: ${priorityColor};">
+                                ${task.priority + 1}
+                            </span>
+                            ${task.dueDate ? `<span class="backlog-item-due">Due: ${new Date(task.dueDate).toLocaleDateString()}</span>` : ''}
+                        </div>
                     </div>
                 </div>
-                <div class="backlog-item-footer">
-                    <div class="backlog-item-actions">
-                        <select onchange="changeTaskStatus(${task.id}, this.value)" onclick="event.stopPropagation()" style="padding: 4px 8px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 12px;">
-                            <option value="backlog" ${task.status === 'backlog' ? 'selected' : ''}>Backlog</option>
-                            <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>To Do</option>
-                            <option value="progress" ${task.status === 'progress' || task.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
-                            <option value="review" ${task.status === 'review' || task.status === 'in-review' ? 'selected' : ''}>In Review</option>
-                            <option value="done" ${task.status === 'done' || task.status === 'completed' ? 'selected' : ''}>Done</option>
-                        </select>
-                        <select onchange="changeTaskAssignee(${task.id}, this.value)" onclick="event.stopPropagation()" style="padding: 4px 8px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 12px;">
-                            <option value="">Unassigned</option>
-                        </select>
+                <div class="backlog-item-right">
+                    <select class="backlog-status-select" onchange="changeTaskStatus(${task.id}, this.value)" onclick="event.stopPropagation()">
+                        <option value="backlog" ${task.status === 'backlog' || !task.status ? 'selected' : ''}>Backlog</option>
+                        <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>To Do</option>
+                        <option value="progress" ${task.status === 'progress' || task.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
+                        <option value="review" ${task.status === 'review' || task.status === 'in-review' ? 'selected' : ''}>In Review</option>
+                        <option value="done" ${task.status === 'done' || task.status === 'completed' ? 'selected' : ''}>Done</option>
+                    </select>
+                    <div class="backlog-item-assignee" title="${task.assignee ? task.assignee.name : 'Unassigned'}" style="background: ${task.assignee ? '#0052CC' : '#DFE1E6'}; color: ${task.assignee ? '#FFFFFF' : '#42526E'};">
+                        ${assigneeInitials}
                     </div>
-                    <div class="backlog-item-assignee" title="${task.assignee ? task.assignee.name : 'Unassigned'}">${assigneeInitials}</div>
                 </div>
             </div>
         `;
@@ -259,20 +305,13 @@ async function loadAssigneesForDropdowns() {
         const response = await apiClient.get('/auth/users');
         if (response.ok) {
             const users = await response.json();
-            const assigneeSelects = document.querySelectorAll('.backlog-item-actions select:last-child');
-            assigneeSelects.forEach(select => {
-                const taskId = parseInt(select.getAttribute('onchange').match(/\d+/)[0]);
-                const currentAssigneeId = backlogTasks.find(t => t.id === taskId)?.assigneeId;
-                
-                users.forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.id;
-                    option.textContent = user.name;
-                    if (user.id === currentAssigneeId) {
-                        option.selected = true;
-                    }
-                    select.appendChild(option);
-                });
+            // Find all backlog items and populate assignee dropdowns
+            backlogTasks.forEach(task => {
+                const taskElement = document.querySelector(`[data-task-id="${task.id}"]`);
+                if (taskElement) {
+                    // We'll add assignee dropdown later if needed
+                    // For now, just show the assignee avatar
+                }
             });
         }
     } catch (error) {
