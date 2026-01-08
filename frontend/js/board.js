@@ -295,14 +295,26 @@ async function showTaskModal(column, task = null) {
         
         // Load checklist if exists
         const checklistDiv = document.getElementById('taskChecklist');
-        if (task.checklist && task.checklist.length > 0) {
+        let checklist = task.checklist;
+        
+        // Parse checklist if it's a string (JSON)
+        if (typeof checklist === 'string' && checklist.trim()) {
+            try {
+                checklist = JSON.parse(checklist);
+            } catch (e) {
+                console.error('Failed to parse checklist:', e);
+                checklist = null;
+            }
+        }
+        
+        if (checklist && Array.isArray(checklist) && checklist.length > 0) {
             checklistDiv.innerHTML = '';
-            task.checklist.forEach((item, idx) => {
+            checklist.forEach((item, idx) => {
                 const itemDiv = document.createElement('div');
                 itemDiv.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 6px; background: white; border-radius: 3px;';
                 itemDiv.innerHTML = `
                     <input type="checkbox" ${item.completed ? 'checked' : ''} style="cursor: pointer;">
-                    <input type="text" value="${item.text || ''}" style="flex: 1; padding: 4px 8px; border: 1px solid #ddd; border-radius: 3px; font-size: 13px;">
+                    <input type="text" value="${(item.text || '').replace(/"/g, '&quot;')}" style="flex: 1; padding: 4px 8px; border: 1px solid #ddd; border-radius: 3px; font-size: 13px;">
                     <button onclick="removeChecklistItemFromModal(this)" style="background: none; border: none; color: #DE350B; cursor: pointer; font-size: 16px; padding: 0 8px;">×</button>
                 `;
                 checklistDiv.appendChild(itemDiv);
@@ -789,18 +801,20 @@ async function handleTaskSubmit(event) {
         dueDate = date.toISOString();
     }
     
-    // Collect checklist items
+    // Collect checklist items - improved selector to catch all checklist items
     const checklistItems = [];
     const checklistDiv = document.getElementById('taskChecklist');
     if (checklistDiv) {
-        const items = checklistDiv.querySelectorAll('div[style*="display: flex"]');
-        items.forEach(item => {
+        // Get all divs that contain a checkbox and text input (checklist items)
+        const allDivs = checklistDiv.querySelectorAll('div');
+        allDivs.forEach(item => {
             const checkbox = item.querySelector('input[type="checkbox"]');
             const textInput = item.querySelector('input[type="text"]');
-            if (textInput && textInput.value.trim()) {
+            // Only process if it has both checkbox and text input (actual checklist item)
+            if (checkbox && textInput && textInput.value.trim()) {
                 checklistItems.push({
                     text: textInput.value.trim(),
-                    completed: checkbox ? checkbox.checked : false
+                    completed: checkbox.checked || false
                 });
             }
         });
@@ -820,8 +834,10 @@ async function handleTaskSubmit(event) {
         priority: parseInt(document.getElementById('taskPriority').value),
         startDate: startDate,
         dueDate: dueDate,
-        checklist: checklistItems.length > 0 ? checklistItems : null
+        checklist: checklistItems.length > 0 ? checklistItems : [] // Always send array, even if empty
     };
+    
+    console.log('Saving task with checklist items:', checklistItems.length, checklistItems);
     
     try {
         let response;
