@@ -310,61 +310,172 @@ function createTimelineRow(item, type, dates, timelineWidth) {
     bar.style.left = left + 'px';
     bar.style.width = Math.max(60, width) + 'px';
     bar.dataset.itemId = item.id;
-    bar.draggable = true;
+    bar.dataset.startDate = startDate.toISOString();
+    bar.dataset.endDate = endDate.toISOString();
     
     const title = item.title.length > 30 ? item.title.substring(0, 30) + '...' : item.title;
-    bar.innerHTML = `<span class="timeline-bar-title">${item.taskId} ${title}</span>`;
     
-    // Add drag handlers
-    bar.addEventListener('dragstart', handleDragStart);
-    bar.addEventListener('dragend', handleDragEnd);
+    // Add resize handles and title
+    bar.innerHTML = `
+        <div class="resize-handle resize-handle-left" data-item-id="${item.id}"></div>
+        <span class="timeline-bar-title">${item.taskId} ${title}</span>
+        <div class="resize-handle resize-handle-right" data-item-id="${item.id}"></div>
+    `;
+    
+    // Add mouse down handler for dragging entire bar
+    bar.addEventListener('mousedown', handleBarMouseDown);
+    
+    // Add resize handlers
+    const leftHandle = bar.querySelector('.resize-handle-left');
+    const rightHandle = bar.querySelector('.resize-handle-right');
+    
+    leftHandle.addEventListener('mousedown', handleLeftResizeStart);
+    rightHandle.addEventListener('mousedown', handleRightResizeStart);
     
     row.appendChild(bar);
     
     return row;
 }
 
-// Drag and drop handlers
-function handleDragStart(e) {
-    draggedBar = this;
-    this.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', this.innerHTML);
+// Drag and resize variables
+let isDragging = false;
+let isResizing = false;
+let resizeMode = null; // 'left' or 'right'
+let currentBar = null;
+let startX = 0;
+let startLeft = 0;
+let startWidth = 0;
+
+// Handle bar mouse down for dragging
+function handleBarMouseDown(e) {
+    // Don't drag if clicking on resize handle
+    if (e.target.classList.contains('resize-handle')) {
+        return;
+    }
+    
+    e.preventDefault();
+    isDragging = true;
+    currentBar = this;
+    startX = e.clientX;
+    startLeft = parseInt(currentBar.style.left) || 0;
+    
+    currentBar.classList.add('dragging');
+    
+    document.addEventListener('mousemove', handleBarDrag);
+    document.addEventListener('mouseup', handleBarDragEnd);
 }
 
-function handleDragEnd(e) {
-    this.classList.remove('dragging');
-    if (draggedBar) {
-        updateTaskDates(draggedBar);
-        draggedBar = null;
+// Handle bar dragging
+function handleBarDrag(e) {
+    if (!isDragging || !currentBar) return;
+    
+    e.preventDefault();
+    const deltaX = e.clientX - startX;
+    const newLeft = startLeft + deltaX;
+    
+    // Constrain to timeline bounds
+    if (newLeft >= 0) {
+        currentBar.style.left = newLeft + 'px';
     }
 }
 
-// Make timeline rows droppable
-document.addEventListener('DOMContentLoaded', function() {
-    const timelineBody = document.getElementById('timelineBody');
-    if (timelineBody) {
-        timelineBody.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-        });
+// Handle bar drag end
+function handleBarDragEnd(e) {
+    if (!isDragging || !currentBar) return;
+    
+    isDragging = false;
+    currentBar.classList.remove('dragging');
+    
+    // Save new position
+    saveTaskPosition(currentBar);
+    
+    currentBar = null;
+    document.removeEventListener('mousemove', handleBarDrag);
+    document.removeEventListener('mouseup', handleBarDragEnd);
+}
+
+// Handle left resize start
+function handleLeftResizeStart(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    isResizing = true;
+    resizeMode = 'left';
+    currentBar = e.target.closest('.timeline-bar');
+    startX = e.clientX;
+    startLeft = parseInt(currentBar.style.left) || 0;
+    startWidth = currentBar.offsetWidth;
+    
+    document.addEventListener('mousemove', handleResize);
+    document.addEventListener('mouseup', handleResizeEnd);
+}
+
+// Handle right resize start
+function handleRightResizeStart(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    isResizing = true;
+    resizeMode = 'right';
+    currentBar = e.target.closest('.timeline-bar');
+    startX = e.clientX;
+    startWidth = currentBar.offsetWidth;
+    
+    document.addEventListener('mousemove', handleResize);
+    document.addEventListener('mouseup', handleResizeEnd);
+}
+
+// Handle resize
+function handleResize(e) {
+    if (!isResizing || !currentBar) return;
+    
+    e.preventDefault();
+    const deltaX = e.clientX - startX;
+    
+    if (resizeMode === 'left') {
+        // Resize from left (change start date)
+        const newLeft = startLeft + deltaX;
+        const newWidth = startWidth - deltaX;
         
-        timelineBody.addEventListener('drop', function(e) {
-            e.preventDefault();
-            if (draggedBar) {
-                const rect = timelineBody.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const newDate = calculateDateFromPosition(x);
-                updateBarPosition(draggedBar, x, newDate);
-            }
-        });
+        if (newLeft >= 0 && newWidth >= 60) {
+            currentBar.style.left = newLeft + 'px';
+            currentBar.style.width = newWidth + 'px';
+        }
+    } else if (resizeMode === 'right') {
+        // Resize from right (change end date)
+        const newWidth = startWidth + deltaX;
+        
+        if (newWidth >= 60) {
+            currentBar.style.width = newWidth + 'px';
+        }
     }
-});
+}
 
-// Calculate date from position
-function calculateDateFromPosition(x) {
+// Handle resize end
+function handleResizeEnd(e) {
+    if (!isResizing || !currentBar) return;
+    
+    isResizing = false;
+    
+    // Save new dates
+    saveTaskDates(currentBar);
+    
+    resizeMode = null;
+    currentBar = null;
+    document.removeEventListener('mousemove', handleResize);
+    document.removeEventListener('mouseup', handleResizeEnd);
+}
+
+// Save task position (drag)
+async function saveTaskPosition(bar) {
+    const itemId = parseInt(bar.dataset.itemId);
+    const task = roadmapData.tasks.find(t => t.id === itemId);
+    if (!task) return;
+    
+    const left = parseInt(bar.style.left);
     const dates = generateTimelineDates();
     const timelineWidth = dates.length * 120;
+    
     const firstDate = dates[0];
     const lastDate = dates[dates.length - 1];
     if (currentViewMode === 'weeks') {
@@ -375,32 +486,61 @@ function calculateDateFromPosition(x) {
     }
     
     const totalDays = Math.ceil((lastDate - firstDate) / (1000 * 60 * 60 * 24));
-    const daysFromStart = (x / timelineWidth) * totalDays;
-    const newDate = new Date(firstDate);
-    newDate.setDate(newDate.getDate() + Math.round(daysFromStart));
-    return newDate;
+    const daysFromStart = (left / timelineWidth) * totalDays;
+    
+    const newStartDate = new Date(firstDate);
+    newStartDate.setDate(newStartDate.getDate() + Math.round(daysFromStart));
+    
+    // Calculate duration to maintain it
+    const duration = task.endDate ? Math.ceil((task.endDate - task.startDate) / (1000 * 60 * 60 * 24)) : 7;
+    const newEndDate = new Date(newStartDate);
+    newEndDate.setDate(newEndDate.getDate() + duration);
+    
+    task.startDate = newStartDate;
+    task.endDate = newEndDate;
+    
+    await saveTaskDates(bar);
 }
 
-// Update bar position
-function updateBarPosition(bar, x, newDate) {
+// Save task dates (resize or drag)
+async function saveTaskDates(bar) {
     const itemId = parseInt(bar.dataset.itemId);
     const task = roadmapData.tasks.find(t => t.id === itemId);
-    if (task) {
-        task.startDate = newDate;
-        if (!task.endDate) {
-            task.endDate = new Date(newDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-        }
-        renderTimeline();
-        saveTaskDates(task);
+    if (!task) return;
+    
+    const left = parseInt(bar.style.left);
+    const width = bar.offsetWidth;
+    
+    const dates = generateTimelineDates();
+    const timelineWidth = dates.length * 120;
+    
+    const firstDate = dates[0];
+    const lastDate = dates[dates.length - 1];
+    if (currentViewMode === 'weeks') {
+        lastDate.setDate(lastDate.getDate() + 6);
+    } else if (currentViewMode === 'months') {
+        lastDate.setMonth(lastDate.getMonth() + 1);
+        lastDate.setDate(0);
     }
-}
-
-// Save task dates to API
-async function saveTaskDates(task) {
+    
+    const totalDays = Math.ceil((lastDate - firstDate) / (1000 * 60 * 60 * 24));
+    const daysFromStart = (left / timelineWidth) * totalDays;
+    const durationDays = (width / timelineWidth) * totalDays;
+    
+    const newStartDate = new Date(firstDate);
+    newStartDate.setDate(newStartDate.getDate() + Math.round(daysFromStart));
+    
+    const newEndDate = new Date(newStartDate);
+    newEndDate.setDate(newEndDate.getDate() + Math.round(durationDays));
+    
+    task.startDate = newStartDate;
+    task.endDate = newEndDate;
+    
+    // Save to API
     try {
         const response = await apiClient.put(`/tasks/${task.id}`, {
             startDate: task.startDate.toISOString(),
-            dueDate: task.endDate ? task.endDate.toISOString() : null
+            dueDate: task.endDate.toISOString()
         });
         if (response.ok) {
             console.log('Task dates updated');
@@ -410,17 +550,6 @@ async function saveTaskDates(task) {
     }
 }
 
-// Update task dates (for drag end)
-async function updateTaskDates(bar) {
-    const itemId = parseInt(bar.dataset.itemId);
-    const task = roadmapData.tasks.find(t => t.id === itemId);
-    if (task && bar.style.left) {
-        const left = parseFloat(bar.style.left);
-        const newDate = calculateDateFromPosition(left);
-        task.startDate = newDate;
-        await saveTaskDates(task);
-    }
-}
 
 // Update current date line
 function updateCurrentDateLine() {

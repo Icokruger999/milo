@@ -461,10 +461,27 @@
         /* Timeline Area */
         .roadmap-timeline {
             flex: 1;
-            overflow-x: auto;
+            overflow-x: scroll; /* Always show horizontal scrollbar */
             overflow-y: auto;
             position: relative;
             background: #FFFFFF;
+        }
+
+        .roadmap-timeline::-webkit-scrollbar {
+            height: 12px;
+        }
+
+        .roadmap-timeline::-webkit-scrollbar-track {
+            background: #F4F5F7;
+        }
+
+        .roadmap-timeline::-webkit-scrollbar-thumb {
+            background: #C1C7D0;
+            border-radius: 6px;
+        }
+
+        .roadmap-timeline::-webkit-scrollbar-thumb:hover {
+            background: #A5ADBA;
         }
 
         .timeline-header {
@@ -522,14 +539,41 @@
             border-radius: 3px;
             display: flex;
             align-items: center;
-            padding: 0 12px;
+            padding: 0 8px;
             color: white;
             font-size: 12px;
             font-weight: 500;
-            cursor: pointer;
+            cursor: move;
             z-index: 5;
             box-shadow: 0 1px 3px rgba(0,0,0,0.2);
             transition: box-shadow 0.2s;
+            user-select: none;
+        }
+
+        .resize-handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 8px;
+            cursor: ew-resize;
+            z-index: 10;
+            transition: background 0.2s;
+        }
+
+        .resize-handle-left {
+            left: 0;
+            border-top-left-radius: 3px;
+            border-bottom-left-radius: 3px;
+        }
+
+        .resize-handle-right {
+            right: 0;
+            border-top-right-radius: 3px;
+            border-bottom-right-radius: 3px;
+        }
+
+        .resize-handle:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         .timeline-bar:hover {
