@@ -12,6 +12,17 @@ let charts = {
     timelineChart: null
 };
 
+// Performance: Cache data for 30 seconds
+let dataCache = {
+    tasks: null,
+    timestamp: 0,
+    duration: 30000 // 30 seconds
+};
+
+// Debounce filter changes
+let filterTimeout = null;
+const FILTER_DEBOUNCE_MS = 300;
+
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', function() {
     if (!authService.isAuthenticated()) {
@@ -88,12 +99,24 @@ function setupUserMenu() {
     });
 }
 
-// Load dashboard data
+// Load dashboard data with caching and error handling
 async function loadDashboardData() {
     try {
         const currentProject = projectSelector.getCurrentProject();
         if (!currentProject) {
             console.error('No project selected');
+            showErrorState();
+            return;
+        }
+
+        // Check cache first
+        const now = Date.now();
+        if (dataCache.tasks && (now - dataCache.timestamp < dataCache.duration)) {
+            console.log('Using cached dashboard data');
+            dashboardData.tasks = dataCache.tasks;
+            dashboardData.filteredTasks = [...dashboardData.tasks];
+            await loadAssignees();
+            applyFiltersImmediate(); // No debounce for cached data
             return;
         }
 
@@ -101,30 +124,67 @@ async function loadDashboardData() {
         const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
         
         if (response.ok) {
-            dashboardData.tasks = await response.json();
-            console.log('Loaded tasks:', dashboardData.tasks.length);
+            const tasks = await response.json();
+            console.log('Loaded tasks:', tasks.length);
+            
+            // Cache the data
+            dataCache.tasks = tasks;
+            dataCache.timestamp = now;
+            
+            dashboardData.tasks = tasks;
             dashboardData.filteredTasks = [...dashboardData.tasks];
             
             // Load assignees for filter
             await loadAssignees();
             
-            // Apply initial filters and render
-            applyFilters();
+            // Apply initial filters and render (no debounce on initial load)
+            applyFiltersImmediate();
         } else {
-            const errorText = await response.text();
+            const errorText = await response.text().catch(() => 'Unknown error');
             console.error('Failed to load tasks. Status:', response.status, 'Response:', errorText);
-            
-            // Show error message to user
-            document.getElementById('totalTasks').textContent = 'Error';
-            document.getElementById('totalTasks').style.color = '#DE350B';
+            showErrorState();
         }
     } catch (error) {
         console.error('Error loading dashboard data:', error);
-        
-        // Show error message to user
-        document.getElementById('totalTasks').textContent = 'Error';
-        document.getElementById('totalTasks').style.color = '#DE350B';
+        showErrorState();
     }
+}
+
+// Show error state with fallback values
+function showErrorState() {
+    // Use cached data if available, otherwise show zeros
+    if (dataCache.tasks && dataCache.tasks.length > 0) {
+        console.log('Using cached data due to error');
+        dashboardData.tasks = dataCache.tasks;
+        dashboardData.filteredTasks = [...dashboardData.tasks];
+        applyFiltersImmediate(); // No debounce for error recovery
+        return;
+    }
+    
+    // Show zeros instead of "Error"
+    const totalTasksEl = document.getElementById('totalTasks');
+    const inProgressEl = document.getElementById('inProgressTasks');
+    const completedEl = document.getElementById('completedTasks');
+    const completionRateEl = document.getElementById('completionRate');
+    
+    if (totalTasksEl) {
+        totalTasksEl.textContent = '0';
+        totalTasksEl.style.color = '';
+    }
+    if (inProgressEl) inProgressEl.textContent = '0';
+    if (completedEl) completedEl.textContent = '0';
+    if (completionRateEl) completionRateEl.textContent = '0%';
+    
+    // Clear charts
+    Object.values(charts).forEach(chart => {
+        if (chart) {
+            try {
+                chart.destroy();
+            } catch (e) {
+                console.warn('Error destroying chart:', e);
+            }
+        }
+    });
 }
 
 // Load assignees for filter dropdown
@@ -159,32 +219,70 @@ async function loadAssignees() {
     }
 }
 
-// Apply filters
+// Apply filters with debouncing for performance
 function applyFilters() {
-    const assigneeFilter = document.getElementById('assigneeFilter').value;
-    const statusFilter = document.getElementById('statusFilter').value;
-    const timeRangeFilter = document.getElementById('timeRangeFilter').value;
+    // Clear existing timeout
+    if (filterTimeout) {
+        clearTimeout(filterTimeout);
+    }
+    
+    // Debounce filter application
+    filterTimeout = setTimeout(() => {
+        applyFiltersImmediate();
+    }, FILTER_DEBOUNCE_MS);
+}
+
+// Immediate filter application (called after debounce)
+function applyFiltersImmediate() {
+    const assigneeFilterEl = document.getElementById('assigneeFilter');
+    const statusFilterEl = document.getElementById('statusFilter');
+    const timeRangeFilterEl = document.getElementById('timeRangeFilter');
+    
+    if (!assigneeFilterEl || !statusFilterEl || !timeRangeFilterEl) {
+        console.warn('Filter elements not found');
+        return;
+    }
+    
+    const assigneeFilter = assigneeFilterEl.value;
+    const statusFilter = statusFilterEl.value;
+    const timeRangeFilter = timeRangeFilterEl.value;
     
     // Filter tasks
     dashboardData.filteredTasks = dashboardData.tasks.filter(task => {
         // Filter by assignee
-        if (assigneeFilter && task.assigneeId != assigneeFilter) {
+        if (assigneeFilter && assigneeFilter !== 'all' && task.assigneeId != assigneeFilter) {
             return false;
         }
         
-        // Filter by status
-        if (statusFilter && task.status !== statusFilter) {
-            return false;
+        // Filter by status (handle variations)
+        if (statusFilter && statusFilter !== 'all') {
+            const taskStatus = (task.status || '').toLowerCase();
+            const filterStatus = statusFilter.toLowerCase();
+            
+            // Map status variations
+            const statusMap = {
+                'todo': ['todo', 'backlog'],
+                'progress': ['progress', 'in-progress', 'inprogress'],
+                'review': ['review', 'in-review', 'inreview'],
+                'done': ['done', 'completed', 'complete']
+            };
+            
+            const matchingStatuses = statusMap[filterStatus] || [filterStatus];
+            if (!matchingStatuses.includes(taskStatus)) {
+                return false;
+            }
         }
         
         // Filter by time range
         if (timeRangeFilter !== 'all') {
             const daysAgo = parseInt(timeRangeFilter);
-            const cutoffDate = new Date();
-            cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
-            const taskDate = new Date(task.createdAt);
-            if (taskDate < cutoffDate) {
-                return false;
+            if (!isNaN(daysAgo) && task.createdAt) {
+                const cutoffDate = new Date();
+                cutoffDate.setDate(cutoffDate.getDate() - daysAgo);
+                const taskDate = new Date(task.createdAt);
+                if (taskDate < cutoffDate) {
+                    return false;
+                }
             }
         }
         
@@ -196,19 +294,38 @@ function applyFilters() {
     updateCharts();
 }
 
-// Update stats cards
+// Update stats cards with null checks and status matching
 function updateStats() {
-    const tasks = dashboardData.filteredTasks;
+    const tasks = dashboardData.filteredTasks || [];
     
     const totalTasks = tasks.length;
-    const inProgressTasks = tasks.filter(t => t.status === 'progress').length;
-    const completedTasks = tasks.filter(t => t.status === 'done').length;
+    
+    // Handle status variations
+    const inProgressTasks = tasks.filter(t => {
+        const status = (t.status || '').toLowerCase();
+        return status === 'progress' || status === 'in-progress' || status === 'inprogress';
+    }).length;
+    
+    const completedTasks = tasks.filter(t => {
+        const status = (t.status || '').toLowerCase();
+        return status === 'done' || status === 'completed' || status === 'complete';
+    }).length;
+    
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
     
-    document.getElementById('totalTasks').textContent = totalTasks;
-    document.getElementById('inProgressTasks').textContent = inProgressTasks;
-    document.getElementById('completedTasks').textContent = completedTasks;
-    document.getElementById('completionRate').textContent = completionRate + '%';
+    // Update with null checks
+    const totalTasksEl = document.getElementById('totalTasks');
+    const inProgressEl = document.getElementById('inProgressTasks');
+    const completedEl = document.getElementById('completedTasks');
+    const completionRateEl = document.getElementById('completionRate');
+    
+    if (totalTasksEl) {
+        totalTasksEl.textContent = totalTasks;
+        totalTasksEl.style.color = '';
+    }
+    if (inProgressEl) inProgressEl.textContent = inProgressTasks;
+    if (completedEl) completedEl.textContent = completedTasks;
+    if (completionRateEl) completionRateEl.textContent = completionRate + '%';
 }
 
 // Update all charts
@@ -219,25 +336,52 @@ function updateCharts() {
     updateTimelineChart();
 }
 
-// Update status chart
+// Update status chart with status variation handling
 function updateStatusChart() {
-    const tasks = dashboardData.filteredTasks;
-    
-    const statusCounts = {
-        'todo': tasks.filter(t => t.status === 'todo').length,
-        'progress': tasks.filter(t => t.status === 'progress').length,
-        'review': tasks.filter(t => t.status === 'review').length,
-        'done': tasks.filter(t => t.status === 'done').length
-    };
-    
+    const tasks = dashboardData.filteredTasks || [];
     const ctx = document.getElementById('statusChart');
     
-    // Destroy existing chart if it exists
-    if (charts.statusChart) {
-        charts.statusChart.destroy();
+    if (!ctx) {
+        console.warn('Status chart canvas not found');
+        return;
     }
     
-    charts.statusChart = new Chart(ctx, {
+    // Count tasks by status (handle variations)
+    const statusCounts = {
+        'todo': tasks.filter(t => {
+            const status = (t.status || '').toLowerCase();
+            return status === 'todo' || status === 'backlog' || !status;
+        }).length,
+        'progress': tasks.filter(t => {
+            const status = (t.status || '').toLowerCase();
+            return status === 'progress' || status === 'in-progress' || status === 'inprogress';
+        }).length,
+        'review': tasks.filter(t => {
+            const status = (t.status || '').toLowerCase();
+            return status === 'review' || status === 'in-review' || status === 'inreview';
+        }).length,
+        'done': tasks.filter(t => {
+            const status = (t.status || '').toLowerCase();
+            return status === 'done' || status === 'completed' || status === 'complete';
+        }).length
+    };
+    
+    // Update existing chart if possible, otherwise create new one
+    if (charts.statusChart) {
+        charts.statusChart.data.datasets[0].data = [
+            statusCounts.todo,
+            statusCounts.progress,
+            statusCounts.review,
+            statusCounts.done
+        ];
+        charts.statusChart.update('none'); // 'none' mode = no animation for performance
+    } else {
+        // Destroy existing chart if it exists
+        if (charts.statusChart) {
+            charts.statusChart.destroy();
+        }
+        
+        charts.statusChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: ['To Do', 'In Progress', 'In Review', 'Done'],
@@ -271,14 +415,20 @@ function updateStatusChart() {
     });
 }
 
-// Update assignee chart
+// Update assignee chart with optimization
 function updateAssigneeChart() {
-    const tasks = dashboardData.filteredTasks;
+    const tasks = dashboardData.filteredTasks || [];
+    const ctx = document.getElementById('assigneeChart');
+    
+    if (!ctx) {
+        console.warn('Assignee chart canvas not found');
+        return;
+    }
     
     // Group tasks by assignee
     const assigneeMap = {};
     tasks.forEach(task => {
-        const assigneeName = task.assignee ? task.assignee.name : 'Unassigned';
+        const assigneeName = task.assignee ? (task.assignee.name || 'Unassigned') : 'Unassigned';
         assigneeMap[assigneeName] = (assigneeMap[assigneeName] || 0) + 1;
     });
     
@@ -290,14 +440,18 @@ function updateAssigneeChart() {
     const labels = sortedAssignees.map(a => a[0]);
     const data = sortedAssignees.map(a => a[1]);
     
-    const ctx = document.getElementById('assigneeChart');
-    
-    // Destroy existing chart if it exists
+    // Update existing chart if possible
     if (charts.assigneeChart) {
-        charts.assigneeChart.destroy();
-    }
-    
-    charts.assigneeChart = new Chart(ctx, {
+        charts.assigneeChart.data.labels = labels;
+        charts.assigneeChart.data.datasets[0].data = data;
+        charts.assigneeChart.update('none');
+    } else {
+        // Destroy existing chart if it exists
+        if (charts.assigneeChart) {
+            charts.assigneeChart.destroy();
+        }
+        
+        charts.assigneeChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: labels,
@@ -345,24 +499,37 @@ function updateAssigneeChart() {
     });
 }
 
-// Update priority chart
+// Update priority chart with optimization
 function updatePriorityChart() {
-    const tasks = dashboardData.filteredTasks;
-    
-    const priorityCounts = {
-        'low': tasks.filter(t => t.priority === 0).length,
-        'medium': tasks.filter(t => t.priority === 1).length,
-        'high': tasks.filter(t => t.priority === 2).length
-    };
-    
+    const tasks = dashboardData.filteredTasks || [];
     const ctx = document.getElementById('priorityChart');
     
-    // Destroy existing chart if it exists
-    if (charts.priorityChart) {
-        charts.priorityChart.destroy();
+    if (!ctx) {
+        console.warn('Priority chart canvas not found');
+        return;
     }
     
-    charts.priorityChart = new Chart(ctx, {
+    const priorityCounts = {
+        'low': tasks.filter(t => (t.priority || 0) === 0).length,
+        'medium': tasks.filter(t => (t.priority || 0) === 1).length,
+        'high': tasks.filter(t => (t.priority || 0) === 2).length
+    };
+    
+    // Update existing chart if possible
+    if (charts.priorityChart) {
+        charts.priorityChart.data.datasets[0].data = [
+            priorityCounts.low,
+            priorityCounts.medium,
+            priorityCounts.high
+        ];
+        charts.priorityChart.update('none');
+    } else {
+        // Destroy existing chart if it exists
+        if (charts.priorityChart) {
+            charts.priorityChart.destroy();
+        }
+        
+        charts.priorityChart = new Chart(ctx, {
         type: 'pie',
         data: {
             labels: ['Low', 'Medium', 'High'],
@@ -395,9 +562,21 @@ function updatePriorityChart() {
     });
 }
 
-// Update timeline chart (last 7 days)
+// Invalidate cache (call this when tasks are updated elsewhere)
+function invalidateDashboardCache() {
+    dataCache.tasks = null;
+    dataCache.timestamp = 0;
+}
+
+// Update timeline chart (last 7 days) with null checks
 function updateTimelineChart() {
-    const tasks = dashboardData.tasks; // Use all tasks for timeline
+    const tasks = dashboardData.tasks || []; // Use all tasks for timeline
+    const ctx = document.getElementById('timelineChart');
+    
+    if (!ctx) {
+        console.warn('Timeline chart canvas not found');
+        return;
+    }
     
     // Get last 7 days
     const days = [];
@@ -412,33 +591,52 @@ function updateTimelineChart() {
         const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         days.push(dateStr);
         
-        // Count tasks completed on this day
+        // Count tasks completed on this day (handle status variations)
         const completedOnDay = tasks.filter(t => {
-            if (!t.updatedAt || t.status !== 'done') return false;
-            const taskDate = new Date(t.updatedAt);
-            taskDate.setHours(0, 0, 0, 0);
-            return taskDate.getTime() === date.getTime();
+            if (!t.updatedAt) return false;
+            const status = (t.status || '').toLowerCase();
+            if (status !== 'done' && status !== 'completed' && status !== 'complete') return false;
+            
+            try {
+                const taskDate = new Date(t.updatedAt);
+                if (isNaN(taskDate.getTime())) return false;
+                taskDate.setHours(0, 0, 0, 0);
+                return taskDate.getTime() === date.getTime();
+            } catch (e) {
+                return false;
+            }
         }).length;
         
         // Count tasks created on this day
         const createdOnDay = tasks.filter(t => {
-            const taskDate = new Date(t.createdAt);
-            taskDate.setHours(0, 0, 0, 0);
-            return taskDate.getTime() === date.getTime();
+            if (!t.createdAt) return false;
+            try {
+                const taskDate = new Date(t.createdAt);
+                if (isNaN(taskDate.getTime())) return false;
+                taskDate.setHours(0, 0, 0, 0);
+                return taskDate.getTime() === date.getTime();
+            } catch (e) {
+                return false;
+            }
         }).length;
         
         completedCounts.push(completedOnDay);
         createdCounts.push(createdOnDay);
     }
     
-    const ctx = document.getElementById('timelineChart');
-    
-    // Destroy existing chart if it exists
+    // Update existing chart if possible
     if (charts.timelineChart) {
-        charts.timelineChart.destroy();
-    }
-    
-    charts.timelineChart = new Chart(ctx, {
+        charts.timelineChart.data.labels = days;
+        charts.timelineChart.data.datasets[0].data = completedCounts;
+        charts.timelineChart.data.datasets[1].data = createdCounts;
+        charts.timelineChart.update('none');
+    } else {
+        // Destroy existing chart if it exists
+        if (charts.timelineChart) {
+            charts.timelineChart.destroy();
+        }
+        
+        charts.timelineChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: days,
@@ -513,4 +711,6 @@ function showCreateTaskModal() {
 // Make functions globally available
 window.applyFilters = applyFilters;
 window.showCreateTaskModal = showCreateTaskModal;
+window.invalidateDashboardCache = invalidateDashboardCache;
+window.loadDashboardData = loadDashboardData;
 
