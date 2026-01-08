@@ -125,30 +125,13 @@ async function loadDashboardData() {
         
         if (response.ok) {
             const tasks = await response.json();
-            console.log('Loaded tasks:', tasks.length);
-            console.log('Tasks data:', tasks);
-            
-            if (!tasks || tasks.length === 0) {
-                console.warn('No tasks returned from API');
-                // Still show zeros but don't error
-                dashboardData.tasks = [];
-                dashboardData.filteredTasks = [];
-                await loadAssignees();
-                applyFiltersImmediate();
-                return;
-            }
             
             // Cache the data
             dataCache.tasks = tasks;
             dataCache.timestamp = now;
             
-            dashboardData.tasks = tasks;
+            dashboardData.tasks = tasks || [];
             dashboardData.filteredTasks = [...dashboardData.tasks];
-            
-            console.log('Dashboard data set:', {
-                totalTasks: dashboardData.tasks.length,
-                filteredTasks: dashboardData.filteredTasks.length
-            });
             
             // Load assignees for filter
             await loadAssignees();
@@ -291,12 +274,12 @@ function applyFiltersImmediate() {
     // Filter tasks
     dashboardData.filteredTasks = dashboardData.tasks.filter(task => {
         // Filter by assignee
-        if (assigneeFilter && assigneeFilter !== 'all' && task.assigneeId != assigneeFilter) {
+        if (assigneeFilter && assigneeFilter !== 'all' && assigneeFilter !== '' && task.assigneeId != assigneeFilter) {
             return false;
         }
         
         // Filter by status (handle variations)
-        if (statusFilter && statusFilter !== 'all') {
+        if (statusFilter && statusFilter !== 'all' && statusFilter !== '') {
             const taskStatus = (task.status || '').toLowerCase();
             const filterStatus = statusFilter.toLowerCase();
             
@@ -339,9 +322,6 @@ function applyFiltersImmediate() {
 function updateStats() {
     const tasks = dashboardData.filteredTasks || [];
     
-    console.log('Updating stats with', tasks.length, 'filtered tasks');
-    console.log('All tasks:', dashboardData.tasks.length);
-    
     const totalTasks = tasks.length;
     
     // Handle status variations
@@ -357,8 +337,6 @@ function updateStats() {
     
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
     
-    console.log('Stats calculated:', { totalTasks, inProgressTasks, completedTasks, completionRate });
-    
     // Update with null checks
     const totalTasksEl = document.getElementById('totalTasks');
     const inProgressEl = document.getElementById('inProgressTasks');
@@ -368,27 +346,15 @@ function updateStats() {
     if (totalTasksEl) {
         totalTasksEl.textContent = totalTasks;
         totalTasksEl.style.color = '';
-        console.log('Updated totalTasks element:', totalTasks);
-    } else {
-        console.error('totalTasks element not found!');
     }
     if (inProgressEl) {
         inProgressEl.textContent = inProgressTasks;
-        console.log('Updated inProgressTasks element:', inProgressTasks);
-    } else {
-        console.error('inProgressTasks element not found!');
     }
     if (completedEl) {
         completedEl.textContent = completedTasks;
-        console.log('Updated completedTasks element:', completedTasks);
-    } else {
-        console.error('completedTasks element not found!');
     }
     if (completionRateEl) {
         completionRateEl.textContent = completionRate + '%';
-        console.log('Updated completionRate element:', completionRate + '%');
-    } else {
-        console.error('completionRate element not found!');
     }
 }
 

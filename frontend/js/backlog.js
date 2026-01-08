@@ -380,28 +380,10 @@ function renderBacklog() {
         `;
     }).join('');
 
-    // Populate assignee dropdowns
-    loadAssigneesForDropdowns();
+    // No need to load assignees on every render - they're shown as avatars
 }
 
-async function loadAssigneesForDropdowns() {
-    try {
-        const response = await apiClient.get('/auth/users');
-        if (response.ok) {
-            const users = await response.json();
-            // Find all backlog items and populate assignee dropdowns
-            backlogTasks.forEach(task => {
-                const taskElement = document.querySelector(`[data-task-id="${task.id}"]`);
-                if (taskElement) {
-                    // We'll add assignee dropdown later if needed
-                    // For now, just show the assignee avatar
-                }
-            });
-        }
-    } catch (error) {
-        console.error('Failed to load users:', error);
-    }
-}
+// Removed inefficient loadAssigneesForDropdowns function that was called on every render
 
 async function changeTaskStatus(taskId, newStatus) {
     const task = backlogTasks.find(t => t.id === taskId);
