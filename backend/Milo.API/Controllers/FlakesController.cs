@@ -242,7 +242,7 @@ public class FlakesController : ControllerBase
                 <strong>Date:</strong> {DateTime.UtcNow.ToLocalTime().ToString(""MMM dd, yyyy"")} at {DateTime.UtcNow.ToLocalTime().ToString(""hh:mm tt"")}
             </div>
             <div class=""flake-title"">{flake.Title}</div>
-            <div class=""flake-content"">{flake.Content ?? ""(No content)"")}</div>
+            <div class=""flake-content"">{flake.Content ?? ""(No content)""}</div>
             <div style=""text-align: center; margin-top: 24px;"">
                 <a href=""{flakeUrl}"" class=""cta-button"">View Full Flake</a>
             </div>
