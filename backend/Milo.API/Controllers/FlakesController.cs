@@ -205,7 +205,7 @@ public class FlakesController : ControllerBase
             var emailService = HttpContext.RequestServices.GetRequiredService<Milo.API.Services.EmailService>();
             var configuration = HttpContext.RequestServices.GetRequiredService<IConfiguration>();
             
-            var flakeUrl = $"{request.BaseUrl ?? "https://www.codingeverest.com"}/milo-flake-view.html?id={flake.Id}";
+            var flakeUrl = $"{request.BaseUrl ?? "https://www.codingeverest.com"}/milo-flake-view.html?id={flake.Id}&readonly=true";
             var projectName = flake.Project?.Name ?? "Unknown Project";
             var authorName = flake.Author?.Name ?? "Unknown Author";
             var fromEmail = configuration["Email:FromEmail"] ?? "info@streamyo.net";
@@ -213,7 +213,9 @@ public class FlakesController : ControllerBase
             var dateNow = DateTime.UtcNow.ToLocalTime();
             var dateStr = dateNow.ToString("MMM dd, yyyy");
             var timeStr = dateNow.ToString("hh:mm tt");
-            var flakeContent = flake.Content ?? "(No content)";
+            var flakeContent = string.IsNullOrWhiteSpace(flake.Content) 
+                ? "<p style='color: #6B778C; font-style: italic; padding: 20px; background: #F4F5F7; border-radius: 4px; text-align: center;'>This flake doesn't have any content yet. Click the button below to view the full flake.</p>" 
+                : flake.Content;
 
             var emailBody = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>" +
                 "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #172B4D; }" +
@@ -306,11 +308,11 @@ public class FlakesController : ControllerBase
 
                 // Add flake link to task description or create a comment
                 var baseUrl = request.BaseUrl ?? "https://www.codingeverest.com";
-                var flakeLink = $"[Flake: {flake.Title}]({baseUrl}/milo-flake-view.html?id={flake.Id})";
+                var flakeLink = $"[Flake: {flake.Title}]({baseUrl}/milo-flake-view.html?id={flake.Id}&readonly=true)";
                 
                 var contentPreview = string.IsNullOrEmpty(flake.Content) 
-                    ? "" 
-                    : (flake.Content.Length > 500 ? flake.Content.Substring(0, 500) : flake.Content);
+                    ? "(No content yet - click the link above to view)" 
+                    : (flake.Content.Length > 500 ? flake.Content.Substring(0, 500) + "..." : flake.Content);
                 
                 if (string.IsNullOrEmpty(task.Description))
                 {

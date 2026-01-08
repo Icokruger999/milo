@@ -127,10 +127,14 @@
 
         <div class="flake-content" id="flakeContent">Loading...</div>
 
-        <div class="flake-actions">
+        <div class="flake-actions" id="flakeActions" style="display: none;">
             <button class="btn btn-primary" onclick="editFlake()">Edit</button>
             <button class="btn btn-secondary" onclick="shareFlake()">Share</button>
             <button class="btn btn-danger" onclick="deleteFlake()">Delete</button>
+        </div>
+        
+        <div id="readOnlyMessage" style="display: none; padding: 16px; background: #E6FCFF; border: 1px solid #00B8D9; border-radius: 4px; margin-top: 24px; color: #0052CC; font-size: 14px;">
+            📄 You're viewing this flake in read-only mode. <a href="milo-login.html" style="color: #0052CC; text-decoration: underline;">Sign in</a> to edit.
         </div>
     </div>
 
@@ -143,6 +147,7 @@
         async function loadFlake() {
             const urlParams = new URLSearchParams(window.location.search);
             const id = urlParams.get('id');
+            const readonly = urlParams.get('readonly');
             
             if (!id) {
                 document.getElementById('flakeTitle').textContent = 'Flake not found';
@@ -150,6 +155,20 @@
             }
 
             currentFlakeId = parseInt(id);
+
+            // Check if user is authenticated and should see edit buttons
+            const isAuthenticated = authService.isAuthenticated();
+            const isReadOnly = readonly === 'true' || !isAuthenticated;
+            
+            if (isReadOnly) {
+                // Show read-only message, hide action buttons
+                document.getElementById('flakeActions').style.display = 'none';
+                document.getElementById('readOnlyMessage').style.display = 'block';
+            } else {
+                // Show action buttons for authenticated users
+                document.getElementById('flakeActions').style.display = 'flex';
+                document.getElementById('readOnlyMessage').style.display = 'none';
+            }
 
             try {
                 const response = await apiClient.get(`/flakes/${id}`);
