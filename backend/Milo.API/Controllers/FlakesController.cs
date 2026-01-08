@@ -210,6 +210,10 @@ public class FlakesController : ControllerBase
             var authorName = flake.Author?.Name ?? "Unknown Author";
             var fromEmail = configuration["Email:FromEmail"] ?? "info@streamyo.net";
             var fromName = configuration["Email:FromName"] ?? "Milo - Coding Everest";
+            var dateNow = DateTime.UtcNow.ToLocalTime();
+            var dateStr = dateNow.ToString("MMM dd, yyyy");
+            var timeStr = dateNow.ToString("hh:mm tt");
+            var flakeContent = flake.Content ?? "(No content)";
 
             var emailBody = $@"
 <!DOCTYPE html>
@@ -239,10 +243,10 @@ public class FlakesController : ControllerBase
             <div class=""flake-meta"">
                 <strong>Project:</strong> {projectName}<br>
                 <strong>Shared by:</strong> {authorName}<br>
-                <strong>Date:</strong> {DateTime.UtcNow.ToLocalTime().ToString(""MMM dd, yyyy"")} at {DateTime.UtcNow.ToLocalTime().ToString(""hh:mm tt"")}
+                <strong>Date:</strong> {dateStr} at {timeStr}
             </div>
             <div class=""flake-title"">{flake.Title}</div>
-            <div class=""flake-content"">{flake.Content ?? ""(No content)""}</div>
+            <div class=""flake-content"">{flakeContent}</div>
             <div style=""text-align: center; margin-top: 24px;"">
                 <a href=""{flakeUrl}"" class=""cta-button"">View Full Flake</a>
             </div>
@@ -271,11 +275,11 @@ Hello,
 
 Project: {projectName}
 Shared by: {authorName}
-Date: {DateTime.UtcNow.ToLocalTime().ToString(""MMMM dd, yyyy 'at' hh:mm tt"")}
+Date: {dateStr} at {timeStr}
 
 {flake.Title}
 
-{flake.Content ?? "(No content)"}
+{flakeContent}
 
 View full flake: {flakeUrl}
 
