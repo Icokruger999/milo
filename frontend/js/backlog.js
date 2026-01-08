@@ -6,6 +6,21 @@ let allTasks = []; // All tasks loaded from API (unfiltered)
 let hasUnsavedChanges = false;
 let originalTaskStates = {};
 
+// Performance: Cache data for 30 seconds (like dashboard)
+let backlogDataCache = {
+    tasks: null,
+    timestamp: 0,
+    duration: 30000 // 30 seconds
+};
+
+// Performance: Cache users and products for 5 minutes (like board)
+let backlogUsersProductsCache = {
+    users: null,
+    products: null,
+    timestamp: 0
+};
+const BACKLOG_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 // Initialize backlog page
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Backlog page DOMContentLoaded fired');
@@ -146,6 +161,36 @@ async function loadBacklogTasks() {
         const filterValue = filterSelect ? filterSelect.value : 'all';
         console.log('Current filter value:', filterValue);
         
+        // Check cache first (performance optimization)
+        const now = Date.now();
+        if (backlogDataCache.tasks && (now - backlogDataCache.timestamp < backlogDataCache.duration)) {
+            console.log('Using cached backlog data');
+            const apiTasks = backlogDataCache.tasks;
+            
+            // Map cached tasks
+            allTasks = apiTasks.map(task => ({
+                id: task.id,
+                taskId: task.taskId || `TASK-${task.id}`,
+                title: task.title,
+                description: task.description,
+                status: task.status,
+                label: task.label || 'accounts',
+                assigneeId: task.assigneeId,
+                assignee: task.assignee ? {
+                    id: task.assignee.id,
+                    name: task.assignee.name,
+                    email: task.assignee.email
+                } : null,
+                priority: task.priority || 0,
+                dueDate: task.dueDate,
+                productId: task.productId
+            }));
+
+            // Apply filter
+            applyCurrentFilter();
+            return;
+        }
+        
         // Get all tasks for the project (no status filter on API)
         let queryUrl = `/tasks?projectId=${currentProject.id}`;
         console.log('Fetching tasks from:', queryUrl);
@@ -153,6 +198,10 @@ async function loadBacklogTasks() {
         const response = await apiClient.get(queryUrl);
         if (response.ok) {
             let apiTasks = await response.json();
+            
+            // Cache the data
+            backlogDataCache.tasks = apiTasks;
+            backlogDataCache.timestamp = now;
             
             console.log(`Loaded ${apiTasks.length} tasks from API`);
             console.log('API Tasks:', apiTasks);

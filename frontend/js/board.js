@@ -8,6 +8,39 @@ let tasks = {
     done: []
 };
 
+// Get consistent color for assignee based on ID or name
+function getAssigneeColor(assigneeId, assigneeName) {
+    if (!assigneeId && !assigneeName) {
+        return { bg: '#DFE1E6', text: '#42526E' }; // Unassigned - gray
+    }
+    
+    // Use ID if available, otherwise use name
+    const seed = assigneeId ? assigneeId.toString() : (assigneeName || '');
+    
+    // Generate consistent hash from seed
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+        hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    
+    // Color palette - green and red variations for visibility
+    const colors = [
+        { bg: '#36B37E', text: '#FFFFFF' }, // Green
+        { bg: '#DE350B', text: '#FFFFFF' }, // Red
+        { bg: '#0052CC', text: '#FFFFFF' }, // Blue
+        { bg: '#FFAB00', text: '#172B4D' }, // Orange
+        { bg: '#6554C0', text: '#FFFFFF' }, // Purple
+        { bg: '#00B8D9', text: '#FFFFFF' }, // Cyan
+        { bg: '#36B37E', text: '#FFFFFF' }, // Green again
+        { bg: '#DE350B', text: '#FFFFFF' }, // Red again
+    ];
+    
+    // Use absolute value of hash to get index
+    const index = Math.abs(hash) % colors.length;
+    return colors[index];
+}
+
 // Initialize board
 document.addEventListener('DOMContentLoaded', function() {
     // Check authentication
@@ -123,6 +156,9 @@ function createTaskCard(task) {
     card.draggable = true;
     card.dataset.taskId = task.id;
     
+    // Get assignee color consistently
+    const assigneeColor = getAssigneeColor(task.assigneeId, task.assigneeName);
+    
     card.innerHTML = `
         <div style="display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px;">
             <div class="task-type-icon"></div>
@@ -144,7 +180,7 @@ function createTaskCard(task) {
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                 </svg>
             </div>
-            <div class="task-assignee" title="${task.assigneeName || 'Unassigned'}" style="width: 24px; height: 24px; border-radius: 50%; background: #0052CC; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; cursor: pointer;">${task.assignee || 'UN'}</div>
+            <div class="task-assignee" title="${task.assigneeName || 'Unassigned'}" style="width: 24px; height: 24px; border-radius: 50%; background: ${assigneeColor.bg}; color: ${assigneeColor.text}; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; cursor: pointer;">${task.assignee || 'UN'}</div>
         </div>
     `;
 

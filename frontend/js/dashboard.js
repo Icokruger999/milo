@@ -187,33 +187,58 @@ function showErrorState() {
     });
 }
 
-// Load assignees for filter dropdown
+// Load assignees for filter dropdown - get ALL users from API
 async function loadAssignees() {
     try {
         const assigneeFilter = document.getElementById('assigneeFilter');
+        if (!assigneeFilter) {
+            console.warn('Assignee filter element not found');
+            return;
+        }
         
-        // Extract unique assignees from tasks
-        const assigneeMap = new Map();
-        dashboardData.tasks.forEach(task => {
-            if (task.assignee && task.assigneeId) {
-                assigneeMap.set(task.assigneeId, task.assignee.name || task.assignee.email);
-            }
-        });
+        // Clear existing options except "All Assignees"
+        assigneeFilter.innerHTML = '<option value="all">All Assignees</option>';
         
-        // Sort assignees by name
-        const sortedAssignees = Array.from(assigneeMap.entries()).sort((a, b) => 
-            a[1].localeCompare(b[1])
-        );
+        // Load all users from API (not just from tasks)
+        const usersResponse = await apiClient.get('/auth/users');
         
-        // Add assignees to dropdown
-        sortedAssignees.forEach(([id, name]) => {
-            const option = document.createElement('option');
-            option.value = id;
-            option.textContent = name;
-            assigneeFilter.appendChild(option);
-        });
-        
-        console.log('Loaded assignees:', sortedAssignees.length);
+        if (usersResponse.ok) {
+            const users = await usersResponse.json();
+            console.log('Loaded all users for filter:', users.length);
+            
+            // Sort users by name
+            const sortedUsers = users.sort((a, b) => 
+                (a.name || a.email || '').localeCompare(b.name || b.email || '')
+            );
+            
+            // Add all users to dropdown
+            sortedUsers.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = user.name || user.email || 'Unknown';
+                assigneeFilter.appendChild(option);
+            });
+            
+            console.log('Added', sortedUsers.length, 'assignees to filter');
+        } else {
+            console.error('Failed to load users for filter:', usersResponse.status);
+            // Fallback: extract from tasks if API fails
+            const assigneeMap = new Map();
+            dashboardData.tasks.forEach(task => {
+                if (task.assignee && task.assigneeId) {
+                    assigneeMap.set(task.assigneeId, task.assignee.name || task.assignee.email);
+                }
+            });
+            const sortedAssignees = Array.from(assigneeMap.entries()).sort((a, b) => 
+                a[1].localeCompare(b[1])
+            );
+            sortedAssignees.forEach(([id, name]) => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = name;
+                assigneeFilter.appendChild(option);
+            });
+        }
     } catch (error) {
         console.error('Error loading assignees:', error);
     }
