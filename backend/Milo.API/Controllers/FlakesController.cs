@@ -301,7 +301,8 @@ public class FlakesController : ControllerBase
                 }
 
                 // Add flake link to task description or create a comment
-                var flakeLink = $"[Flake: {flake.Title}]({request.BaseUrl ?? "https://www.codingeverest.com"}/milo-flake-view.html?id={flake.Id})";
+                var baseUrl = request.BaseUrl ?? "https://www.codingeverest.com";
+                var flakeLink = $"[Flake: {flake.Title}]({baseUrl}/milo-flake-view.html?id={flake.Id})";
                 
                 var contentPreview = string.IsNullOrEmpty(flake.Content) 
                     ? "" 
@@ -328,7 +329,8 @@ public class FlakesController : ControllerBase
             else
             {
                 // Create a new task with flake content
-                var flakeLink = $"{request.BaseUrl ?? "https://www.codingeverest.com"}/milo-flake-view.html?id={flake.Id}";
+                var baseUrl = request.BaseUrl ?? "https://www.codingeverest.com";
+                var flakeLink = $"{baseUrl}/milo-flake-view.html?id={flake.Id}";
                 var task = new Milo.API.Models.Task
                 {
                     Title = $"Review: {flake.Title}",
