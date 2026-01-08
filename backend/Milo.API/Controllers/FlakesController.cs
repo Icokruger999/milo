@@ -239,7 +239,7 @@ public class FlakesController : ControllerBase
             <div class=""flake-meta"">
                 <strong>Project:</strong> {projectName}<br>
                 <strong>Shared by:</strong> {authorName}<br>
-                <strong>Date:</strong> {DateTime.UtcNow.ToLocalTime().ToString(""MMM dd, yyyy 'at' hh:mm tt"")}
+                <strong>Date:</strong> {DateTime.UtcNow.ToLocalTime().ToString(""MMM dd, yyyy"")} at {DateTime.UtcNow.ToLocalTime().ToString(""hh:mm tt"")}
             </div>
             <div class=""flake-title"">{flake.Title}</div>
             <div class=""flake-content"">{flake.Content ?? ""(No content)"")}</div>
