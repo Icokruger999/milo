@@ -875,6 +875,7 @@ function updateTimelineChart() {
             }
         }
     });
+    }
 }
 
 // Show create task modal (redirect to board for now)
