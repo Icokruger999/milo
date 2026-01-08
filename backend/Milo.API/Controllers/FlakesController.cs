@@ -255,12 +255,12 @@ public class FlakesController : ControllerBase
 </body>
 </html>";
 
-            var message = new MimeKit.MimeMessage();
-            message.From.Add(new MimeKit.MailboxAddress(fromName, fromEmail));
-            message.To.Add(new MimeKit.MailboxAddress("", request.ToEmail));
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(fromName, fromEmail));
+            message.To.Add(new MailboxAddress("", request.ToEmail));
             message.Subject = $"Shared Flake: {flake.Title}";
 
-            var bodyBuilder = new MimeKit.BodyBuilder
+            var bodyBuilder = new BodyBuilder
             {
                 HtmlBody = emailBody,
                 TextBody = $@"Shared Flake: {flake.Title}
