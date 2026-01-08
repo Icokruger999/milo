@@ -3,6 +3,67 @@
 let flakes = [];
 let currentFlake = null;
 
+// Toast notification function
+function showToast(message, type = 'info') {
+    // Remove any existing toasts
+    const existing = document.getElementById('flakeToast');
+    if (existing) existing.remove();
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.id = 'flakeToast';
+    toast.textContent = message;
+    
+    // Style based on type
+    const colors = {
+        success: '#36B37E',
+        error: '#DE350B',
+        info: '#0052CC',
+        warning: '#FF991F'
+    };
+    
+    toast.style.cssText = `
+        position: fixed;
+        top: 70px;
+        right: 20px;
+        background: ${colors[type] || colors.info};
+        color: white;
+        padding: 16px 24px;
+        border-radius: 3px;
+        box-shadow: 0 4px 8px rgba(9, 30, 66, 0.25);
+        z-index: 10000;
+        font-size: 14px;
+        font-weight: 500;
+        max-width: 400px;
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+// Add animation styles
+if (!document.getElementById('toastStyles')) {
+    const style = document.createElement('style');
+    style.id = 'toastStyles';
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(400px); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 // Initialize flakes
 document.addEventListener('DOMContentLoaded', function() {
     if (!authService.isAuthenticated()) {
@@ -235,13 +296,13 @@ async function confirmShareEmail() {
     const toEmail = document.getElementById('shareEmailInput').value.trim();
     
     if (!toEmail || !toEmail.includes('@')) {
-        alert('Please enter a valid email address');
+        showToast('Please enter a valid email address', 'error');
         return;
     }
 
     const user = authService.getCurrentUser();
     if (!user) {
-        alert('You must be logged in to share flakes');
+        showToast('You must be logged in to share flakes', 'error');
         return;
     }
 
@@ -254,18 +315,18 @@ async function confirmShareEmail() {
 
         if (response.ok) {
             closeShareEmailModal();
-            alert(`Flake shared successfully to ${toEmail}`);
+            showToast(`Flake shared successfully to ${toEmail}`, 'success');
         } else {
             try {
                 const error = await response.json();
-                alert(error.message || 'Failed to share flake');
+                showToast(error.message || 'Failed to share flake', 'error');
             } catch (parseError) {
-                alert(`Failed to share flake (${response.status}). Please ensure the API server is running.`);
+                showToast(`Failed to share flake (${response.status})`, 'error');
             }
         }
     } catch (error) {
         console.error('Error sharing flake:', error);
-        alert('Failed to share flake. Please try again.');
+        showToast('Failed to share flake. Please try again.', 'error');
     }
 }
 
@@ -407,21 +468,18 @@ async function linkFlakeToTask(taskId) {
         if (response.ok) {
             const result = await response.json();
             closeLinkTaskModal();
-            alert(result.message || 'Flake linked to task successfully!');
-            if (confirm('Would you like to view the task on the board?')) {
-                window.location.href = 'milo-board.html';
-            }
+            showToast(result.message || 'Flake linked to task successfully!', 'success');
         } else {
             try {
                 const error = await response.json();
-                alert(error.message || 'Failed to link flake to task');
+                showToast(error.message || 'Failed to link flake to task', 'error');
             } catch (parseError) {
-                alert(`Failed to link flake (${response.status}). Please ensure the API server is running.`);
+                showToast(`Failed to link flake (${response.status})`, 'error');
             }
         }
     } catch (error) {
         console.error('Error linking flake:', error);
-        alert('Failed to link flake. Please try again.');
+        showToast('Failed to link flake. Please try again.', 'error');
     }
 }
 
@@ -434,21 +492,28 @@ async function createNewTaskFromFlake() {
         if (response.ok) {
             const result = await response.json();
             closeLinkTaskModal();
-            alert(result.message || 'Task created from flake successfully!');
-            if (confirm('Would you like to view the task on the board?')) {
-                window.location.href = 'milo-board.html';
-            }
+            showToast(result.message || 'Task created from flake successfully!', 'success');
+            
+            // Show link to view on board after 1 second
+            setTimeout(() => {
+                showToast('Click here to view on board', 'info');
+                const toast = document.getElementById('flakeToast');
+                if (toast) {
+                    toast.style.cursor = 'pointer';
+                    toast.onclick = () => window.location.href = 'milo-board.html';
+                }
+            }, 1500);
         } else {
             try {
                 const error = await response.json();
-                alert(error.message || 'Failed to create task');
+                showToast(error.message || 'Failed to create task', 'error');
             } catch (parseError) {
-                alert(`Failed to create task (${response.status}). Please ensure the API server is running.`);
+                showToast(`Failed to create task (${response.status})`, 'error');
             }
         }
     } catch (error) {
         console.error('Error creating task:', error);
-        alert('Failed to create task. Please try again.');
+        showToast('Failed to create task. Please try again.', 'error');
     }
 }
 
