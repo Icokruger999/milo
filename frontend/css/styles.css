@@ -533,6 +533,212 @@ body {
     font-size: 12px;
 }
 
+/* Milo Showcase Section */
+.milo-showcase {
+    padding: 100px 0;
+    background: linear-gradient(135deg, #DEEBFF 0%, #F4F5F7 100%);
+}
+
+.milo-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+}
+
+.milo-text {
+    padding-right: 40px;
+}
+
+.section-badge {
+    display: inline-block;
+    background: var(--primary-blue);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.milo-text h2 {
+    font-size: 42px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 24px;
+    line-height: 1.2;
+}
+
+.milo-description {
+    font-size: 18px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 32px;
+}
+
+.milo-features {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 40px;
+}
+
+.feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 15px;
+    color: var(--text-secondary);
+}
+
+.feature-item svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.feature-item strong {
+    color: var(--text-primary);
+}
+
+.milo-cta {
+    display: flex;
+    gap: 16px;
+}
+
+/* Dashboard Preview */
+.dashboard-preview {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(9, 30, 66, 0.15);
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dashboard-preview:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 30px 80px rgba(9, 30, 66, 0.2);
+}
+
+.preview-header {
+    background: #F4F5F7;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #DFE1E6;
+}
+
+.preview-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.dot.red {
+    background: #FF5F56;
+}
+
+.dot.yellow {
+    background: #FFBD2E;
+}
+
+.dot.green {
+    background: #27C93F;
+}
+
+.preview-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.preview-content {
+    padding: 24px;
+}
+
+.preview-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.stat-box {
+    background: var(--bg-secondary);
+    padding: 16px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.stat-number {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.preview-charts {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.chart-preview {
+    background: var(--bg-secondary);
+    padding: 20px;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.chart-donut {
+    width: 120px;
+    height: 120px;
+}
+
+.chart-bars {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    gap: 12px;
+    height: 100px;
+    width: 100%;
+}
+
+.bar {
+    flex: 1;
+    background: linear-gradient(180deg, var(--primary-blue) 0%, #0065FF 100%);
+    border-radius: 4px 4px 0 0;
+    transition: all 0.3s ease;
+}
+
+.bar:hover {
+    background: linear-gradient(180deg, #0065FF 0%, var(--primary-blue) 100%);
+}
+
+.chart-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
 /* Responsive Design */
 @media (max-width: 1024px) {
     .hero .container {
@@ -543,6 +749,24 @@ body {
 
     .hero-visual {
         order: -1;
+    }
+
+    .milo-content {
+        grid-template-columns: 1fr;
+        gap: 48px;
+    }
+
+    .milo-text {
+        padding-right: 0;
+        text-align: center;
+    }
+
+    .milo-text h2 {
+        font-size: 36px;
+    }
+
+    .milo-cta {
+        justify-content: center;
     }
 
     .solutions-grid {
