@@ -435,6 +435,39 @@
             font-size: 14px;
             margin-bottom: 24px;
         }
+
+        /* Modal styles */
+        #createFlakeModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #createFlakeModal[style*="flex"] {
+            display: flex !important;
+        }
+
+        /* Search input styling */
+        #flakesSearch {
+            padding: 6px 12px;
+            border: 1px solid #DFE1E6;
+            border-radius: 3px;
+            font-size: 14px;
+            width: 200px;
+            transition: border-color 0.15s;
+        }
+
+        #flakesSearch:focus {
+            outline: none;
+            border-color: #0052CC;
+        }
     </style>
 </head>
 <body>
@@ -530,7 +563,7 @@
             <div class="flakes-header">
                 <div class="flakes-title">Flakes</div>
                 <div class="flakes-header-actions">
-                    <input type="text" id="flakesSearch" placeholder="Search flakes..." style="padding: 6px 12px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px; width: 200px;">
+                    <input type="text" id="flakesSearch" placeholder="Search flakes...">
                     <button class="btn-primary" onclick="showCreateFlakeModal()">+ Create Flake</button>
                 </div>
             </div>
@@ -548,7 +581,7 @@
     </div>
 
     <!-- Create Flake Modal -->
-    <div id="createFlakeModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+    <div id="createFlakeModal">
         <div style="background: white; border-radius: 8px; padding: 24px; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Create Flake</h2>
