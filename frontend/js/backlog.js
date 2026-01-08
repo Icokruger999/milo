@@ -1,7 +1,8 @@
 // Backlog Page Functionality
 console.log('Backlog.js script loaded');
 
-let backlogTasks = [];
+let backlogTasks = []; // Currently displayed tasks (may be filtered)
+let allTasks = []; // All tasks loaded from API (unfiltered)
 let hasUnsavedChanges = false;
 let originalTaskStates = {};
 
@@ -141,7 +142,10 @@ async function loadBacklogTasks() {
         }
 
         console.log('Current project:', currentProject.id, currentProject.name);
-        const filter = document.getElementById('backlogFilter')?.value || 'backlog';
+        const filterSelect = document.getElementById('backlogFilter');
+        const filterValue = filterSelect ? filterSelect.value : 'all';
+        console.log('Current filter value:', filterValue);
+        
         // Get all tasks for the project (no status filter on API)
         let queryUrl = `/tasks?projectId=${currentProject.id}`;
         console.log('Fetching tasks from:', queryUrl);
@@ -150,15 +154,15 @@ async function loadBacklogTasks() {
         if (response.ok) {
             let apiTasks = await response.json();
             
-            // Show ALL tasks on backlog page (no filtering)
-            console.log(`Loaded ${apiTasks.length} tasks for backlog page`);
+            console.log(`Loaded ${apiTasks.length} tasks from API`);
             console.log('API Tasks:', apiTasks);
             
             if (apiTasks.length === 0) {
                 console.warn('No tasks returned from API. Check project ID and task status.');
             }
 
-            backlogTasks = apiTasks.map(task => ({
+            // Store all tasks (unfiltered)
+            allTasks = apiTasks.map(task => ({
                 id: task.id,
                 taskId: task.taskId || `TASK-${task.id}`,
                 title: task.title,
@@ -175,6 +179,9 @@ async function loadBacklogTasks() {
                 dueDate: task.dueDate,
                 productId: task.productId
             }));
+
+            // Apply filter to get displayed tasks
+            applyCurrentFilter();
 
             // Store original states for change tracking
             originalTaskStates = {};
@@ -356,8 +363,14 @@ async function changeTaskStatus(taskId, newStatus) {
     // If status hasn't changed, do nothing
     if (originalStatus === newStatus) return;
     
-    // Update task status immediately
+    // Update task status immediately in both arrays
     task.status = newStatus;
+    
+    // Also update in allTasks array
+    const allTask = allTasks.find(t => t.id === taskId);
+    if (allTask) {
+        allTask.status = newStatus;
+    }
     
     // Save immediately to backend
     try {
@@ -377,8 +390,8 @@ async function changeTaskStatus(taskId, newStatus) {
                 localStorage.setItem('boardRefreshTime', Date.now().toString());
             }
             
-            // Re-render backlog to show updated status
-            renderBacklog();
+            // Re-apply filter in case task should be shown/hidden based on new status
+            applyCurrentFilter();
         } else {
             // Revert on error
             task.status = originalStatus;
@@ -495,8 +508,29 @@ async function saveAllChanges() {
     }
 }
 
+function applyCurrentFilter() {
+    const filterSelect = document.getElementById('backlogFilter');
+    const filterValue = filterSelect ? filterSelect.value : 'all';
+    
+    console.log('Applying filter:', filterValue);
+    
+    if (filterValue === 'backlog') {
+        // Show only backlog tasks
+        backlogTasks = allTasks.filter(t => 
+            t.status === 'backlog' || !t.status || t.status === ''
+        );
+        console.log(`Filtered to ${backlogTasks.length} backlog tasks from ${allTasks.length} total`);
+    } else {
+        // Show all tasks
+        backlogTasks = [...allTasks];
+        console.log(`Showing all ${backlogTasks.length} tasks`);
+    }
+    
+    renderBacklog();
+}
+
 function applyBacklogFilter() {
-    loadBacklogTasks();
+    applyCurrentFilter();
 }
 
 function openTaskModal(taskId) {
@@ -506,23 +540,31 @@ function openTaskModal(taskId) {
     }
 }
 
+// Wrapper function for creating tasks from backlog page
+// This ensures tasks are created with 'backlog' status
 function showCreateTaskModal() {
-    if (typeof window.showCreateTaskModal === 'function') {
+    // Check if board.js has loaded and has the showTaskModal function
+    if (typeof showTaskModal === 'function') {
         // Create task with 'backlog' status when created from backlog page
-        // Store a flag to reload backlog after task creation
-        window.location.hash = 'backlog';
-        window.showCreateTaskModal('backlog');
+        showTaskModal('backlog');
         
-        // Override the task creation success handler to reload backlog
-        const originalHandler = window.handleTaskSubmit;
-        if (originalHandler) {
-            // The task creation will be handled by board.js, but we'll reload backlog after
-            setTimeout(() => {
-                if (window.location.hash === '#backlog' || window.location.pathname.includes('backlog')) {
+        // Listen for task creation completion to reload backlog
+        const checkForNewTask = setInterval(() => {
+            // Check if modal is closed (task was created)
+            const modal = document.getElementById('taskModal');
+            if (!modal || modal.style.display === 'none') {
+                clearInterval(checkForNewTask);
+                // Reload backlog after a short delay to ensure task is saved
+                setTimeout(() => {
                     loadBacklogTasks();
-                }
-            }, 1000);
-        }
+                }, 500);
+            }
+        }, 200);
+        
+        // Clear interval after 30 seconds to prevent infinite loop
+        setTimeout(() => clearInterval(checkForNewTask), 30000);
+    } else {
+        console.error('showTaskModal function not found. Make sure board.js is loaded.');
     }
 }
 
@@ -532,6 +574,7 @@ window.changeTaskAssignee = changeTaskAssignee;
 window.saveAllChanges = saveAllChanges;
 window.applyBacklogFilter = applyBacklogFilter;
 window.openTaskModal = openTaskModal;
+// Override board.js showCreateTaskModal for backlog page to default to 'backlog' status
 window.showCreateTaskModal = showCreateTaskModal;
 window.logout = logout;
 window.toggleUserMenu = toggleUserMenu;
