@@ -140,15 +140,21 @@ async function loadDashboardData() {
             return;
         }
 
-        // Check cache first
+        // Check cache first (but always reload if data is empty)
         const now = Date.now();
-        if (dataCache.tasks && (now - dataCache.timestamp < dataCache.duration)) {
-            console.log('Using cached dashboard data');
+        const hasValidCache = dataCache.tasks && 
+                             dataCache.tasks.length > 0 && 
+                             (now - dataCache.timestamp < dataCache.duration);
+        
+        if (hasValidCache) {
+            console.log('Using cached dashboard data:', dataCache.tasks.length, 'tasks');
             dashboardData.tasks = dataCache.tasks;
             dashboardData.filteredTasks = [...dashboardData.tasks];
             await loadAssignees();
-            applyFiltersImmediate(); // No debounce for cached data
+            applyFiltersImmediate();
             return;
+        } else if (dataCache.tasks && dataCache.tasks.length === 0) {
+            console.log('Cache has no tasks, forcing reload...');
         }
 
         // Load data with timeout protection
