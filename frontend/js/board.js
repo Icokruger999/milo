@@ -210,8 +210,15 @@ async function showTaskModal(column, task = null) {
     }
     
     modal.dataset.column = column;
-    modal.dataset.taskId = task ? (task.id || task.taskId) : '';
+    const taskIdValue = task ? (task.id || task.taskId) : '';
+    modal.dataset.taskId = taskIdValue;
     currentTaskId = task ? task.id : null;
+    
+    // Set hidden input field for delete button
+    const taskIdInput = document.getElementById('taskId');
+    if (taskIdInput) {
+        taskIdInput.value = taskIdValue || '';
+    }
     
     // Update form title and button
     const formTitle = document.getElementById('taskModalTitle');
@@ -427,9 +434,18 @@ async function addCommentToTaskModal() {
 }
 
 function deleteTaskFromModal() {
-    const taskId = document.getElementById('taskId').value;
+    const modal = document.getElementById('taskModal');
+    if (!modal) return;
+    
+    // Get taskId from modal dataset (set when opening modal)
+    const taskId = modal.dataset.taskId || currentTaskId;
+    
     if (taskId) {
+        // Close modal first, then delete
+        closeTaskModal();
         deleteTask(taskId);
+    } else {
+        console.warn('Cannot delete: No task ID found');
     }
 }
 
@@ -868,18 +884,8 @@ async function handleTaskSubmit(event) {
             if (isBacklogPage && typeof loadBacklogTasks === 'function') {
                 // Reload backlog if on backlog page
                 loadBacklogTasks();
-            } else if (!taskId && savedTask && savedTask.id) {
-                // If this was a new task, open it in the unified modal to view/edit
-                await loadTasksFromAPI();
-                setTimeout(() => {
-                    const allTasks = [...tasks.todo, ...tasks.progress, ...tasks.review, ...tasks.done];
-                    const newTask = allTasks.find(t => t.id === savedTask.id);
-                    if (newTask) {
-                        showTaskModal(newTask.status || 'todo', newTask);
-                    }
-                }, 500);
             } else {
-                // For updates, just reload
+                // Just reload the board - don't reopen the modal
                 debouncedRender();
                 setTimeout(() => loadTasksFromAPI(), 300);
             }
