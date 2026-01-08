@@ -53,7 +53,7 @@ function getAssigneeColor(assigneeId, assigneeName) {
     return colors[index];
 }
 
-// Initialize board
+// Initialize board with faster loading
 document.addEventListener('DOMContentLoaded', function() {
     // Check authentication
     if (!authService.requireAuth()) {
@@ -78,11 +78,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup user menu
     setupUserMenu();
 
-    // Render board
+    // Render board immediately with empty state
     renderBoard();
 
-    // Load tasks from API (when available)
-    loadTasks();
+    // Load tasks from API asynchronously
+    loadTasks().catch(error => {
+        console.error('Failed to load tasks:', error);
+        // Show error message but don't block UI
+        showToast('Failed to load tasks. Please refresh the page.', 'error');
+    });
     
     // Listen for status changes from backlog page
     setInterval(() => {
@@ -1217,7 +1221,18 @@ async function handleDrop(e) {
 }
 
 async function loadTasks() {
-    await loadTasksFromAPI();
+    try {
+        // Add timeout to prevent hanging
+        const loadPromise = loadTasksFromAPI();
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Load timeout')), 8000)
+        );
+        
+        await Promise.race([loadPromise, timeoutPromise]);
+    } catch (error) {
+        console.error('Error loading tasks:', error);
+        showToast('Failed to load tasks. Please refresh the page.', 'error');
+    }
 }
 
 // Delete task function

@@ -40,7 +40,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (nameParts.length === 1) {
             initials = nameParts[0].substring(0, 2).toUpperCase();
         }
-        document.getElementById('globalUserAvatar').textContent = initials;
+        const avatarEl = document.getElementById('globalUserAvatar');
+        if (avatarEl) avatarEl.textContent = initials;
     }
 
     // Setup user menu dropdown
@@ -49,17 +50,47 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load project info
     const currentProject = projectSelector.getCurrentProject();
     if (currentProject) {
-        document.getElementById('projectName').textContent = currentProject.name;
-        document.getElementById('projectIcon').textContent = (currentProject.key || currentProject.name).substring(0, 1).toUpperCase();
-        document.getElementById('projectTitle').textContent = currentProject.name + ' Dashboard';
+        const nameEl = document.getElementById('projectName');
+        const iconEl = document.getElementById('projectIcon');
+        const titleEl = document.getElementById('projectTitle');
+        
+        if (nameEl) nameEl.textContent = currentProject.name;
+        if (iconEl) iconEl.textContent = (currentProject.key || currentProject.name).substring(0, 1).toUpperCase();
+        if (titleEl) titleEl.textContent = currentProject.name + ' Dashboard';
     } else {
         window.location.href = 'milo-select-project.html';
         return;
     }
 
-    // Load dashboard data
-    loadDashboardData();
+    // Show loading state
+    showLoadingState();
+    
+    // Load dashboard data with timeout
+    const loadTimeout = setTimeout(() => {
+        console.warn('Dashboard load timeout - forcing reload');
+        showErrorState();
+    }, 10000); // 10 second timeout
+    
+    loadDashboardData().then(() => {
+        clearTimeout(loadTimeout);
+    }).catch(error => {
+        clearTimeout(loadTimeout);
+        console.error('Dashboard load failed:', error);
+        showErrorState();
+    });
 });
+
+// Show loading state
+function showLoadingState() {
+    const stats = ['totalTasks', 'inProgressTasks', 'completedTasks', 'completionRate'];
+    stats.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = '...';
+            el.style.color = '#6B778C';
+        }
+    });
+}
 
 // Setup user menu with dropdown
 function setupUserMenu() {
@@ -358,12 +389,22 @@ function updateStats() {
     }
 }
 
-// Update all charts
+// Update all charts with error handling
 function updateCharts() {
-    updateStatusChart();
-    updateAssigneeChart();
-    updatePriorityChart();
-    updateTimelineChart();
+    try {
+        // Check if Chart.js is loaded
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js not loaded!');
+            return;
+        }
+        
+        updateStatusChart();
+        updateAssigneeChart();
+        updatePriorityChart();
+        updateTimelineChart();
+    } catch (error) {
+        console.error('Error updating charts:', error);
+    }
 }
 
 // Update status chart with status variation handling
