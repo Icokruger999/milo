@@ -156,10 +156,10 @@ body {
 }
 
 .hero .container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 80px;
+    display: flex;
+    justify-content: center;
     align-items: center;
+    text-align: center;
 }
 
 .hero-title {
@@ -187,6 +187,7 @@ body {
     display: flex;
     gap: 12px;
     margin-bottom: 48px;
+    justify-content: center;
 }
 
 .hero-trust {
@@ -219,11 +220,6 @@ body {
 }
 
 /* Dashboard Mockup */
-.hero-visual {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
 
 .dashboard-mockup {
     width: 100%;
