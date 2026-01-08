@@ -26,6 +26,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('sidebarUserAvatar').textContent = initials;
     }
 
+    // Setup user menu dropdown
+    setupUserMenu();
+
     // Load project info
     const currentProject = projectSelector.getCurrentProject();
     if (currentProject) {
@@ -42,6 +45,44 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load roadmap data
     loadRoadmap();
 });
+
+// Setup user menu with dropdown
+function setupUserMenu() {
+    const userMenu = document.getElementById('globalUserAvatar');
+    if (!userMenu) return;
+    
+    // Create dropdown menu
+    const dropdown = document.createElement('div');
+    dropdown.className = 'user-dropdown-menu';
+    dropdown.style.cssText = 'display: none; position: fixed; background: white; border: 1px solid #DFE1E6; border-radius: 4px; box-shadow: 0 4px 8px rgba(9, 30, 66, 0.15); z-index: 1000; min-width: 160px;';
+    dropdown.innerHTML = `
+        <div style="padding: 8px 12px; cursor: pointer; font-size: 14px; color: #172B4D; transition: background 0.15s;" 
+             onmouseover="this.style.background='#F4F5F7'" 
+             onmouseout="this.style.background='white'"
+             onclick="window.logout()">Logout</div>
+    `;
+    document.body.appendChild(dropdown);
+
+    // Toggle dropdown on avatar click
+    userMenu.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const isVisible = dropdown.style.display === 'block';
+        dropdown.style.display = isVisible ? 'none' : 'block';
+        
+        if (!isVisible) {
+            const rect = userMenu.getBoundingClientRect();
+            dropdown.style.top = (rect.bottom + 4) + 'px';
+            dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!userMenu.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+}
 
 // Initialize timeline with months
 function initializeTimeline() {
