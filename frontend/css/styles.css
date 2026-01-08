@@ -120,7 +120,8 @@ body {
     position: absolute;
     top: 100%;
     left: 0;
-    margin-top: 8px;
+    margin-top: 4px;
+    padding-top: 4px;
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -132,7 +133,8 @@ body {
     z-index: 1000;
 }
 
-.nav-dropdown:hover .nav-dropdown-menu {
+.nav-dropdown:hover .nav-dropdown-menu,
+.nav-dropdown-menu:hover {
     display: block;
     animation: dropdownFadeIn 0.2s ease;
 }
@@ -181,7 +183,7 @@ body {
     background: var(--primary-blue);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    color: white;
+    color: white !important;
     padding: 8px 16px;
     border-radius: 12px;
     border: none;
@@ -196,6 +198,7 @@ body {
 
 .btn-primary:hover {
     background: var(--primary-blue-hover);
+    color: white !important;
     transform: translateY(-2px);
     box-shadow: 0 6px 20px 0 rgba(0, 82, 204, 0.35);
 }
