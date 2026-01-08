@@ -635,29 +635,29 @@
             background: #36B37E;
         }
 
-        /* Status-based colors (override type colors when status is set) */
+        /* Status-based colors (override type colors when status is set) - Match board colors */
         .timeline-bar.status-backlog {
-            background: #DFE1E6 !important;
-            color: #42526E !important;
-        }
-
-        .timeline-bar.status-todo {
-            background: #DFE1E6 !important;
-            color: #42526E !important;
-        }
-
-        .timeline-bar.status-progress {
-            background: #FFAB00 !important;
-            color: #172B4D !important;
-        }
-
-        .timeline-bar.status-review {
-            background: #0065FF !important;
+            background: #FF8A80 !important; /* Light red */
             color: #FFFFFF !important;
         }
 
+        .timeline-bar.status-todo {
+            background: #FF8A80 !important; /* Light red (same as backlog) */
+            color: #FFFFFF !important;
+        }
+
+        .timeline-bar.status-progress {
+            background: #0052CC !important; /* Blue */
+            color: #FFFFFF !important;
+        }
+
+        .timeline-bar.status-review {
+            background: #FFAB00 !important; /* Orange */
+            color: #172B4D !important;
+        }
+
         .timeline-bar.status-done {
-            background: #36B37E !important;
+            background: #36B37E !important; /* Green */
             color: #FFFFFF !important;
         }
 
