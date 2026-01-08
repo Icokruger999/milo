@@ -367,19 +367,24 @@ async function addCommentToTaskModal() {
     if (!input || !input.value.trim()) return;
     
     if (!currentTaskId) {
-        alert('Please save the task first before adding comments');
+        console.warn('Cannot add comment: task must be saved first');
+        // Silently prevent comment if task not saved
         return;
     }
     
     const commentText = input.value.trim();
-    input.value = '';
+    const originalValue = input.value; // Store original value in case of error
     
     try {
         const user = authService.getCurrentUser();
         if (!user || !user.id) {
-            alert('You must be logged in to add comments');
+            console.warn('Cannot add comment: user not logged in');
+            // Silently prevent comment if not logged in
             return;
         }
+        
+        // Clear input immediately for better UX
+        input.value = '';
         
         const response = await apiClient.post('/comments', {
             taskId: currentTaskId,
@@ -392,18 +397,23 @@ async function addCommentToTaskModal() {
             currentTaskComments.push(newComment);
             renderTaskComments();
         } else {
-            const error = await response.json();
-            alert(error.message || 'Failed to add comment');
+            // Restore input value on error
+            input.value = originalValue;
+            const error = await response.json().catch(() => ({ message: 'Failed to add comment' }));
+            console.error('Failed to add comment:', error.message || 'Unknown error');
+            // Silently fail - no popup
         }
     } catch (error) {
-        console.error('Failed to add comment:', error);
-        alert('Failed to add comment. Please try again.');
+        // Restore input value on error
+        input.value = originalValue;
+        console.error('Error adding comment:', error);
+        // Silently fail - no popup
     }
 }
 
 function deleteTaskFromModal() {
     const taskId = document.getElementById('taskId').value;
-    if (taskId && confirm('Are you sure you want to delete this task?')) {
+    if (taskId) {
         deleteTask(taskId);
     }
 }
@@ -1075,10 +1085,6 @@ async function loadTasks() {
 
 // Delete task function
 async function deleteTask(taskId) {
-    if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
-        return;
-    }
-    
     try {
         const response = await apiClient.delete(`/tasks/${taskId}`);
         if (response.ok) {
@@ -1086,12 +1092,13 @@ async function deleteTask(taskId) {
             await loadTasksFromAPI();
             renderBoard();
         } else {
-            const error = await response.json();
-            alert(error.message || 'Failed to delete task');
+            const error = await response.json().catch(() => ({ message: 'Failed to delete task' }));
+            console.error('Failed to delete task:', error.message || 'Unknown error');
+            // Silently fail - no popup
         }
     } catch (error) {
         console.error('Error deleting task:', error);
-        alert('Failed to delete task. Please try again.');
+        // Silently fail - no popup
     }
 }
 
@@ -1111,21 +1118,35 @@ function addChecklistItem() {
     const checklistDiv = document.getElementById('taskChecklist');
     if (!checklistDiv) return;
     
-    const itemText = prompt('Enter checklist item:');
-    if (!itemText) return;
-    
+    // Clear "No checklist items yet" message
     if (checklistDiv.querySelector('div[style*="color: #6B778C"]')) {
         checklistDiv.innerHTML = '';
     }
     
+    // Create new checklist item with inline input
     const itemDiv = document.createElement('div');
     itemDiv.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 6px; background: white; border-radius: 3px;';
-    itemDiv.innerHTML = `
-        <input type="checkbox" style="cursor: pointer;">
-        <input type="text" value="${itemText}" style="flex: 1; padding: 4px 8px; border: 1px solid #ddd; border-radius: 3px; font-size: 13px;">
-        <button onclick="removeChecklistItemFromModal(this)" style="background: none; border: none; color: #DE350B; cursor: pointer; font-size: 16px; padding: 0 8px;">×</button>
-    `;
+    
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.style.cursor = 'pointer';
+    
+    const textInput = document.createElement('input');
+    textInput.type = 'text';
+    textInput.placeholder = 'Enter checklist item...';
+    textInput.style.cssText = 'flex: 1; padding: 4px 8px; border: 1px solid #ddd; border-radius: 3px; font-size: 13px;';
+    
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '×';
+    removeBtn.onclick = function() { removeChecklistItemFromModal(this); };
+    removeBtn.style.cssText = 'background: none; border: none; color: #DE350B; cursor: pointer; font-size: 16px; padding: 0 8px;';
+    
+    itemDiv.appendChild(checkbox);
+    itemDiv.appendChild(textInput);
+    itemDiv.appendChild(removeBtn);
+    
     checklistDiv.appendChild(itemDiv);
+    textInput.focus();
 }
 
 function removeChecklistItemFromModal(button) {
@@ -1137,10 +1158,9 @@ function removeChecklistItemFromModal(button) {
 }
 
 function addChecklistItemToView(taskId) {
-    const itemText = prompt('Enter checklist item:');
-    if (!itemText) return;
-    console.log('Adding checklist item to task', taskId, itemText);
-    // TODO: Implement API call
+    // This function is for view mode - can be implemented later if needed
+    console.log('Adding checklist item to task', taskId);
+    // TODO: Implement API call with inline input (no popup)
 }
 
 function toggleChecklistItem(taskId, index, completed) {
@@ -1149,7 +1169,7 @@ function toggleChecklistItem(taskId, index, completed) {
 }
 
 function removeChecklistItem(taskId, index) {
-    if (!confirm('Remove this checklist item?')) return;
+    // Remove without confirmation
     console.log('Removing checklist item', taskId, index);
     // TODO: Implement API call
 }
