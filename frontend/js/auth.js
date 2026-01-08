@@ -226,3 +226,8 @@ class AuthService {
 // Create global auth service instance
 const authService = new AuthService();
 
+// Expose logout function globally for easy access from HTML onclick handlers
+window.logout = function() {
+    authService.logout();
+};
+
