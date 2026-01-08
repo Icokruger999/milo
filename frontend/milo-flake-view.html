@@ -118,7 +118,7 @@
 </head>
 <body>
     <div class="container">
-        <a href="milo-flakes.html" class="back-link">← Back to Flakes</a>
+        <a href="#" id="backLink" class="back-link" onclick="goBack(); return false;">← Back</a>
         
         <div class="flake-header">
             <h1 class="flake-title" id="flakeTitle">Loading...</h1>
@@ -143,6 +143,34 @@
     <script src="js/auth.js"></script>
     <script>
         let currentFlakeId = null;
+
+        function goBack() {
+            // Check if we came from a task/board context (from email link)
+            const referrer = document.referrer;
+            const urlParams = new URLSearchParams(window.location.search);
+            const readonly = urlParams.get('readonly');
+            
+            // If in read-only mode (from email), go to board
+            if (readonly === 'true') {
+                window.location.href = 'milo-board.html';
+                return;
+            }
+            
+            // If referrer is from board or task page, go back there
+            if (referrer && (referrer.includes('milo-board') || referrer.includes('task'))) {
+                window.location.href = 'milo-board.html';
+                return;
+            }
+            
+            // If authenticated, go to flakes page
+            if (authService.isAuthenticated()) {
+                window.location.href = 'milo-flakes.html';
+                return;
+            }
+            
+            // Default: go to board (public access)
+            window.location.href = 'milo-board.html';
+        }
 
         async function loadFlake() {
             const urlParams = new URLSearchParams(window.location.search);
