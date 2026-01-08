@@ -179,16 +179,25 @@ function renderTimeline() {
     updateCurrentDateLine();
 }
 
+// Get cell width based on view mode
+function getCellWidth() {
+    if (currentViewMode === 'days') return 60;
+    if (currentViewMode === 'weeks') return 120;
+    if (currentViewMode === 'months') return 150;
+    return 120;
+}
+
 // Render timeline header
 function renderTimelineHeader() {
     const header = document.getElementById('timelineHeader');
     const dates = generateTimelineDates();
-    const timelineWidth = dates.length * 120; // 120px per cell
+    const cellWidth = getCellWidth();
+    const timelineWidth = dates.length * cellWidth;
     
     const cells = dates.map(date => {
         const isWeekend = date.getDay() === 0 || date.getDay() === 6;
         const label = formatDateLabel(date);
-        return `<div class="timeline-header-cell ${isWeekend ? 'weekend' : ''}">${label}</div>`;
+        return `<div class="timeline-header-cell ${isWeekend ? 'weekend' : ''}" style="min-width: ${cellWidth}px; width: ${cellWidth}px;">${label}</div>`;
     }).join('');
     
     header.innerHTML = `<div class="timeline-header-row" style="width: ${timelineWidth}px; display: flex;">${cells}</div>`;
@@ -228,7 +237,7 @@ function generateTimelineDates() {
 // Format date label
 function formatDateLabel(date) {
     if (currentViewMode === 'days') {
-        return date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     } else if (currentViewMode === 'weeks') {
         const weekStart = new Date(date);
         const weekEnd = new Date(date);
@@ -253,8 +262,9 @@ function renderTimelineBody() {
         filteredTasks = filteredTasks.filter(t => t.type === typeFilter);
     }
 
-    // Calculate cell width
-    const timelineWidth = dates.length * 120; // 120px per cell
+    // Calculate cell width based on view mode
+    const cellWidth = getCellWidth();
+    const timelineWidth = dates.length * cellWidth;
     rows.style.width = timelineWidth + 'px';
     
     // Clear existing rows
@@ -305,10 +315,13 @@ function createTimelineRow(item, type, dates, timelineWidth) {
     const left = (startDays / totalDays) * timelineWidth;
     const width = (durationDays / totalDays) * timelineWidth;
     
+    // Adjust minimum bar width based on view mode
+    const minBarWidth = currentViewMode === 'days' ? 30 : 60;
+    
     const bar = document.createElement('div');
     bar.className = `timeline-bar ${type}`;
     bar.style.left = left + 'px';
-    bar.style.width = Math.max(60, width) + 'px';
+    bar.style.width = Math.max(minBarWidth, width) + 'px';
     bar.dataset.itemId = item.id;
     bar.dataset.startDate = startDate.toISOString();
     bar.dataset.endDate = endDate.toISOString();
@@ -474,7 +487,8 @@ async function saveTaskPosition(bar) {
     
     const left = parseInt(bar.style.left);
     const dates = generateTimelineDates();
-    const timelineWidth = dates.length * 120;
+    const cellWidth = getCellWidth();
+    const timelineWidth = dates.length * cellWidth;
     
     const firstDate = dates[0];
     const lastDate = dates[dates.length - 1];
@@ -512,7 +526,8 @@ async function saveTaskDates(bar) {
     const width = bar.offsetWidth;
     
     const dates = generateTimelineDates();
-    const timelineWidth = dates.length * 120;
+    const cellWidth = getCellWidth();
+    const timelineWidth = dates.length * cellWidth;
     
     const firstDate = dates[0];
     const lastDate = dates[dates.length - 1];
@@ -567,7 +582,8 @@ function updateCurrentDateLine() {
     const totalDays = Math.ceil((lastDate - firstDate) / (1000 * 60 * 60 * 24));
     const daysFromStart = Math.ceil((now - firstDate) / (1000 * 60 * 60 * 24));
     
-    const timelineWidth = dates.length * 120;
+    const cellWidth = getCellWidth();
+    const timelineWidth = dates.length * cellWidth;
     currentDatePosition = (daysFromStart / totalDays) * timelineWidth;
     
     const currentDateLine = document.getElementById('currentDateLine');
