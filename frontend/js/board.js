@@ -230,7 +230,7 @@ async function showTaskModal(column, task = null) {
     
     // Load users/products/labels FIRST, then set values (prevents reset)
     await loadUsersAndProducts();
-    await loadLabelsForModal();
+    await loadLabels();
     
     if (task) {
         // Set all form values AFTER dropdowns are populated
