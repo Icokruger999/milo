@@ -151,29 +151,37 @@ async function loadDashboardData() {
             return;
         }
 
-        console.log('Loading dashboard data for project:', currentProject.id);
-        const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
+        // Load data with timeout protection
+        const apiPromise = (async () => {
+            const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
+            
+            if (response.ok) {
+                const tasks = await response.json();
+                
+                // Cache the data
+                dataCache.tasks = tasks;
+                dataCache.timestamp = now;
+                
+                dashboardData.tasks = tasks || [];
+                dashboardData.filteredTasks = [...dashboardData.tasks];
+                
+                // Load assignees for filter
+                await loadAssignees();
+                
+                // Apply initial filters and render
+                applyFiltersImmediate();
+            } else {
+                const errorText = await response.text().catch(() => 'Unknown error');
+                console.error('Failed to load tasks. Status:', response.status, 'Response:', errorText);
+                showErrorState();
+            }
+        })();
         
-        if (response.ok) {
-            const tasks = await response.json();
-            
-            // Cache the data
-            dataCache.tasks = tasks;
-            dataCache.timestamp = now;
-            
-            dashboardData.tasks = tasks || [];
-            dashboardData.filteredTasks = [...dashboardData.tasks];
-            
-            // Load assignees for filter
-            await loadAssignees();
-            
-            // Apply initial filters and render (no debounce on initial load)
-            applyFiltersImmediate();
-        } else {
-            const errorText = await response.text().catch(() => 'Unknown error');
-            console.error('Failed to load tasks. Status:', response.status, 'Response:', errorText);
-            showErrorState();
-        }
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Dashboard load timeout')), 10000)
+        );
+        
+        await Promise.race([apiPromise, timeoutPromise]);
     } catch (error) {
         console.error('Error loading dashboard data:', error);
         showErrorState();
