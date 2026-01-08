@@ -201,7 +201,7 @@
                 });
 
                 if (response.ok) {
-                    alert('Flake updated successfully');
+                    // Redirect silently without popup
                     window.location.href = `milo-flake-view.html?id=${currentFlakeId}`;
                 } else {
                     const error = await response.json();
