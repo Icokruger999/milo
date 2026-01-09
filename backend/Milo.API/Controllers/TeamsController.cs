@@ -210,11 +210,11 @@ public class TeamsController : ControllerBase
                     .ToList();
 
                 // Send emails in background (don't wait for them)
-                _ = Task.Run(async () =>
+                _ = System.Threading.Tasks.Task.Run(async () =>
                 {
                     try
                     {
-                        await Task.WhenAll(emailTasks);
+                        await System.Threading.Tasks.Task.WhenAll(emailTasks);
                         _logger.LogInformation($"✓ All project assignment emails sent for team {team.Name}");
                     }
                     catch (Exception emailEx)
@@ -321,11 +321,11 @@ public class TeamsController : ControllerBase
                         .ToList();
 
                     // Send emails in background
-                    _ = Task.Run(async () =>
+                    _ = System.Threading.Tasks.Task.Run(async () =>
                     {
                         try
                         {
-                            await Task.WhenAll(emailTasks);
+                            await System.Threading.Tasks.Task.WhenAll(emailTasks);
                             _logger.LogInformation($"✓ All project assignment emails sent for team {teamWithDetails.Name}");
                         }
                         catch (Exception emailEx)
