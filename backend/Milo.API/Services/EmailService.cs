@@ -493,6 +493,139 @@ The Milo Team
         }
     }
 
+    public async Task<bool> SendTeamProjectAssignmentEmailAsync(string toEmail, string toName, string teamName, string projectName, string projectKey)
+    {
+        try
+        {
+            var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
+            var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
+            var smtpUser = _configuration["Email:SmtpUser"];
+            var smtpPassword = _configuration["Email:SmtpPassword"];
+            var fromEmail = _configuration["Email:FromEmail"] ?? "noreply@codingeverest.com";
+            var fromName = _configuration["Email:FromName"] ?? "Milo";
+
+            if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPassword))
+            {
+                _logger.LogWarning("Email service not configured. Skipping email send.");
+                return false;
+            }
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(fromName, fromEmail));
+            message.To.Add(new MailboxAddress(toName, toEmail));
+            message.Subject = $"Team {teamName} assigned to {projectName}";
+
+            var boardUrl = "https://www.codingeverest.com/milo-board.html";
+
+            var bodyBuilder = new BodyBuilder
+            {
+                HtmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=""utf-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; }}
+        .email-wrapper {{ background-color: #F4F5F7; padding: 40px 20px; }}
+        .email-container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
+        .email-header {{ background: linear-gradient(135deg, #6554C0 0%, #8777D9 100%); color: #FFFFFF; padding: 40px 30px; text-align: center; }}
+        .email-header h1 {{ font-size: 28px; font-weight: 600; margin: 0; letter-spacing: -0.5px; }}
+        .email-body {{ padding: 40px 30px; }}
+        .greeting {{ font-size: 16px; color: #172B4D; margin-bottom: 20px; }}
+        .message {{ font-size: 15px; color: #42526E; margin-bottom: 30px; line-height: 1.7; }}
+        .assignment-card {{ background: #F4F5F7; border-left: 4px solid #6554C0; border-radius: 4px; padding: 20px; margin: 30px 0; }}
+        .team-name {{ font-size: 20px; font-weight: 600; color: #172B4D; margin-bottom: 12px; }}
+        .project-info {{ font-size: 15px; color: #42526E; margin: 8px 0; }}
+        .project-info strong {{ color: #172B4D; }}
+        .project-key {{ display: inline-block; background: #DEEBFF; color: #0052CC; padding: 4px 12px; border-radius: 3px; font-size: 13px; font-weight: 600; font-family: 'Monaco', 'Menlo', monospace; margin-top: 8px; }}
+        .cta-button {{ display: inline-block; background: #6554C0; color: #FFFFFF !important; padding: 14px 32px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 15px; margin: 30px 0; text-align: center; transition: background-color 0.2s; }}
+        .cta-button:hover {{ background: #8777D9; }}
+        .button-container {{ text-align: center; margin: 30px 0; }}
+        .email-footer {{ padding: 30px; background-color: #F4F5F7; border-top: 1px solid #DFE1E6; text-align: center; }}
+        .email-footer p {{ font-size: 13px; color: #6B778C; margin: 5px 0; }}
+        .email-footer .brand {{ color: #0052CC; font-weight: 600; }}
+        .info-box {{ background: #DEEBFF; border: 1px solid #B3D4FF; border-radius: 4px; padding: 15px; margin: 20px 0; }}
+        .info-box p {{ font-size: 14px; color: #0052CC; margin: 0; }}
+    </style>
+</head>
+<body>
+    <div class=""email-wrapper"">
+        <div class=""email-container"">
+            <div class=""email-header"">
+                <h1>🎉 Team Project Assignment</h1>
+            </div>
+            <div class=""email-body"">
+                <div class=""greeting"">Hi {toName},</div>
+                <div class=""message"">Great news! Your team has been assigned to a new project in Milo.</div>
+                
+                <div class=""assignment-card"">
+                    <div class=""team-name"">Team: {teamName}</div>
+                    <div class=""project-info""><strong>Project:</strong> {projectName}</div>
+                    <div><span class=""project-key"">{projectKey}</span></div>
+                </div>
+                
+                <div class=""info-box"">
+                    <p><strong>📌 What this means:</strong> You now have access to all tasks, boards, and resources for this project. You can start collaborating with your team right away!</p>
+                </div>
+                
+                <div class=""button-container"">
+                    <a href=""{boardUrl}"" class=""cta-button"">View Project Board</a>
+                </div>
+                
+                <div style=""font-size: 13px; color: #6B778C; margin-top: 30px; padding-top: 20px; border-top: 1px solid #DFE1E6;"">
+                    <p>If you have any questions, please reach out to your team lead or project administrator.</p>
+                </div>
+            </div>
+            <div class=""email-footer"">
+                <p><span class=""brand"">Milo</span> - Project Management by Coding Everest</p>
+                <p style=""margin-top: 10px; font-size: 12px; color: #8993A4;"">This is an automated notification. Please do not reply to this email.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>",
+                TextBody = $@"
+Team Project Assignment
+
+Hi {toName},
+
+Great news! Your team has been assigned to a new project in Milo.
+
+Team: {teamName}
+Project: {projectName}
+Project Key: {projectKey}
+
+You now have access to all tasks, boards, and resources for this project.
+
+View the project board: {boardUrl}
+
+If you have any questions, please reach out to your team lead or project administrator.
+
+Best regards,
+The Milo Team
+"
+            };
+
+            message.Body = bodyBuilder.ToMessageBody();
+
+            using var client = new SmtpClient();
+            await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
+            await client.AuthenticateAsync(smtpUser, smtpPassword);
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
+
+            _logger.LogInformation($"Team project assignment email sent successfully to {toEmail}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Failed to send team project assignment email to {toEmail}");
+            return false;
+        }
+    }
+
     public async Task<bool> SendCustomEmailAsync(MimeMessage message, string toEmail)
     {
         try

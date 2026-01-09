@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Milo.API.Data;
 using Milo.API.Models;
+using Milo.API.Services;
 
 namespace Milo.API.Controllers;
 
@@ -11,11 +12,13 @@ public class TeamsController : ControllerBase
 {
     private readonly MiloDbContext _context;
     private readonly ILogger<TeamsController> _logger;
+    private readonly EmailService _emailService;
 
-    public TeamsController(MiloDbContext context, ILogger<TeamsController> logger)
+    public TeamsController(MiloDbContext context, ILogger<TeamsController> logger, EmailService emailService)
     {
         _context = context;
         _logger = logger;
+        _emailService = emailService;
     }
 
     // GET: api/teams
@@ -190,6 +193,37 @@ public class TeamsController : ControllerBase
                     .ThenInclude(m => m.User)
                 .FirstOrDefaultAsync(t => t.Id == team.Id);
 
+            // Send email notifications if team is assigned to a project
+            if (team.Project != null && team.Members.Any())
+            {
+                _logger.LogInformation($"Sending project assignment emails for team {team.Name} to {team.Members.Count} members");
+                
+                var emailTasks = team.Members
+                    .Where(m => m.IsActive && m.User != null)
+                    .Select(m => _emailService.SendTeamProjectAssignmentEmailAsync(
+                        m.User.Email,
+                        m.User.Name ?? m.User.Email,
+                        team.Name,
+                        team.Project.Name,
+                        team.Project.Key ?? team.Project.Name
+                    ))
+                    .ToList();
+
+                // Send emails in background (don't wait for them)
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await Task.WhenAll(emailTasks);
+                        _logger.LogInformation($"✓ All project assignment emails sent for team {team.Name}");
+                    }
+                    catch (Exception emailEx)
+                    {
+                        _logger.LogError(emailEx, $"✗ Failed to send some project assignment emails for team {team.Name}");
+                    }
+                });
+            }
+
             return CreatedAtAction(nameof(GetTeam), new { id = team.Id }, new
             {
                 id = team.Id,
@@ -245,13 +279,62 @@ public class TeamsController : ControllerBase
                 team.Avatar = request.Avatar;
             }
 
+            bool projectAssignmentChanged = false;
+            int? newProjectId = null;
+
             if (request.ProjectId.HasValue)
             {
-                team.ProjectId = request.ProjectId.Value == 0 ? null : request.ProjectId.Value;
+                newProjectId = request.ProjectId.Value == 0 ? null : request.ProjectId.Value;
+                if (team.ProjectId != newProjectId)
+                {
+                    projectAssignmentChanged = true;
+                    team.ProjectId = newProjectId;
+                }
             }
 
             team.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
+
+            // Send email notifications if project assignment changed and there's a new project
+            if (projectAssignmentChanged && newProjectId.HasValue)
+            {
+                // Reload team with project and members for email
+                var teamWithDetails = await _context.Teams
+                    .Include(t => t.Project)
+                    .Include(t => t.Members)
+                        .ThenInclude(m => m.User)
+                    .FirstOrDefaultAsync(t => t.Id == id);
+
+                if (teamWithDetails?.Project != null && teamWithDetails.Members.Any())
+                {
+                    _logger.LogInformation($"Sending project assignment emails for team {teamWithDetails.Name} to {teamWithDetails.Members.Count} members");
+                    
+                    var emailTasks = teamWithDetails.Members
+                        .Where(m => m.IsActive && m.User != null)
+                        .Select(m => _emailService.SendTeamProjectAssignmentEmailAsync(
+                            m.User.Email,
+                            m.User.Name ?? m.User.Email,
+                            teamWithDetails.Name,
+                            teamWithDetails.Project.Name,
+                            teamWithDetails.Project.Key ?? teamWithDetails.Project.Name
+                        ))
+                        .ToList();
+
+                    // Send emails in background
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await Task.WhenAll(emailTasks);
+                            _logger.LogInformation($"✓ All project assignment emails sent for team {teamWithDetails.Name}");
+                        }
+                        catch (Exception emailEx)
+                        {
+                            _logger.LogError(emailEx, $"✗ Failed to send some project assignment emails for team {teamWithDetails.Name}");
+                        }
+                    });
+                }
+            }
 
             return Ok(new { message = "Team updated successfully", id = team.Id });
         }

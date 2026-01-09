@@ -567,13 +567,30 @@
             </div>
             <div class="sidebar-section">
                 <div class="sidebar-section-title">Planning</div>
-                <a href="milo-roadmap.html" class="sidebar-item">Roadmap</a>
+                <a href="milo-roadmap.html" class="sidebar-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    </svg>
+                    Roadmap
+                </a>
                 <a href="milo-backlog.html" class="sidebar-item">Backlog</a>
-                <a href="milo-board.html" class="sidebar-item">Board</a>
-                <a href="milo-timeline.html" class="sidebar-item">Timeline</a>
-            </div>
-            <div class="sidebar-section">
-                <div class="sidebar-section-title">Documentation</div>
+                <a href="milo-board.html" class="sidebar-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="9" y1="3" x2="9" y2="21"></line>
+                        <line x1="3" y1="9" x2="21" y2="9"></line>
+                    </svg>
+                    Board
+                </a>
+                <a href="milo-dashboard.html" class="sidebar-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="9"></rect>
+                        <rect x="14" y="3" width="7" height="5"></rect>
+                        <rect x="14" y="12" width="7" height="9"></rect>
+                        <rect x="3" y="16" width="7" height="5"></rect>
+                    </svg>
+                    Dashboard
+                </a>
                 <a href="milo-flakes.html" class="sidebar-item active">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -584,10 +601,34 @@
                     </svg>
                     Flakes
                 </a>
+                <a href="milo-incidents.html" class="sidebar-item">Incidents</a>
             </div>
             <div class="sidebar-section">
-                <div class="sidebar-section-title">Operations</div>
-                <a href="milo-incidents.html" class="sidebar-item">Incidents</a>
+                <div class="sidebar-section-title">Development</div>
+                <a href="#" class="sidebar-item">Code</a>
+                <a href="#" class="sidebar-item">Security</a>
+                <a href="#" class="sidebar-item">Releases</a>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">Team</div>
+                <a href="milo-teams.html" class="sidebar-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Teams
+                </a>
+                <a href="#" class="sidebar-item" onclick="if(typeof showInviteModal === 'function') showInviteModal(); return false;" style="cursor: pointer;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="8.5" cy="7" r="4"></circle>
+                        <line x1="20" y1="8" x2="20" y2="14"></line>
+                        <line x1="23" y1="11" x2="17" y2="11"></line>
+                    </svg>
+                    Invite People
+                </a>
             </div>
         </div>
 

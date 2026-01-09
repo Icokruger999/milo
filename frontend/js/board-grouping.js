@@ -4,6 +4,28 @@
 // Track collapsed state
 let collapsedGroups = JSON.parse(localStorage.getItem('collapsedAssigneeGroups') || '{}');
 
+// Get color for assignee
+function getAssigneeColor(assigneeId, assigneeName) {
+    const colors = [
+        { bg: '#0052CC', text: '#FFFFFF' }, // Blue
+        { bg: '#36B37E', text: '#FFFFFF' }, // Green
+        { bg: '#DE350B', text: '#FFFFFF' }, // Red
+        { bg: '#6554C0', text: '#FFFFFF' }, // Purple
+        { bg: '#FFAB00', text: '#172B4D' }, // Orange
+        { bg: '#00B8D9', text: '#FFFFFF' }, // Cyan
+        { bg: '#FF5630', text: '#FFFFFF' }, // Red-Orange
+        { bg: '#5243AA', text: '#FFFFFF' }  // Deep Purple
+    ];
+    
+    if (!assigneeId || assigneeId === 'unassigned') {
+        return { bg: '#DFE1E6', text: '#42526E' }; // Gray for unassigned
+    }
+    
+    // Use assignee ID to deterministically select a color
+    const colorIndex = parseInt(assigneeId) % colors.length;
+    return colors[colorIndex];
+}
+
 // Group tasks by assignee
 function groupTasksByAssignee(taskList) {
     const groups = {};

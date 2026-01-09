@@ -28,11 +28,16 @@ public class ProjectsController : ControllerBase
             .Where(p => p.Status != "archived")
             .AsQueryable();
 
-        // If userId provided, filter to projects user is member of or owns
+        // If userId provided, filter to projects user is member of, owns, or has access through team
         if (userId.HasValue)
         {
             query = query.Where(p => p.OwnerId == userId.Value || 
-                                     p.Members.Any(m => m.UserId == userId.Value));
+                                     p.Members.Any(m => m.UserId == userId.Value) ||
+                                     _context.Teams.Any(t => 
+                                         t.ProjectId == p.Id && 
+                                         !t.IsDeleted &&
+                                         t.Members.Any(tm => tm.UserId == userId.Value && tm.IsActive)
+                                     ));
         }
 
         var projects = await query.OrderBy(p => p.Name).ToListAsync();
@@ -50,7 +55,23 @@ public class ProjectsController : ControllerBase
                 else
                 {
                     var member = p.Members.FirstOrDefault(m => m.UserId == userId.Value);
-                    userRole = member?.Role;
+                    if (member != null)
+                    {
+                        userRole = member.Role;
+                    }
+                    else
+                    {
+                        // Check if user has access through a team
+                        var hasTeamAccess = _context.Teams
+                            .Any(t => t.ProjectId == p.Id && 
+                                     !t.IsDeleted &&
+                                     t.Members.Any(tm => tm.UserId == userId.Value && tm.IsActive));
+                        
+                        if (hasTeamAccess)
+                        {
+                            userRole = "team member";
+                        }
+                    }
                 }
             }
 
