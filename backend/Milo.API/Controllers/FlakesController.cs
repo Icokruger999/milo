@@ -213,46 +213,71 @@ public class FlakesController : ControllerBase
             var dateNow = DateTime.UtcNow.ToLocalTime();
             var dateStr = dateNow.ToString("MMM dd, yyyy");
             var timeStr = dateNow.ToString("hh:mm tt");
-            // Don't include flake content in email for privacy - only send link
-            var flakeContentHtml = "<div style='color: #6B778C; font-style: italic; padding: 20px; background: #F4F5F7; border-radius: 4px; text-align: center; margin: 16px 0;'>This flake has been shared with you. Click the button below to view the full content.</div>";
-            
-            var flakeContentText = "This flake has been shared with you. Click the link below to view the full content.";
 
-            var emailBody = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>" +
-                "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #172B4D; margin: 0; padding: 0; }" +
-                ".email-container { max-width: 600px; margin: 0 auto; background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }" +
-                ".email-header { background: linear-gradient(135deg, #0052CC 0%, #0065FF 100%); color: #FFFFFF; padding: 30px; text-align: center; }" +
-                ".email-body { padding: 30px; }" +
-                ".flake-title { font-size: 24px; font-weight: 600; color: #172B4D; margin-bottom: 16px; }" +
-                ".flake-content { font-size: 15px; color: #42526E; line-height: 1.7; margin-bottom: 24px; white-space: pre-wrap; }" +
-                ".flake-meta { font-size: 13px; color: #6B778C; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #DFE1E6; }" +
-                ".cta-button { display: inline-block; background: #0052CC; color: #FFFFFF !important; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: 600; margin-top: 16px; }" +
-                ".email-footer { padding: 20px; background: #F4F5F7; border-top: 1px solid #DFE1E6; text-align: center; font-size: 12px; color: #6B778C; }" +
-                "</style></head><body><div class=\"email-container\"><div class=\"email-header\"><h1>Shared Flake: " + System.Net.WebUtility.HtmlEncode(flake.Title) + "</h1></div>" +
-                "<div class=\"email-body\"><p>Hello,</p><p><strong>" + System.Net.WebUtility.HtmlEncode(authorName) + "</strong> has shared a flake from <strong>" + System.Net.WebUtility.HtmlEncode(projectName) + "</strong> with you.</p>" +
-                "<div class=\"flake-meta\"><strong>Project:</strong> " + System.Net.WebUtility.HtmlEncode(projectName) + "<br><strong>Shared by:</strong> " + System.Net.WebUtility.HtmlEncode(authorName) + "<br><strong>Date:</strong> " + dateStr + " at " + timeStr + "</div>" +
-                "<div class=\"flake-title\">" + System.Net.WebUtility.HtmlEncode(flake.Title) + "</div><div class=\"flake-content\">" + flakeContentHtml + "</div>" +
-                "<div style=\"text-align: center; margin-top: 24px; margin-bottom: 24px;\"><a href=\"" + flakeUrl + "\" class=\"cta-button\" style=\"display: inline-block; background: #0052CC; color: #FFFFFF !important; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 15px;\">View Full Flake</a></div>" +
-                "<div style=\"text-align: center; margin-bottom: 16px; padding: 16px; background: #F4F5F7; border-radius: 4px;\"><p style=\"margin: 0; font-size: 13px; color: #6B778C;\">Or copy and paste this link into your browser:</p><p style=\"margin: 8px 0 0 0; font-size: 12px; color: #0052CC; word-break: break-all;\"><a href=\"" + flakeUrl + "\" style=\"color: #0052CC; text-decoration: underline;\">" + flakeUrl + "</a></p></div></div>" +
-                "<div class=\"email-footer\"><p>This flake was shared from Milo</p><p><a href=\"" + flakeUrl + "\" style=\"color: #0052CC; text-decoration: underline;\">" + flakeUrl + "</a></p></div>" +
-                "</div></body></html>";
+            // Simplified email template for better compatibility
+            var emailBody = @"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=""utf-8"">
+</head>
+<body style=""font-family: Arial, sans-serif; line-height: 1.6; color: #172B4D; margin: 0; padding: 20px; background: #F4F5F7;"">
+    <div style=""max-width: 600px; margin: 0 auto; background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"">
+        <div style=""background: #0052CC; color: #FFFFFF; padding: 30px; text-align: center;"">
+            <h1 style=""margin: 0; font-size: 24px;"">Shared Flake: " + System.Net.WebUtility.HtmlEncode(flake.Title) + @"</h1>
+        </div>
+        <div style=""padding: 30px;"">
+            <p style=""margin: 0 0 16px 0;"">Hello,</p>
+            <p style=""margin: 0 0 24px 0;""><strong>" + System.Net.WebUtility.HtmlEncode(authorName) + @"</strong> has shared a flake from <strong>" + System.Net.WebUtility.HtmlEncode(projectName) + @"</strong> with you.</p>
+            
+            <div style=""background: #F4F5F7; padding: 16px; border-radius: 4px; margin-bottom: 24px;"">
+                <p style=""margin: 0; font-size: 13px; color: #6B778C;""><strong>Project:</strong> " + System.Net.WebUtility.HtmlEncode(projectName) + @"</p>
+                <p style=""margin: 8px 0 0 0; font-size: 13px; color: #6B778C;""><strong>Shared by:</strong> " + System.Net.WebUtility.HtmlEncode(authorName) + @"</p>
+                <p style=""margin: 8px 0 0 0; font-size: 13px; color: #6B778C;""><strong>Date:</strong> " + dateStr + @" at " + timeStr + @"</p>
+            </div>
+
+            <div style=""text-align: center; margin: 32px 0;"">
+                <a href=""" + flakeUrl + @""" style=""display: inline-block; background: #0052CC; color: #FFFFFF; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 15px;"">VIEW FLAKE</a>
+            </div>
+
+            <div style=""background: #F4F5F7; padding: 20px; border-radius: 4px; text-align: center;"">
+                <p style=""margin: 0 0 12px 0; font-size: 13px; color: #6B778C;"">Or copy this link:</p>
+                <p style=""margin: 0; font-size: 14px; word-break: break-all;""><a href=""" + flakeUrl + @""" style=""color: #0052CC;"">" + flakeUrl + @"</a></p>
+            </div>
+        </div>
+        <div style=""padding: 20px; background: #F4F5F7; border-top: 1px solid #DFE1E6; text-align: center;"">
+            <p style=""margin: 0; font-size: 12px; color: #6B778C;"">This flake was shared from Milo</p>
+        </div>
+    </div>
+</body>
+</html>";
 
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress(fromName, fromEmail));
             message.To.Add(new MailboxAddress("", request.ToEmail));
             message.Subject = $"Shared Flake: {flake.Title}";
 
-            var textBody = "Shared Flake: " + flake.Title + "\n\n" +
-                "Hello,\n\n" +
-                authorName + " has shared a flake from " + projectName + " with you.\n\n" +
-                "Project: " + projectName + "\n" +
-                "Shared by: " + authorName + "\n" +
-                "Date: " + dateStr + " at " + timeStr + "\n\n" +
-                "Flake: " + flake.Title + "\n\n" +
-                flakeContentText + "\n\n" +
-                "View full flake: " + flakeUrl + "\n\n" +
-                "---\n" +
-                "This flake was shared from Milo";
+            var textBody = @"Shared Flake: " + flake.Title + @"
+
+Hello,
+
+" + authorName + @" has shared a flake from " + projectName + @" with you.
+
+Project: " + projectName + @"
+Shared by: " + authorName + @"
+Date: " + dateStr + @" at " + timeStr + @"
+
+Flake: " + flake.Title + @"
+
+=====================================
+CLICK HERE TO VIEW THE FLAKE:
+" + flakeUrl + @"
+=====================================
+
+Or copy and paste the link above into your browser.
+
+---
+This flake was shared from Milo";
 
             var bodyBuilder = new BodyBuilder
             {

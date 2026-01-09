@@ -1,0 +1,11 @@
+{
+  "commands": [
+    "echo '=== Checking Dashboard API ==='",
+    "curl -s 'http://localhost:5001/api/tasks?projectId=1' | head -c 500",
+    "echo ''",
+    "echo '=== Checking Users API ==='",
+    "curl -s 'http://localhost:5001/api/auth/users' | head -c 300",
+    "echo ''"
+  ]
+}
+
