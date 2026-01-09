@@ -213,15 +213,10 @@ public class FlakesController : ControllerBase
             var dateNow = DateTime.UtcNow.ToLocalTime();
             var dateStr = dateNow.ToString("MMM dd, yyyy");
             var timeStr = dateNow.ToString("hh:mm tt");
-            // Handle empty content with proper HTML encoding
-            var hasContent = !string.IsNullOrWhiteSpace(flake.Content);
-            var flakeContentHtml = hasContent 
-                ? System.Net.WebUtility.HtmlEncode(flake.Content).Replace("\n", "<br>").Replace("\r", "")
-                : "<div style='color: #6B778C; font-style: italic; padding: 20px; background: #F4F5F7; border-radius: 4px; text-align: center; margin: 16px 0;'>This flake doesn't have any content yet. Click the button below to view the full flake.</div>";
+            // Don't include flake content in email for privacy - only send link
+            var flakeContentHtml = "<div style='color: #6B778C; font-style: italic; padding: 20px; background: #F4F5F7; border-radius: 4px; text-align: center; margin: 16px 0;'>This flake has been shared with you. Click the button below to view the full content.</div>";
             
-            var flakeContentText = hasContent 
-                ? flake.Content 
-                : "This flake doesn't have any content yet. Click the link below to view the full flake.";
+            var flakeContentText = "This flake has been shared with you. Click the link below to view the full content.";
 
             var emailBody = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>" +
                 "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #172B4D; margin: 0; padding: 0; }" +

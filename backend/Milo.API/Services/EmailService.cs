@@ -24,7 +24,7 @@ public class EmailService
             var smtpUser = _configuration["Email:SmtpUser"];
             var smtpPassword = _configuration["Email:SmtpPassword"];
             var fromEmail = _configuration["Email:FromEmail"] ?? "noreply@codingeverest.com";
-            var fromName = _configuration["Email:FromName"] ?? "Milo - Coding Everest";
+            var fromName = _configuration["Email:FromName"] ?? "Milo";
 
             // If email is not configured, log and return false
             if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPassword))
@@ -121,7 +121,7 @@ The Milo Team
             var smtpUser = _configuration["Email:SmtpUser"];
             var smtpPassword = _configuration["Email:SmtpPassword"];
             var fromEmail = _configuration["Email:FromEmail"] ?? "noreply@codingeverest.com";
-            var fromName = _configuration["Email:FromName"] ?? "Milo - Coding Everest";
+            var fromName = _configuration["Email:FromName"] ?? "Milo";
 
             // If email is not configured, log and return false
             if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPassword))
@@ -226,7 +226,7 @@ The Milo Team
             var smtpUser = _configuration["Email:SmtpUser"];
             var smtpPassword = _configuration["Email:SmtpPassword"];
             var fromEmail = _configuration["Email:FromEmail"] ?? "noreply@codingeverest.com";
-            var fromName = _configuration["Email:FromName"] ?? "Milo - Coding Everest";
+            var fromName = _configuration["Email:FromName"] ?? "Milo";
 
             // If email is not configured, log and return false
             if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPassword))
@@ -370,7 +370,7 @@ The Milo Team
             var smtpUser = _configuration["Email:SmtpUser"];
             var smtpPassword = _configuration["Email:SmtpPassword"];
             var fromEmail = _configuration["Email:FromEmail"] ?? "noreply@codingeverest.com";
-            var fromName = _configuration["Email:FromName"] ?? "Milo - Coding Everest";
+            var fromName = _configuration["Email:FromName"] ?? "Milo";
 
             if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPassword))
             {
