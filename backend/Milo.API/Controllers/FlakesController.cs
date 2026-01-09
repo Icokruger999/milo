@@ -215,7 +215,12 @@ public class FlakesController : ControllerBase
             var timeStr = dateNow.ToString("hh:mm tt");
 
             // Simplified email template for better compatibility
-            var emailBody = @"
+            var titleHtml = System.Net.WebUtility.HtmlEncode(flake.Title);
+            var authorHtml = System.Net.WebUtility.HtmlEncode(authorName);
+            var projectHtml = System.Net.WebUtility.HtmlEncode(projectName);
+            var urlHtml = System.Net.WebUtility.HtmlEncode(flakeUrl);
+            
+            var emailBody = $@"
 <!DOCTYPE html>
 <html>
 <head>
@@ -224,25 +229,25 @@ public class FlakesController : ControllerBase
 <body style=""font-family: Arial, sans-serif; line-height: 1.6; color: #172B4D; margin: 0; padding: 20px; background: #F4F5F7;"">
     <div style=""max-width: 600px; margin: 0 auto; background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"">
         <div style=""background: #0052CC; color: #FFFFFF; padding: 30px; text-align: center;"">
-            <h1 style=""margin: 0; font-size: 24px;"">Shared Flake: " + System.Net.WebUtility.HtmlEncode(flake.Title) + @"</h1>
+            <h1 style=""margin: 0; font-size: 24px;"">Shared Flake: {titleHtml}</h1>
         </div>
         <div style=""padding: 30px;"">
             <p style=""margin: 0 0 16px 0;"">Hello,</p>
-            <p style=""margin: 0 0 24px 0;""><strong>" + System.Net.WebUtility.HtmlEncode(authorName) + @"</strong> has shared a flake from <strong>" + System.Net.WebUtility.HtmlEncode(projectName) + @"</strong> with you.</p>
+            <p style=""margin: 0 0 24px 0;""><strong>{authorHtml}</strong> has shared a flake from <strong>{projectHtml}</strong> with you.</p>
             
             <div style=""background: #F4F5F7; padding: 16px; border-radius: 4px; margin-bottom: 24px;"">
-                <p style=""margin: 0; font-size: 13px; color: #6B778C;""><strong>Project:</strong> " + System.Net.WebUtility.HtmlEncode(projectName) + @"</p>
-                <p style=""margin: 8px 0 0 0; font-size: 13px; color: #6B778C;""><strong>Shared by:</strong> " + System.Net.WebUtility.HtmlEncode(authorName) + @"</p>
-                <p style=""margin: 8px 0 0 0; font-size: 13px; color: #6B778C;""><strong>Date:</strong> " + dateStr + @" at " + timeStr + @"</p>
+                <p style=""margin: 0; font-size: 13px; color: #6B778C;""><strong>Project:</strong> {projectHtml}</p>
+                <p style=""margin: 8px 0 0 0; font-size: 13px; color: #6B778C;""><strong>Shared by:</strong> {authorHtml}</p>
+                <p style=""margin: 8px 0 0 0; font-size: 13px; color: #6B778C;""><strong>Date:</strong> {dateStr} at {timeStr}</p>
             </div>
 
             <div style=""text-align: center; margin: 32px 0;"">
-                <a href=""" + flakeUrl + @""" style=""display: inline-block; background: #0052CC; color: #FFFFFF; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 15px;"">VIEW FLAKE</a>
+                <a href=""{flakeUrl}"" style=""display: inline-block; background: #0052CC; color: #FFFFFF; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 15px;"">VIEW FLAKE</a>
             </div>
 
             <div style=""background: #F4F5F7; padding: 20px; border-radius: 4px; text-align: center;"">
                 <p style=""margin: 0 0 12px 0; font-size: 13px; color: #6B778C;"">Or copy this link:</p>
-                <p style=""margin: 0; font-size: 14px; word-break: break-all;""><a href=""" + flakeUrl + @""" style=""color: #0052CC;"">" + flakeUrl + @"</a></p>
+                <p style=""margin: 0; font-size: 14px; word-break: break-all;""><a href=""{flakeUrl}"" style=""color: #0052CC;"">{urlHtml}</a></p>
             </div>
         </div>
         <div style=""padding: 20px; background: #F4F5F7; border-top: 1px solid #DFE1E6; text-align: center;"">
