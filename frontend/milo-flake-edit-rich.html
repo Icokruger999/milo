@@ -95,7 +95,8 @@
             border-radius: 3px;
             cursor: pointer;
             transition: all 0.15s;
-            font-size: 16px;
+            font-size: 14px;
+            font-weight: 600;
             color: #42526E;
         }
 
@@ -124,18 +125,74 @@
         #flakeContent {
             width: 100%;
             min-height: 400px;
-            padding: 12px;
+            padding: 16px;
             border: 1px solid #DFE1E6;
             border-radius: 0 0 3px 3px;
             font-size: 14px;
-            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
-            resize: vertical;
+            overflow-y: auto;
+            background: white;
         }
 
         #flakeContent:focus {
             outline: none;
             border-color: #0052CC;
+        }
+
+        #flakeContent h1 {
+            font-size: 24px;
+            margin: 16px 0 8px 0;
+            color: #172B4D;
+        }
+
+        #flakeContent h2 {
+            font-size: 20px;
+            margin: 16px 0 8px 0;
+            color: #172B4D;
+        }
+
+        #flakeContent h3 {
+            font-size: 16px;
+            margin: 12px 0 6px 0;
+            color: #172B4D;
+        }
+
+        #flakeContent ul, #flakeContent ol {
+            margin: 8px 0;
+            padding-left: 24px;
+        }
+
+        #flakeContent li {
+            margin: 4px 0;
+        }
+
+        #flakeContent a {
+            color: #0052CC;
+            text-decoration: underline;
+        }
+
+        #flakeContent code {
+            background: #F4F5F7;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+        }
+
+        #flakeContent pre {
+            background: #F4F5F7;
+            padding: 12px;
+            border-radius: 3px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+
+        #flakeContent blockquote {
+            border-left: 3px solid #DFE1E6;
+            padding-left: 12px;
+            margin: 8px 0;
+            color: #6B778C;
         }
 
         .form-actions {
@@ -188,7 +245,7 @@
             </div>
 
             <div class="form-group">
-                <label for="flakeContent">Content</label>
+                <label>Content</label>
                 <div class="formatting-toolbar">
                     <button type="button" class="toolbar-button" onclick="formatText('bold')" title="Bold (Ctrl+B)">
                         <strong>B</strong>
@@ -220,23 +277,17 @@
                     <button type="button" class="toolbar-button" onclick="formatText('numberList')" title="Numbered List">
                         1.
                     </button>
-                    <button type="button" class="toolbar-button" onclick="formatText('checkbox')" title="Checklist">
-                        ☐
-                    </button>
                     
                     <div class="toolbar-separator"></div>
                     
                     <button type="button" class="toolbar-button" onclick="formatText('link')" title="Insert Link">
                         🔗
                     </button>
-                    <button type="button" class="toolbar-button" onclick="formatText('code')" title="Code Block">
+                    <button type="button" class="toolbar-button" onclick="formatText('code')" title="Code">
                         &lt;/&gt;
                     </button>
-                    <button type="button" class="toolbar-button" onclick="formatText('quote')" title="Quote">
-                        "
-                    </button>
                 </div>
-                <textarea id="flakeContent" name="content" placeholder="Enter flake content..."></textarea>
+                <div id="flakeContent" contenteditable="true" placeholder="Enter flake content..."></div>
             </div>
 
             <div class="form-actions">
@@ -252,62 +303,45 @@
     <script>
         let currentFlakeId = null;
 
-        // Format text in textarea
+        // Format text with execCommand (works on contenteditable)
         function formatText(format) {
-            const textarea = document.getElementById('flakeContent');
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-            const selectedText = textarea.value.substring(start, end);
-            let formattedText = '';
+            const editor = document.getElementById('flakeContent');
+            editor.focus();
             
             switch(format) {
                 case 'bold':
-                    formattedText = `**${selectedText || 'bold text'}**`;
+                    document.execCommand('bold', false, null);
                     break;
                 case 'italic':
-                    formattedText = `*${selectedText || 'italic text'}*`;
+                    document.execCommand('italic', false, null);
                     break;
                 case 'underline':
-                    formattedText = `__${selectedText || 'underlined text'}__`;
+                    document.execCommand('underline', false, null);
                     break;
                 case 'h1':
-                    formattedText = `\n# ${selectedText || 'Heading 1'}\n`;
+                    document.execCommand('formatBlock', false, '<h1>');
                     break;
                 case 'h2':
-                    formattedText = `\n## ${selectedText || 'Heading 2'}\n`;
+                    document.execCommand('formatBlock', false, '<h2>');
                     break;
                 case 'h3':
-                    formattedText = `\n### ${selectedText || 'Heading 3'}\n`;
+                    document.execCommand('formatBlock', false, '<h3>');
                     break;
                 case 'bulletList':
-                    formattedText = `\n- ${selectedText || 'List item'}\n`;
+                    document.execCommand('insertUnorderedList', false, null);
                     break;
                 case 'numberList':
-                    formattedText = `\n1. ${selectedText || 'List item'}\n`;
-                    break;
-                case 'checkbox':
-                    formattedText = `\n- [ ] ${selectedText || 'Task item'}\n`;
+                    document.execCommand('insertOrderedList', false, null);
                     break;
                 case 'link':
                     const url = prompt('Enter URL:', 'https://');
                     if (url) {
-                        formattedText = `[${selectedText || 'link text'}](${url})`;
+                        document.execCommand('createLink', false, url);
                     }
                     break;
                 case 'code':
-                    formattedText = selectedText.includes('\n') 
-                        ? `\n\`\`\`\n${selectedText || 'code block'}\n\`\`\`\n`
-                        : `\`${selectedText || 'code'}\``;
+                    document.execCommand('formatBlock', false, '<pre>');
                     break;
-                case 'quote':
-                    formattedText = `\n> ${selectedText || 'Quote text'}\n`;
-                    break;
-            }
-            
-            if (formattedText) {
-                textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
-                textarea.focus();
-                textarea.selectionStart = textarea.selectionEnd = start + formattedText.length;
             }
         }
 
@@ -342,7 +376,18 @@
                 if (response.ok) {
                     const flake = await response.json();
                     document.getElementById('flakeTitle').value = flake.title || '';
-                    document.getElementById('flakeContent').value = flake.content || '';
+                    
+                    // Set content - handle both HTML and plain text
+                    const editor = document.getElementById('flakeContent');
+                    const content = flake.content || '';
+                    
+                    // If content looks like HTML, use it directly
+                    if (content.includes('<') && content.includes('>')) {
+                        editor.innerHTML = content;
+                    } else {
+                        // Convert plain text to HTML (preserve line breaks)
+                        editor.textContent = content;
+                    }
                 } else {
                     console.error('Flake not found');
                     window.location.href = 'milo-flakes.html';
@@ -358,10 +403,11 @@
             if (!currentFlakeId) return;
 
             const title = document.getElementById('flakeTitle').value.trim();
-            const content = document.getElementById('flakeContent').value.trim();
+            const editor = document.getElementById('flakeContent');
+            const content = editor.innerHTML.trim();
 
             if (!title) {
-                console.error('Title is required');
+                alert('Title is required');
                 return;
             }
 
@@ -377,9 +423,11 @@
                 } else {
                     const error = await response.json();
                     console.error(error.message || 'Failed to update flake');
+                    alert(error.message || 'Failed to update flake');
                 }
             } catch (error) {
                 console.error('Error updating flake:', error);
+                alert('Error updating flake. Please try again.');
             }
         }
 
@@ -387,4 +435,3 @@
     </script>
 </body>
 </html>
-

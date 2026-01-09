@@ -217,6 +217,9 @@ function createTaskCard(task) {
     return card;
 }
 
+// Make createTaskCard available globally for board-grouping.js
+window.createTaskCard = createTaskCard;
+
 // View/Edit Task Modal - Unified Create/Edit View
 function viewTask(task) {
     // Find the actual task object with full details

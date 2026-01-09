@@ -50,7 +50,7 @@ function isGroupCollapsed(columnId, assigneeId) {
 
 // Render column with assignee grouping
 function renderColumnWithGrouping(columnId, taskList) {
-    const container = document.getElementById(`${columnId}-tasks`);
+    const container = document.getElementById(`${columnId}Items`);
     if (!container) return;
     
     container.innerHTML = '';
@@ -114,7 +114,8 @@ function renderColumnWithGrouping(columnId, taskList) {
             `;
             
             group.tasks.forEach(task => {
-                const card = createTaskCard(task);
+                // Use window.createTaskCard to access the function from board.js
+                const card = window.createTaskCard ? window.createTaskCard(task) : createTaskCardFallback(task);
                 groupContent.appendChild(card);
             });
             
@@ -127,6 +128,14 @@ function renderColumnWithGrouping(columnId, taskList) {
     if (counterEl) {
         counterEl.textContent = taskList.length;
     }
+}
+
+// Fallback card creator if main one isn't available
+function createTaskCardFallback(task) {
+    const card = document.createElement('div');
+    card.className = 'task-card';
+    card.innerHTML = `<div class="task-title">${task.title || 'Untitled'}</div>`;
+    return card;
 }
 
 // Override the original renderColumn function
