@@ -206,7 +206,7 @@ public class MiloDbContext : DbContext
             entity.HasIndex(e => e.Name);
             entity.HasIndex(e => e.ProjectId);
             entity.HasOne(e => e.Project)
-                .WithMany()
+                .WithMany(p => p.Teams)
                 .HasForeignKey(e => e.ProjectId)
                 .OnDelete(DeleteBehavior.SetNull);
             entity.HasOne(e => e.CreatedBy)
