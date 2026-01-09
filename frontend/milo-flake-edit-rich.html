@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Flake - Milo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #F4F5F7;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .back-link {
+            color: #0052CC;
+            text-decoration: none;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 24px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #172B4D;
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #172B4D;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #DFE1E6;
+            border-radius: 3px;
+            font-size: 14px;
+            transition: border-color 0.15s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #0052CC;
+        }
+
+        /* Formatting Toolbar */
+        .formatting-toolbar {
+            display: flex;
+            gap: 4px;
+            padding: 8px;
+            background: #F4F5F7;
+            border: 1px solid #DFE1E6;
+            border-bottom: none;
+            border-radius: 3px 3px 0 0;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-button {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 1px solid #DFE1E6;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-size: 16px;
+            color: #42526E;
+        }
+
+        .toolbar-button:hover {
+            background: #EBECF0;
+            border-color: #C1C7D0;
+        }
+
+        .toolbar-button:active {
+            background: #DFE1E6;
+        }
+
+        .toolbar-button.active {
+            background: #0052CC;
+            color: white;
+            border-color: #0052CC;
+        }
+
+        .toolbar-separator {
+            width: 1px;
+            height: 32px;
+            background: #DFE1E6;
+            margin: 0 4px;
+        }
+
+        #flakeContent {
+            width: 100%;
+            min-height: 400px;
+            padding: 12px;
+            border: 1px solid #DFE1E6;
+            border-radius: 0 0 3px 3px;
+            font-size: 14px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            line-height: 1.6;
+            resize: vertical;
+        }
+
+        #flakeContent:focus {
+            outline: none;
+            border-color: #0052CC;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 32px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 3px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.15s;
+        }
+
+        .btn-primary {
+            background: #0052CC;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0065FF;
+        }
+
+        .btn-secondary {
+            background: #F4F5F7;
+            color: #42526E;
+            border: 1px solid #DFE1E6;
+        }
+
+        .btn-secondary:hover {
+            background: #EBECF0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="milo-flakes.html" class="back-link">← Back to Flakes</a>
+        
+        <h1>Edit Flake</h1>
+
+        <form id="editFlakeForm" onsubmit="handleUpdateFlake(event)">
+            <div class="form-group">
+                <label for="flakeTitle">Title *</label>
+                <input type="text" id="flakeTitle" name="title" required>
+            </div>
+
+            <div class="form-group">
+                <label for="flakeContent">Content</label>
+                <div class="formatting-toolbar">
+                    <button type="button" class="toolbar-button" onclick="formatText('bold')" title="Bold (Ctrl+B)">
+                        <strong>B</strong>
+                    </button>
+                    <button type="button" class="toolbar-button" onclick="formatText('italic')" title="Italic (Ctrl+I)">
+                        <em>I</em>
+                    </button>
+                    <button type="button" class="toolbar-button" onclick="formatText('underline')" title="Underline (Ctrl+U)">
+                        <u>U</u>
+                    </button>
+                    
+                    <div class="toolbar-separator"></div>
+                    
+                    <button type="button" class="toolbar-button" onclick="formatText('h1')" title="Heading 1">
+                        H1
+                    </button>
+                    <button type="button" class="toolbar-button" onclick="formatText('h2')" title="Heading 2">
+                        H2
+                    </button>
+                    <button type="button" class="toolbar-button" onclick="formatText('h3')" title="Heading 3">
+                        H3
+                    </button>
+                    
+                    <div class="toolbar-separator"></div>
+                    
+                    <button type="button" class="toolbar-button" onclick="formatText('bulletList')" title="Bullet List">
+                        •
+                    </button>
+                    <button type="button" class="toolbar-button" onclick="formatText('numberList')" title="Numbered List">
+                        1.
+                    </button>
+                    <button type="button" class="toolbar-button" onclick="formatText('checkbox')" title="Checklist">
+                        ☐
+                    </button>
+                    
+                    <div class="toolbar-separator"></div>
+                    
+                    <button type="button" class="toolbar-button" onclick="formatText('link')" title="Insert Link">
+                        🔗
+                    </button>
+                    <button type="button" class="toolbar-button" onclick="formatText('code')" title="Code Block">
+                        &lt;/&gt;
+                    </button>
+                    <button type="button" class="toolbar-button" onclick="formatText('quote')" title="Quote">
+                        "
+                    </button>
+                </div>
+                <textarea id="flakeContent" name="content" placeholder="Enter flake content..."></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="window.location.href='milo-flakes.html'">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/api-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        let currentFlakeId = null;
+
+        // Format text in textarea
+        function formatText(format) {
+            const textarea = document.getElementById('flakeContent');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+            let formattedText = '';
+            
+            switch(format) {
+                case 'bold':
+                    formattedText = `**${selectedText || 'bold text'}**`;
+                    break;
+                case 'italic':
+                    formattedText = `*${selectedText || 'italic text'}*`;
+                    break;
+                case 'underline':
+                    formattedText = `__${selectedText || 'underlined text'}__`;
+                    break;
+                case 'h1':
+                    formattedText = `\n# ${selectedText || 'Heading 1'}\n`;
+                    break;
+                case 'h2':
+                    formattedText = `\n## ${selectedText || 'Heading 2'}\n`;
+                    break;
+                case 'h3':
+                    formattedText = `\n### ${selectedText || 'Heading 3'}\n`;
+                    break;
+                case 'bulletList':
+                    formattedText = `\n- ${selectedText || 'List item'}\n`;
+                    break;
+                case 'numberList':
+                    formattedText = `\n1. ${selectedText || 'List item'}\n`;
+                    break;
+                case 'checkbox':
+                    formattedText = `\n- [ ] ${selectedText || 'Task item'}\n`;
+                    break;
+                case 'link':
+                    const url = prompt('Enter URL:', 'https://');
+                    if (url) {
+                        formattedText = `[${selectedText || 'link text'}](${url})`;
+                    }
+                    break;
+                case 'code':
+                    formattedText = selectedText.includes('\n') 
+                        ? `\n\`\`\`\n${selectedText || 'code block'}\n\`\`\`\n`
+                        : `\`${selectedText || 'code'}\``;
+                    break;
+                case 'quote':
+                    formattedText = `\n> ${selectedText || 'Quote text'}\n`;
+                    break;
+            }
+            
+            if (formattedText) {
+                textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+                textarea.focus();
+                textarea.selectionStart = textarea.selectionEnd = start + formattedText.length;
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+                e.preventDefault();
+                formatText('bold');
+            } else if ((e.ctrlKey || e.metaKey) && e.key === 'i') {
+                e.preventDefault();
+                formatText('italic');
+            } else if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
+                e.preventDefault();
+                formatText('underline');
+            }
+        });
+
+        async function loadFlake() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+            
+            if (!id) {
+                console.error('Flake ID not found');
+                window.location.href = 'milo-flakes.html';
+                return;
+            }
+
+            currentFlakeId = parseInt(id);
+
+            try {
+                const response = await apiClient.get(`/flakes/${id}`);
+                if (response.ok) {
+                    const flake = await response.json();
+                    document.getElementById('flakeTitle').value = flake.title || '';
+                    document.getElementById('flakeContent').value = flake.content || '';
+                } else {
+                    console.error('Flake not found');
+                    window.location.href = 'milo-flakes.html';
+                }
+            } catch (error) {
+                console.error('Error loading flake:', error);
+            }
+        }
+
+        async function handleUpdateFlake(event) {
+            event.preventDefault();
+            
+            if (!currentFlakeId) return;
+
+            const title = document.getElementById('flakeTitle').value.trim();
+            const content = document.getElementById('flakeContent').value.trim();
+
+            if (!title) {
+                console.error('Title is required');
+                return;
+            }
+
+            try {
+                const response = await apiClient.put(`/flakes/${currentFlakeId}`, {
+                    title: title,
+                    content: content
+                });
+
+                if (response.ok) {
+                    // Redirect silently without popup
+                    window.location.href = `milo-flake-view.html?id=${currentFlakeId}`;
+                } else {
+                    const error = await response.json();
+                    console.error(error.message || 'Failed to update flake');
+                }
+            } catch (error) {
+                console.error('Error updating flake:', error);
+            }
+        }
+
+        loadFlake();
+    </script>
+</body>
+</html>
+

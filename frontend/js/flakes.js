@@ -280,6 +280,11 @@ function openFlake(flakeId) {
     window.location.href = `milo-flake-view.html?id=${flakeId}`;
 }
 
+// Open flake for editing (use rich editor)
+function editFlake(flakeId) {
+    window.location.href = `milo-flake-edit-rich.html?id=${flakeId}`;
+}
+
 // Share flake by email - show modal
 let currentShareFlakeId = null;
 
