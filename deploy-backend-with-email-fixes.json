@@ -1,0 +1,21 @@
+{
+  "commands": [
+    "cd /home/ec2-user/codingeverest/milo",
+    "echo '=== Pulling latest changes ==='",
+    "git pull origin main",
+    "echo ''",
+    "echo '=== Building backend ==='",
+    "cd backend/Milo.API",
+    "dotnet publish -c Release -o /var/www/milo-api",
+    "echo ''",
+    "echo '=== Restarting service ==='",
+    "sudo systemctl restart milo-api",
+    "sleep 3",
+    "sudo systemctl status milo-api --no-pager | head -20",
+    "echo ''",
+    "echo '=== Deployment complete ==='",
+    "echo 'Watching logs for EMAIL activity...'",
+    "sudo journalctl -u milo-api -f -n 5 & sleep 5; kill $!"
+  ]
+}
+

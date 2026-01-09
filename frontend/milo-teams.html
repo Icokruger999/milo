@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teams - Milo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #F4F5F7;
+            color: #172B4D;
+        }
+
+        /* Navigation */
+        .global-nav {
+            background: #0052CC;
+            color: white;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .global-nav-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .global-nav-logo {
+            cursor: pointer;
+        }
+
+        .global-nav-brand-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .global-nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .global-nav-links a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: color 0.15s;
+        }
+
+        .global-nav-links a:hover,
+        .global-nav-links a.active {
+            color: white;
+        }
+
+        /* Main Container */
+        .container {
+            margin-top: 56px;
+            padding: 40px;
+            max-width: 1400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: #172B4D;
+        }
+
+        .btn-primary {
+            background: #0052CC;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 3px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .btn-primary:hover {
+            background: #0065FF;
+        }
+
+        /* Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 20px;
+            border-bottom: 2px solid #DFE1E6;
+            margin-bottom: 24px;
+        }
+
+        .filter-tab {
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #6B778C;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.15s;
+        }
+
+        .filter-tab.active {
+            color: #0052CC;
+            border-bottom-color: #0052CC;
+        }
+
+        .filter-tab:hover {
+            color: #172B4D;
+        }
+
+        /* Teams Grid */
+        .teams-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .team-card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .team-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .team-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .team-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #0052CC, #0065FF);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .team-info {
+            flex: 1;
+        }
+
+        .team-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #172B4D;
+            margin-bottom: 4px;
+        }
+
+        .team-member-count {
+            font-size: 13px;
+            color: #6B778C;
+        }
+
+        .team-project {
+            font-size: 13px;
+            color: #0052CC;
+            margin-bottom: 12px;
+            padding: 6px 10px;
+            background: #DEEBFF;
+            border-radius: 3px;
+            display: inline-block;
+        }
+
+        .team-description {
+            font-size: 14px;
+            color: #42526E;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .team-members {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .member-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #DFE1E6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: #42526E;
+            border: 2px solid white;
+        }
+
+        .member-avatar-more {
+            background: #F4F5F7;
+            color: #6B778C;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 40px;
+        }
+
+        .empty-state svg {
+            width: 120px;
+            height: 120px;
+            color: #DFE1E6;
+            margin-bottom: 24px;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #172B4D;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            color: #6B778C;
+            margin-bottom: 24px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(9, 30, 66, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            padding: 24px;
+            border-bottom: 1px solid #DFE1E6;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #172B4D;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #172B4D;
+            margin-bottom: 8px;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #DFE1E6;
+            border-radius: 3px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.15s;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: #0052CC;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .members-list {
+            margin-top: 16px;
+        }
+
+        .member-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #F4F5F7;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .member-item-info {
+            flex: 1;
+        }
+
+        .member-item-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #172B4D;
+        }
+
+        .member-item-title {
+            font-size: 13px;
+            color: #6B778C;
+        }
+
+        .btn-remove {
+            background: #DE350B;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 3px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .btn-add-member {
+            background: #F4F5F7;
+            color: #0052CC;
+            border: 1px dashed #0052CC;
+            padding: 10px;
+            width: 100%;
+            border-radius: 3px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-add-member:hover {
+            background: #DEEBFF;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #DFE1E6;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn-secondary {
+            background: #F4F5F7;
+            color: #42526E;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 3px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: #EBECF0;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #172B4D;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 3000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <div class="global-nav">
+        <div class="global-nav-left">
+            <div class="global-nav-logo" onclick="window.location.href='milo-board.html'">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                </svg>
+            </div>
+            <span class="global-nav-brand-text">Milo</span>
+            <div class="global-nav-links">
+                <a href="milo-board.html">Board</a>
+                <a href="milo-backlog.html">Backlog</a>
+                <a href="milo-roadmap.html">Roadmap</a>
+                <a href="milo-flakes.html">Flakes</a>
+                <a href="milo-teams.html" class="active">Teams</a>
+                <a href="milo-dashboard.html">Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">Teams</h1>
+            <button class="btn-primary" onclick="openCreateTeamModal()">Create Team</button>
+        </div>
+
+        <div class="filter-tabs">
+            <div class="filter-tab active" data-filter="all" onclick="applyFilter('all')">All teams</div>
+            <div class="filter-tab" data-filter="project" onclick="applyFilter('project')">Current project</div>
+            <div class="filter-tab" data-filter="myteams" onclick="applyFilter('myteams')">My teams</div>
+        </div>
+
+        <div id="teamsContainer" class="teams-grid">
+            <!-- Teams will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Create Team Modal -->
+    <div id="createTeamModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Create Team</h2>
+            </div>
+            <div class="modal-body">
+                <form id="createTeamForm" onsubmit="handleCreateTeam(event)">
+                    <div class="form-group">
+                        <label class="form-label">Team Name *</label>
+                        <input type="text" id="teamName" class="form-input" required placeholder="Enter team name">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea id="teamDescription" class="form-textarea" placeholder="What is this team about?"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Assign to Project</label>
+                        <select id="teamProject" class="form-select">
+                            <option value="">No project</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Team Members</label>
+                        <div id="membersList" class="members-list">
+                            <!-- Members will be added here -->
+                        </div>
+                        <button type="button" class="btn-add-member" onclick="addMemberToTeam()">+ Add member</button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeCreateTeamModal()">Cancel</button>
+                <button class="btn-primary" onclick="document.getElementById('createTeamForm').requestSubmit()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/api-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/project-selector.js"></script>
+    <script src="js/teams.js"></script>
+</body>
+</html>
+

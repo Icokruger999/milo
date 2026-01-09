@@ -1,0 +1,13 @@
+{
+  "commands": [
+    "echo '=== Backend Service Status ==='",
+    "ps aux | grep 'Milo.API.dll' | grep -v grep | awk '{print \"Process ID:\", $2, \"Running since:\", $9}'",
+    "echo ''",
+    "echo '=== Testing API Endpoint ==='",
+    "curl -s http://localhost:5001/api/health || echo 'Health check failed'",
+    "echo ''",
+    "echo '=== Watching for EMAIL logs (last 10 minutes) ==='",
+    "sudo journalctl -u milo-api --since '10 minutes ago' | grep -i EMAIL || echo 'No EMAIL logs yet - ready to receive task assignment notifications'"
+  ]
+}
+

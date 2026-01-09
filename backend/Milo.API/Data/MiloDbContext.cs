@@ -23,6 +23,8 @@ public class MiloDbContext : DbContext
     public DbSet<TaskComment> TaskComments { get; set; }
     public DbSet<TaskLink> TaskLinks { get; set; }
     public DbSet<Flake> Flakes { get; set; }
+    public DbSet<Team> Teams { get; set; }
+    public DbSet<TeamMember> TeamMembers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -196,6 +198,37 @@ public class MiloDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.AuthorId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Team configuration
+        modelBuilder.Entity<Team>(entity =>
+        {
+            entity.HasIndex(e => e.Name);
+            entity.HasIndex(e => e.ProjectId);
+            entity.HasOne(e => e.Project)
+                .WithMany()
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.CreatedBy)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedById)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // TeamMember configuration
+        modelBuilder.Entity<TeamMember>(entity =>
+        {
+            entity.HasIndex(e => e.TeamId);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => new { e.TeamId, e.UserId }).IsUnique();
+            entity.HasOne(e => e.Team)
+                .WithMany(t => t.Members)
+                .HasForeignKey(e => e.TeamId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
