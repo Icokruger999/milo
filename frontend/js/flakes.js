@@ -237,8 +237,13 @@ async function handleCreateFlake(event) {
     const content = document.getElementById('flakeContent').value.trim();
     
     if (!title) {
-        alert('Title is required');
+        showToast('Title is required', 'error');
         return;
+    }
+    
+    // Warn if creating without content
+    if (!content || content === '') {
+        showToast('Tip: You can add content to this flake later by clicking the edit button', 'info');
     }
 
     try {
