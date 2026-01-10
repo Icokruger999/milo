@@ -1,0 +1,27 @@
+{
+  "commands": [
+    "echo 'Deploying Milo backend with Incidents feature...'",
+    "sudo systemctl stop milo-api || true",
+    "cd /tmp",
+    "aws s3 cp s3://milo-deploy-temp/incidents-backend.zip ./incidents-backend.zip --region eu-west-1",
+    "if [ -d /var/www/milo-api ]; then sudo mv /var/www/milo-api /var/www/milo-api.backup.$(date +%Y%m%d-%H%M%S); fi",
+    "sudo mkdir -p /var/www/milo-api",
+    "sudo unzip -o ./incidents-backend.zip -d /var/www/milo-api",
+    "sudo chown -R ec2-user:ec2-user /var/www/milo-api",
+    "sudo chmod -R 755 /var/www/milo-api",
+    "sudo systemctl start milo-api",
+    "sleep 5",
+    "echo ''",
+    "echo '=== Service Status ==='",
+    "sudo systemctl status milo-api --no-pager || true",
+    "echo ''",
+    "echo '=== Testing API ==='",
+    "curl -s http://localhost:5001/api/health || echo 'Health check not ready'",
+    "echo ''",
+    "curl -s http://localhost:5001/api/incidents || echo 'Incidents endpoint not ready'",
+    "echo ''",
+    "rm -f ./incidents-backend.zip",
+    "echo ''",
+    "echo 'Deployment complete!'"
+  ]
+}
