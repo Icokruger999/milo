@@ -26,7 +26,7 @@ public class IncidentsController : ControllerBase
         {
             var query = _context.Incidents
                 .Include(i => i.Requester)
-                .Include(i => i.Agent)
+                .Include(i => i.Assignee)
                 .Include(i => i.Group)
                 .Include(i => i.Project)
                 .AsQueryable();
@@ -77,11 +77,11 @@ public class IncidentsController : ControllerBase
                         i.Requester.Name,
                         i.Requester.Email
                     },
-                    Agent = i.Agent == null ? null : new
+                    Agent = i.Assignee == null ? null : new
                     {
-                        i.Agent.Id,
-                        i.Agent.Name,
-                        i.Agent.Email
+                        i.Assignee.Id,
+                        i.Assignee.Name,
+                        i.Assignee.Email
                     },
                     Group = i.Group == null ? null : new
                     {
@@ -108,7 +108,7 @@ public class IncidentsController : ControllerBase
         {
             var incident = await _context.Incidents
                 .Include(i => i.Requester)
-                .Include(i => i.Agent)
+                .Include(i => i.Assignee)
                 .Include(i => i.Group)
                 .Include(i => i.Project)
                 .Where(i => i.Id == id)
@@ -147,11 +147,11 @@ public class IncidentsController : ControllerBase
                         i.Requester.Name,
                         i.Requester.Email
                     },
-                    Agent = i.Agent == null ? null : new
+                    Agent = i.Assignee == null ? null : new
                     {
-                        i.Agent.Id,
-                        i.Agent.Name,
-                        i.Agent.Email
+                        i.Assignee.Id,
+                        i.Assignee.Name,
+                        i.Assignee.Email
                     },
                     Group = i.Group == null ? null : new
                     {
@@ -242,7 +242,7 @@ public class IncidentsController : ControllerBase
             // Fetch the complete incident with relationships
             var createdIncident = await _context.Incidents
                 .Include(i => i.Requester)
-                .Include(i => i.Agent)
+                .Include(i => i.Assignee)
                 .Include(i => i.Group)
                 .Include(i => i.Project)
                 .FirstOrDefaultAsync(i => i.Id == incident.Id);

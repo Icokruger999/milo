@@ -49,8 +49,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Load initial data
-    await loadUsers();
-    await loadTeams();
+    await loadAssignees();
+    await loadGroups();
+    await loadRequesters();
     await loadIncidents();
     
     // Close modal when clicking outside
@@ -64,63 +65,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
-// Load users for requester/agent dropdowns
+// Legacy functions - now handled by incident-entities.js
+// These are kept for backward compatibility but delegate to the new functions
 async function loadUsers() {
-    try {
-        const response = await apiClient.get('/auth/users');
-        users = response || [];
-        
-        // Populate requester dropdown
-        const requesterSelect = document.getElementById('incidentRequester');
-        if (requesterSelect) {
-            requesterSelect.innerHTML = '<option value="">Select Requester</option>';
-            users.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user.id;
-                option.textContent = `${user.name} (${user.email})`;
-                requesterSelect.appendChild(option);
-            });
-        }
-
-        // Populate agent dropdown
-        const agentSelect = document.getElementById('incidentAgent');
-        if (agentSelect) {
-            agentSelect.innerHTML = '<option value="">Unassigned</option>';
-            users.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user.id;
-                option.textContent = user.name;
-                agentSelect.appendChild(option);
-            });
-        }
-    } catch (error) {
-        console.error('Failed to load users:', error);
+    if (typeof loadRequesters === 'function') {
+        await loadRequesters();
     }
 }
 
-// Load teams for group dropdown
 async function loadTeams() {
-    try {
-        if (!currentProject || !currentProject.id) {
-            console.warn('No project ID available for loading teams');
-            return;
-        }
-
-        const response = await apiClient.get(`/teams?projectId=${currentProject.id}`);
-        teams = response || [];
-        
-        const groupSelect = document.getElementById('incidentGroup');
-        if (groupSelect) {
-            groupSelect.innerHTML = '<option value="">Select Group</option>';
-            teams.forEach(team => {
-                const option = document.createElement('option');
-                option.value = team.id;
-                option.textContent = team.name;
-                groupSelect.appendChild(option);
-            });
-        }
-    } catch (error) {
-        console.error('Failed to load teams:', error);
+    if (typeof loadGroups === 'function') {
+        await loadGroups();
     }
 }
 
@@ -255,26 +210,15 @@ function showCreateIncidentModal() {
         form.reset();
     }
     
-        // Load users for requester dropdown
-        if (typeof loadUsers === 'function') {
-            loadUsers().then(() => {
-                const requesterSelect = document.getElementById('incidentRequester');
-                if (requesterSelect) {
-                    requesterSelect.innerHTML = '<option value="">Select Requester</option>';
-                    if (users && users.length > 0) {
-                        users.forEach(user => {
-                            const option = document.createElement('option');
-                            option.value = user.id;
-                            option.textContent = user.name || user.email;
-                            requesterSelect.appendChild(option);
-                        });
-                    } else {
-                        console.warn('No users loaded for requester dropdown');
-                    }
-                }
-            }).catch(error => {
-                console.error('Error loading users:', error);
-            });
+        // Load entities for dropdowns
+        if (typeof loadRequesters === 'function') {
+            loadRequesters();
+        }
+        if (typeof loadAssignees === 'function') {
+            loadAssignees();
+        }
+        if (typeof loadGroups === 'function') {
+            loadGroups();
         }
     } catch (error) {
         console.error('Error in showCreateIncidentModal:', error);
@@ -309,7 +253,7 @@ async function createIncident(event) {
             return;
         }
 
-        const subject = document.getElementById('incidentSubject')?.value;
+        const subject = document.getElementById('incidentSubject')?.value?.trim();
         const requesterId = parseInt(document.getElementById('incidentRequester')?.value);
         const status = document.getElementById('incidentStatus')?.value || 'New';
         const priority = document.getElementById('incidentPriority')?.value || 'Low';
@@ -317,13 +261,18 @@ async function createIncident(event) {
         const impact = document.getElementById('incidentImpact')?.value;
         const source = document.getElementById('incidentSource')?.value;
         const department = document.getElementById('incidentDepartment')?.value;
-        const agentId = document.getElementById('incidentAgent')?.value;
-        const groupId = document.getElementById('incidentGroup')?.value;
-        const category = document.getElementById('incidentCategory')?.value;
-        const description = document.getElementById('incidentDescription')?.value;
+        const agentId = document.getElementById('incidentAgent')?.value ? parseInt(document.getElementById('incidentAgent').value) : null;
+        const groupId = document.getElementById('incidentGroup')?.value ? parseInt(document.getElementById('incidentGroup').value) : null;
+        const category = document.getElementById('incidentCategory')?.value?.trim();
+        const description = document.getElementById('incidentDescription')?.value?.trim();
 
-        if (!subject || !requesterId) {
-            console.error('Missing required fields');
+        if (!subject) {
+            console.error('Subject is required');
+            return;
+        }
+
+        if (!requesterId || isNaN(requesterId)) {
+            console.error('Requester is required. Please select a requester.');
             return;
         }
 
@@ -336,8 +285,8 @@ async function createIncident(event) {
             impact: impact || null,
             source: source || null,
             department: department || null,
-            agentId: agentId ? parseInt(agentId) : null,
-            groupId: groupId ? parseInt(groupId) : null,
+            agentId: agentId, // Backend expects agentId (maps to IncidentAssignee)
+            groupId: groupId,
             category: category || null,
             description: description || null,
             projectId: currentProject?.id || null

@@ -27,6 +27,9 @@ public class MiloDbContext : DbContext
     public DbSet<TeamMember> TeamMembers { get; set; }
     public DbSet<Incident> Incidents { get; set; }
     public DbSet<ReportRecipient> ReportRecipients { get; set; }
+    public DbSet<IncidentAssignee> IncidentAssignees { get; set; }
+    public DbSet<IncidentRequester> IncidentRequesters { get; set; }
+    public DbSet<IncidentGroup> IncidentGroups { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -236,7 +239,7 @@ public class MiloDbContext : DbContext
         // Incident configuration
         modelBuilder.Entity<Incident>(entity =>
         {
-            entity.ToTable("incidents"); // Map to lowercase table name
+            entity.ToTable("Incidents"); // Map to PascalCase table name
             entity.HasIndex(e => e.IncidentNumber).IsUnique();
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.Priority);
@@ -246,7 +249,7 @@ public class MiloDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.RequesterId)
                 .OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.Agent)
+            entity.HasOne(e => e.Assignee)
                 .WithMany()
                 .HasForeignKey(e => e.AgentId)
                 .OnDelete(DeleteBehavior.SetNull);
@@ -271,6 +274,30 @@ public class MiloDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.ProjectId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // IncidentAssignee configuration
+        modelBuilder.Entity<IncidentAssignee>(entity =>
+        {
+            entity.ToTable("incident_assignees");
+            entity.HasIndex(e => e.Email);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        // IncidentRequester configuration
+        modelBuilder.Entity<IncidentRequester>(entity =>
+        {
+            entity.ToTable("incident_requesters");
+            entity.HasIndex(e => e.Email);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        // IncidentGroup configuration
+        modelBuilder.Entity<IncidentGroup>(entity =>
+        {
+            entity.ToTable("incident_groups");
+            entity.HasIndex(e => e.Name);
+            entity.HasIndex(e => e.IsActive);
         });
     }
 }

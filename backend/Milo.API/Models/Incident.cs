@@ -19,14 +19,14 @@ public class Incident
     
     // Requester Information
     public int RequesterId { get; set; }
-    public User? Requester { get; set; }
+    public IncidentRequester? Requester { get; set; }
     
-    // Assignment
-    public int? AgentId { get; set; }
-    public User? Agent { get; set; }
+    // Assignment (changed from Agent to Assignee)
+    public int? AgentId { get; set; } // Keep name for backward compatibility, but references IncidentAssignee
+    public IncidentAssignee? Assignee { get; set; }
     
     public int? GroupId { get; set; }
-    public Team? Group { get; set; }
+    public IncidentGroup? Group { get; set; }
     
     [StringLength(100)]
     public string? Department { get; set; }

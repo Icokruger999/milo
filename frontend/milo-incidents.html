@@ -752,9 +752,19 @@
                     </div>
                     <div class="form-row">
                         <label class="form-label required">Requester</label>
-                        <select class="form-select" id="incidentRequester" required>
-                            <option value="">Select Requester</option>
-                        </select>
+                        <div style="display: flex; gap: 8px;">
+                            <select class="form-select" id="incidentRequester" required style="flex: 1;">
+                                <option value="">Select Requester (Required)</option>
+                            </select>
+                            <button type="button" class="btn-secondary" onclick="showManageRequesters()" style="white-space: nowrap; padding: 8px 12px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                </svg>
+                                Manage
+                            </button>
+                        </div>
                     </div>
                     <div class="form-row-split">
                         <div class="form-row">
@@ -818,16 +828,36 @@
                         </div>
                     </div>
                     <div class="form-row">
-                        <label class="form-label">Agent</label>
-                        <select class="form-select" id="incidentAgent">
-                            <option value="">Unassigned</option>
-                        </select>
+                        <label class="form-label">Assignee</label>
+                        <div style="display: flex; gap: 8px;">
+                            <select class="form-select" id="incidentAgent" style="flex: 1;">
+                                <option value="">Unassigned</option>
+                            </select>
+                            <button type="button" class="btn-secondary" onclick="showManageAssignees()" style="white-space: nowrap; padding: 8px 12px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                </svg>
+                                Manage
+                            </button>
+                        </div>
                     </div>
                     <div class="form-row">
                         <label class="form-label">Group</label>
-                        <select class="form-select" id="incidentGroup">
-                            <option value="">Select Group</option>
-                        </select>
+                        <div style="display: flex; gap: 8px;">
+                            <select class="form-select" id="incidentGroup" style="flex: 1;">
+                                <option value="">Select Group</option>
+                            </select>
+                            <button type="button" class="btn-secondary" onclick="showManageGroups()" style="white-space: nowrap; padding: 8px 12px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                                </svg>
+                                Manage
+                            </button>
+                        </div>
                     </div>
                     <div class="form-row">
                         <label class="form-label">Category</label>
@@ -842,6 +872,126 @@
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" onclick="closeCreateIncidentModal()">Cancel</button>
                 <button type="submit" form="createIncidentForm" class="btn-primary">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Assignees Modal -->
+    <div class="modal" id="manageAssigneesModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Manage Assignees</h2>
+                <button class="modal-close" onclick="closeManageAssignees()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 16px;">
+                    <button class="btn-primary" onclick="showAddAssigneeForm()" style="padding: 8px 16px;">
+                        + Add Assignee
+                    </button>
+                </div>
+                <div id="addAssigneeForm" style="display: none; background: #F4F5F7; padding: 16px; border-radius: 6px; margin-bottom: 16px;">
+                    <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Add New Assignee</h3>
+                    <div class="form-row">
+                        <label class="form-label required">Name</label>
+                        <input type="text" class="form-input" id="assigneeName" placeholder="John Doe">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label required">Email</label>
+                        <input type="email" class="form-input" id="assigneeEmail" placeholder="john@example.com">
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 12px;">
+                        <button class="btn-primary" onclick="addAssignee()">Add</button>
+                        <button class="btn-secondary" onclick="hideAddAssigneeForm()">Cancel</button>
+                    </div>
+                </div>
+                <div id="assigneesList" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Assignees will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Groups Modal -->
+    <div class="modal" id="manageGroupsModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Manage Groups</h2>
+                <button class="modal-close" onclick="closeManageGroups()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 16px;">
+                    <button class="btn-primary" onclick="showAddGroupForm()" style="padding: 8px 16px;">
+                        + Add Group
+                    </button>
+                </div>
+                <div id="addGroupForm" style="display: none; background: #F4F5F7; padding: 16px; border-radius: 6px; margin-bottom: 16px;">
+                    <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Add New Group</h3>
+                    <div class="form-row">
+                        <label class="form-label required">Name</label>
+                        <input type="text" class="form-input" id="groupName" placeholder="IT Support">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-textarea" id="groupDescription" placeholder="IT Support team" rows="2"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 12px;">
+                        <button class="btn-primary" onclick="addGroup()">Add</button>
+                        <button class="btn-secondary" onclick="hideAddGroupForm()">Cancel</button>
+                    </div>
+                </div>
+                <div id="groupsList" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Groups will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manage Requesters Modal -->
+    <div class="modal" id="manageRequestersModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Manage Requesters</h2>
+                <button class="modal-close" onclick="closeManageRequesters()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 16px;">
+                    <button class="btn-primary" onclick="showAddRequesterForm()" style="padding: 8px 16px;">
+                        + Add Requester
+                    </button>
+                </div>
+                <div id="addRequesterForm" style="display: none; background: #F4F5F7; padding: 16px; border-radius: 6px; margin-bottom: 16px;">
+                    <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Add New Requester</h3>
+                    <div class="form-row">
+                        <label class="form-label required">Name</label>
+                        <input type="text" class="form-input" id="requesterName" placeholder="Jane Smith">
+                    </div>
+                    <div class="form-row">
+                        <label class="form-label required">Email</label>
+                        <input type="email" class="form-input" id="requesterEmail" placeholder="jane@example.com">
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-top: 12px;">
+                        <button class="btn-primary" onclick="addRequester()">Add</button>
+                        <button class="btn-secondary" onclick="hideAddRequesterForm()">Cancel</button>
+                    </div>
+                </div>
+                <div id="requestersList" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Requesters will be loaded here -->
+                </div>
             </div>
         </div>
     </div>
@@ -932,6 +1082,7 @@
     <script src="js/auth.js"></script>
     <script src="js/api-client.js"></script>
     <script src="js/project-selector-enhanced.js"></script>
+    <script src="js/incident-entities.js"></script>
     <script src="js/incidents.js"></script>
     <script src="js/reports.js"></script>
     <script>
