@@ -154,19 +154,58 @@ function setupUserMenu() {
 async function loadDashboardData() {
     try {
         let currentProject = null;
+        
+        // Try projectSelector first
         if (typeof projectSelector !== 'undefined' && projectSelector.getCurrentProject) {
             currentProject = projectSelector.getCurrentProject();
-        } else {
-            // Fallback: try to get from localStorage
+        }
+        
+        // If not in memory, try localStorage
+        if (!currentProject) {
+            const stored = localStorage.getItem('milo_current_project');
+            if (stored) {
+                try {
+                    currentProject = JSON.parse(stored);
+                    if (typeof projectSelector !== 'undefined' && projectSelector.setCurrentProject) {
+                        projectSelector.setCurrentProject(currentProject);
+                    }
+                } catch (e) {
+                    console.error('Error parsing stored project:', e);
+                }
+            }
+        }
+        
+        // If still no project, try user projects list
+        if (!currentProject) {
             const projectsStr = localStorage.getItem('milo_user_projects') || sessionStorage.getItem('milo_user_projects');
             if (projectsStr) {
                 try {
                     const projects = JSON.parse(projectsStr);
                     if (projects && projects.length > 0) {
                         currentProject = projects[0];
+                        if (typeof projectSelector !== 'undefined' && projectSelector.setCurrentProject) {
+                            projectSelector.setCurrentProject(currentProject);
+                        }
                     }
                 } catch (e) {
                     console.error('Error parsing projects:', e);
+                }
+            }
+        }
+        
+        // If still no project, try loading from API
+        if (!currentProject) {
+            const user = authService.getCurrentUser();
+            if (user && typeof projectSelector !== 'undefined' && projectSelector.loadProjects) {
+                try {
+                    await projectSelector.loadProjects(user.id);
+                    currentProject = projectSelector.getCurrentProject();
+                    if (!currentProject && projectSelector.projects && projectSelector.projects.length > 0) {
+                        currentProject = projectSelector.projects[0];
+                        projectSelector.setCurrentProject(currentProject);
+                    }
+                } catch (error) {
+                    console.error('Failed to load projects:', error);
                 }
             }
         }

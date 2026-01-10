@@ -220,40 +220,74 @@ public class FlakesController : ControllerBase
             var projectHtml = System.Net.WebUtility.HtmlEncode(projectName);
             var urlHtml = System.Net.WebUtility.HtmlEncode(flakeUrl);
             
+            // Professional, Outlook-compatible email template using tables
             var emailBody = $@"
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset=""utf-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <!--[if mso]>
+    <style type=""text/css"">
+        body, table, td {{font-family: Arial, sans-serif !important;}}
+    </style>
+    <![endif]-->
 </head>
-<body style=""font-family: Arial, sans-serif; line-height: 1.6; color: #172B4D; margin: 0; padding: 20px; background: #F4F5F7;"">
-    <div style=""max-width: 600px; margin: 0 auto; background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"">
-        <div style=""background: #0052CC; color: #FFFFFF; padding: 30px; text-align: center;"">
-            <h1 style=""margin: 0; font-size: 24px;"">Shared Flake: {titleHtml}</h1>
-        </div>
-        <div style=""padding: 30px;"">
-            <p style=""margin: 0 0 16px 0;"">Hello,</p>
-            <p style=""margin: 0 0 24px 0;""><strong>{authorHtml}</strong> has shared a flake from <strong>{projectHtml}</strong> with you.</p>
-            
-            <div style=""background: #F4F5F7; padding: 16px; border-radius: 4px; margin-bottom: 24px;"">
-                <p style=""margin: 0; font-size: 13px; color: #6B778C;""><strong>Project:</strong> {projectHtml}</p>
-                <p style=""margin: 8px 0 0 0; font-size: 13px; color: #6B778C;""><strong>Shared by:</strong> {authorHtml}</p>
-                <p style=""margin: 8px 0 0 0; font-size: 13px; color: #6B778C;""><strong>Date:</strong> {dateStr} at {timeStr}</p>
-            </div>
+<body style=""margin: 0; padding: 0; background-color: #F4F5F7; font-family: Arial, sans-serif;"">
+    <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""background-color: #F4F5F7;"">
+        <tr>
+            <td align=""center"" style=""padding: 40px 20px;"">
+                <table role=""presentation"" width=""600"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""background-color: #FFFFFF; max-width: 600px; width: 100%; border-radius: 8px; overflow: hidden;"">
+                    <!-- Header -->
+                    <tr>
+                        <td style=""background-color: #0052CC; padding: 40px 30px; text-align: center;"">
+                            <h1 style=""margin: 0; font-size: 24px; font-weight: 600; color: #FFFFFF; line-height: 1.3;"">{titleHtml}</h1>
+                        </td>
+                    </tr>
+                    <!-- Body -->
+                    <tr>
+                        <td style=""padding: 40px 30px;"">
+                            <p style=""margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #172B4D;"">Hello,</p>
+                            <p style=""margin: 0 0 30px 0; font-size: 16px; line-height: 1.6; color: #172B4D;""><strong style=""color: #172B4D;"">{authorHtml}</strong> has shared a flake from <strong style=""color: #172B4D;"">{projectHtml}</strong> with you.</p>
+                            
+                            <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""background-color: #F4F5F7; border-radius: 4px; margin-bottom: 30px;"">
+                                <tr>
+                                    <td style=""padding: 20px;"">
+                                        <p style=""margin: 0 0 12px 0; font-size: 14px; color: #6B778C; line-height: 1.5;""><strong style=""color: #42526E;"">Project:</strong> {projectHtml}</p>
+                                        <p style=""margin: 0 0 12px 0; font-size: 14px; color: #6B778C; line-height: 1.5;""><strong style=""color: #42526E;"">Shared by:</strong> {authorHtml}</p>
+                                        <p style=""margin: 0; font-size: 14px; color: #6B778C; line-height: 1.5;""><strong style=""color: #42526E;"">Date:</strong> {dateStr} at {timeStr}</p>
+                                    </td>
+                                </tr>
+                            </table>
 
-            <div style=""text-align: center; margin: 32px 0;"">
-                <a href=""{flakeUrl}"" style=""display: inline-block; background: #0052CC; color: #FFFFFF; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 15px;"">VIEW FLAKE</a>
-            </div>
+                            <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""margin: 32px 0;"">
+                                <tr>
+                                    <td align=""center"">
+                                        <a href=""{flakeUrl}"" style=""display: inline-block; background-color: #0052CC; color: #FFFFFF; padding: 14px 32px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 15px; line-height: 1.5;"">VIEW FLAKE</a>
+                                    </td>
+                                </tr>
+                            </table>
 
-            <div style=""background: #F4F5F7; padding: 20px; border-radius: 4px; text-align: center;"">
-                <p style=""margin: 0 0 12px 0; font-size: 13px; color: #6B778C;"">Or copy this link:</p>
-                <p style=""margin: 0; font-size: 14px; word-break: break-all;""><a href=""{flakeUrl}"" style=""color: #0052CC;"">{urlHtml}</a></p>
-            </div>
-        </div>
-        <div style=""padding: 20px; background: #F4F5F7; border-top: 1px solid #DFE1E6; text-align: center;"">
-            <p style=""margin: 0; font-size: 12px; color: #6B778C;"">This flake was shared from Milo</p>
-        </div>
-    </div>
+                            <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""background-color: #F4F5F7; border-radius: 4px; margin-top: 30px;"">
+                                <tr>
+                                    <td style=""padding: 20px; text-align: center;"">
+                                        <p style=""margin: 0 0 12px 0; font-size: 13px; color: #6B778C;"">Or copy this link:</p>
+                                        <p style=""margin: 0; font-size: 13px; word-break: break-all;""><a href=""{flakeUrl}"" style=""color: #0052CC; text-decoration: underline;"">{urlHtml}</a></p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style=""padding: 20px 30px; background-color: #F4F5F7; border-top: 1px solid #DFE1E6; text-align: center;"">
+                            <p style=""margin: 0; font-size: 12px; color: #6B778C; line-height: 1.5;"">This email was sent from <strong style=""color: #42526E;"">Milo</strong> - Your Project Management Workspace</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>";
 
