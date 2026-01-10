@@ -5,7 +5,11 @@ let currentIncident = null;
 let currentProject = null;
 let users = [];
 let teams = [];
-// apiClient is already defined in api-client.js, don't redeclare
+// apiClient is already defined in api-client.js - use it directly
+// If apiClient is not available, try to access it from global scope
+if (typeof apiClient === 'undefined') {
+    console.error('apiClient is not defined. Make sure api-client.js is loaded before incidents.js');
+}
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', async function() {
