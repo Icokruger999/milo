@@ -913,52 +913,142 @@ body {
 
 @media (max-width: 768px) {
     .container {
-        padding: 0 24px;
+        padding: 0 20px !important;
     }
 
     .navbar .container {
-        padding: 12px 24px;
+        padding: 12px 20px !important;
     }
 
     .nav-links {
-        gap: 16px;
+        gap: 8px;
+        font-size: 13px;
     }
 
     .nav-links a:not(.btn-primary) {
         display: none;
     }
 
+    .nav-dropdown {
+        display: none;
+    }
+
+    .hero {
+        padding: 40px 0 60px;
+    }
+
     .hero-title {
-        font-size: 40px;
+        font-size: 32px !important;
+        line-height: 1.2;
     }
 
     .hero-description {
-        font-size: 18px;
+        font-size: 16px !important;
+        margin-bottom: 24px;
     }
 
     .hero-cta {
         flex-direction: column;
+        width: 100%;
+        gap: 12px;
+    }
+
+    .hero-cta a {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .btn-large {
+        padding: 12px 20px !important;
+        font-size: 14px !important;
+    }
+
+    .milo-showcase .container {
+        padding: 0 20px !important;
+    }
+
+    .milo-content {
+        grid-template-columns: 1fr !important;
+        gap: 32px !important;
+    }
+
+    .milo-text h2 {
+        font-size: 28px !important;
+    }
+
+    .milo-description {
+        font-size: 15px !important;
+    }
+
+    .milo-features {
+        gap: 12px;
+    }
+
+    .feature-item {
+        font-size: 14px;
+    }
+
+    .milo-cta {
+        flex-direction: column;
+        width: 100%;
+        gap: 12px;
+    }
+
+    .milo-cta a {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .dashboard-preview {
+        max-width: 100%;
     }
 
     .solutions-grid {
         grid-template-columns: 1fr;
+        gap: 20px;
     }
 
     .section-header h2 {
-        font-size: 32px;
+        font-size: 28px !important;
+    }
+
+    .section-header p {
+        font-size: 15px !important;
+    }
+
+    .solution-card {
+        padding: 24px;
     }
 
     .cta-content h2 {
-        font-size: 32px;
+        font-size: 28px !important;
+    }
+
+    .cta-content p {
+        font-size: 15px !important;
     }
 
     .cta-buttons {
         flex-direction: column;
+        width: 100%;
+        gap: 12px;
+    }
+
+    .cta-buttons a {
+        width: 100%;
+        text-align: center;
+        justify-content: center;
     }
 
     .footer-links {
         grid-template-columns: 1fr;
-        gap: 32px;
+        gap: 24px;
+    }
+
+    .section-badge {
+        font-size: 11px;
     }
 }
 

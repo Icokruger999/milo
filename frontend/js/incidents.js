@@ -33,9 +33,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     if (!currentProject) {
-        console.warn('No project selected, redirecting...');
-        window.location.href = 'milo-select-project.html';
-        return;
+        console.warn('No project selected');
+        // Don't redirect, just show message
+        // Incidents can be created without a project
     }
 
     // Update project name in breadcrumb

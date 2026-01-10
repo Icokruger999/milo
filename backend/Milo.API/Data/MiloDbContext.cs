@@ -26,6 +26,7 @@ public class MiloDbContext : DbContext
     public DbSet<Team> Teams { get; set; }
     public DbSet<TeamMember> TeamMembers { get; set; }
     public DbSet<Incident> Incidents { get; set; }
+    public DbSet<ReportRecipient> ReportRecipients { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -252,6 +253,18 @@ public class MiloDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.GroupId)
                 .OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne(e => e.Project)
+                .WithMany()
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ReportRecipient configuration
+        modelBuilder.Entity<ReportRecipient>(entity =>
+        {
+            entity.HasIndex(e => e.Email);
+            entity.HasIndex(e => e.ProjectId);
+            entity.HasIndex(e => e.IsActive);
             entity.HasOne(e => e.Project)
                 .WithMany()
                 .HasForeignKey(e => e.ProjectId)
