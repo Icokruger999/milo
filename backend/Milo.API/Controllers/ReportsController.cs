@@ -143,7 +143,7 @@ public class ReportsController : ControllerBase
 
             var query = _context.Incidents
                 .Include(i => i.Requester)
-                .Include(i => i.Agent)
+                .Include(i => i.Assignee)
                 .Where(i => i.CreatedAt >= today && i.CreatedAt < tomorrow);
 
             if (projectId.HasValue)
@@ -162,7 +162,7 @@ public class ReportsController : ControllerBase
                     i.Priority,
                     i.CreatedAt,
                     RequesterName = i.Requester != null ? i.Requester.Name : "Unknown",
-                    AgentName = i.Agent != null ? i.Agent.Name : "Unassigned"
+                    AgentName = i.Assignee != null ? i.Assignee.Name : "Unassigned"
                 })
                 .ToListAsync();
 
@@ -213,7 +213,7 @@ public class ReportsController : ControllerBase
 
             var query = _context.Incidents
                 .Include(i => i.Requester)
-                .Include(i => i.Agent)
+                .Include(i => i.Assignee)
                 .Where(i => i.CreatedAt >= today && i.CreatedAt < tomorrow);
 
             if (projectId.HasValue)
@@ -241,7 +241,7 @@ public class ReportsController : ControllerBase
                     Status = i.Status,
                     Priority = i.Priority,
                     RequesterName = i.Requester?.Name ?? "Unknown",
-                    AgentName = i.Agent?.Name ?? "Unassigned"
+                    AgentName = i.Assignee?.Name ?? "Unassigned"
                 }).ToList()
             };
 
