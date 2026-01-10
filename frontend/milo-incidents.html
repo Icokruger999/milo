@@ -308,20 +308,24 @@
 
         /* Modal Styles */
         .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(9, 30, 66, 0.54);
-            z-index: 500;
-            align-items: center;
-            justify-content: center;
+            display: none !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background: rgba(9, 30, 66, 0.54) !important;
+            z-index: 9999 !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
 
         .modal.active {
-            display: flex;
+            display: flex !important;
+        }
+        
+        .modal[style*="display: flex"] {
+            display: flex !important;
         }
 
         .modal-content {

@@ -215,18 +215,36 @@ function filterIncidents() {
 
 // Show create incident modal
 function showCreateIncidentModal() {
-    console.log('showCreateIncidentModal called');
-    const modal = document.getElementById('createIncidentModal');
-    if (!modal) {
-        console.error('Modal element not found!');
-        alert('Error: Create Incident modal not found. Please refresh the page.');
-        return;
-    }
-    
-    console.log('Modal found, adding active class');
-    modal.classList.add('active');
-    modal.style.display = 'flex'; // Ensure it's visible
-    document.body.style.overflow = 'hidden'; // Prevent body scroll when modal is open
+    try {
+        console.log('showCreateIncidentModal called');
+        const modal = document.getElementById('createIncidentModal');
+        if (!modal) {
+            console.error('Modal element not found!');
+            alert('Error: Create Incident modal not found. Please refresh the page.');
+            return;
+        }
+        
+        console.log('Modal found, showing it');
+        // Force display with inline styles that override everything
+        modal.style.setProperty('display', 'flex', 'important');
+        modal.style.setProperty('visibility', 'visible', 'important');
+        modal.style.setProperty('opacity', '1', 'important');
+        modal.style.setProperty('z-index', '9999', 'important');
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden'; // Prevent body scroll when modal is open
+        
+        // Double check it's visible
+        setTimeout(() => {
+            const computedStyle = window.getComputedStyle(modal);
+            console.log('Modal display after show:', computedStyle.display);
+            console.log('Modal visibility:', computedStyle.visibility);
+            console.log('Modal z-index:', computedStyle.zIndex);
+            if (computedStyle.display === 'none') {
+                console.error('Modal still not visible! Forcing again...');
+                modal.style.display = 'flex';
+                modal.style.visibility = 'visible';
+            }
+        }, 100);
     
     // Reset form
     const form = document.getElementById('createIncidentForm');
@@ -234,34 +252,46 @@ function showCreateIncidentModal() {
         form.reset();
     }
     
-    // Load users for requester dropdown
-    loadUsers().then(() => {
-        const requesterSelect = document.getElementById('incidentRequester');
-        if (requesterSelect) {
-            requesterSelect.innerHTML = '<option value="">Select Requester</option>';
-            if (users && users.length > 0) {
-                users.forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.id;
-                    option.textContent = user.name || user.email;
-                    requesterSelect.appendChild(option);
-                });
-            } else {
-                console.warn('No users loaded for requester dropdown');
-            }
+        // Load users for requester dropdown
+        if (typeof loadUsers === 'function') {
+            loadUsers().then(() => {
+                const requesterSelect = document.getElementById('incidentRequester');
+                if (requesterSelect) {
+                    requesterSelect.innerHTML = '<option value="">Select Requester</option>';
+                    if (users && users.length > 0) {
+                        users.forEach(user => {
+                            const option = document.createElement('option');
+                            option.value = user.id;
+                            option.textContent = user.name || user.email;
+                            requesterSelect.appendChild(option);
+                        });
+                    } else {
+                        console.warn('No users loaded for requester dropdown');
+                    }
+                }
+            }).catch(error => {
+                console.error('Error loading users:', error);
+            });
         }
-    }).catch(error => {
-        console.error('Error loading users:', error);
-    });
+    } catch (error) {
+        console.error('Error in showCreateIncidentModal:', error);
+        alert('Error opening Create Incident modal: ' + error.message);
+    }
 }
 
 // Close create incident modal
 function closeCreateIncidentModal() {
-    const modal = document.getElementById('createIncidentModal');
-    if (modal) {
-        modal.classList.remove('active');
-        modal.style.display = 'none'; // Ensure it's hidden
-        document.body.style.overflow = ''; // Restore body scroll
+    try {
+        const modal = document.getElementById('createIncidentModal');
+        if (modal) {
+            modal.classList.remove('active');
+            modal.style.display = 'none'; // Ensure it's hidden
+            modal.style.visibility = 'hidden';
+            modal.style.opacity = '0';
+            document.body.style.overflow = ''; // Restore body scroll
+        }
+    } catch (error) {
+        console.error('Error closing modal:', error);
     }
 }
 
@@ -614,15 +644,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Export functions for global use
-// Export functions to global scope
+// Export functions to global scope IMMEDIATELY (don't wait for DOMContentLoaded)
 window.showCreateIncidentModal = showCreateIncidentModal;
 window.closeCreateIncidentModal = closeCreateIncidentModal;
 window.createIncident = createIncident;
 
+// Also attach to window explicitly for safety
+if (typeof window !== 'undefined') {
+    window.showCreateIncidentModal = showCreateIncidentModal;
+    window.closeCreateIncidentModal = closeCreateIncidentModal;
+    window.createIncident = createIncident;
+}
+
 // Ensure modal is initialized on page load
-document.addEventListener('DOMContentLoaded', function() {
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeModal);
+} else {
+    // DOM already loaded, initialize immediately
+    initializeModal();
+}
+
+function initializeModal() {
     console.log('Incidents page loaded, modal functions available');
+    console.log('showCreateIncidentModal available:', typeof window.showCreateIncidentModal);
     
     // Close modal when clicking outside
     const modal = document.getElementById('createIncidentModal');
@@ -632,8 +676,49 @@ document.addEventListener('DOMContentLoaded', function() {
                 closeCreateIncidentModal();
             }
         });
+        console.log('Modal element found and initialized');
+    } else {
+        console.error('Modal element not found during initialization');
     }
-});
+    
+    // ADD DIRECT EVENT LISTENERS TO BUTTONS AS BACKUP
+    const createButtons = document.querySelectorAll('.global-nav-create, button[onclick*="showCreateIncidentModal"]');
+    createButtons.forEach(button => {
+        if (button) {
+            console.log('Adding event listener to Create Incident button');
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Create Incident button clicked via event listener');
+                if (typeof showCreateIncidentModal === 'function') {
+                    showCreateIncidentModal();
+                } else if (typeof window.showCreateIncidentModal === 'function') {
+                    window.showCreateIncidentModal();
+                } else {
+                    alert('Create Incident function not found. Please refresh the page.');
+                }
+            });
+            console.log('Event listener added to button:', button);
+        }
+    });
+    
+    // Also try to find button by text content
+    const allButtons = document.querySelectorAll('button');
+    allButtons.forEach(button => {
+        if (button.textContent && button.textContent.trim() === 'Create Incident') {
+            console.log('Found Create Incident button by text:', button);
+            if (!button.hasAttribute('data-listener-added')) {
+                button.setAttribute('data-listener-added', 'true');
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Create Incident button clicked (text match)');
+                    showCreateIncidentModal();
+                });
+            }
+        }
+    });
+}
 window.closeCreateIncidentModal = closeCreateIncidentModal;
 window.createIncident = createIncident;
 window.showIncidentDetails = showIncidentDetails;
