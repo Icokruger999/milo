@@ -1031,4 +1031,6 @@ window.applyFilters = applyFilters;
 window.showCreateTaskModal = showCreateTaskModal;
 window.invalidateDashboardCache = invalidateDashboardCache;
 window.loadDashboardData = loadDashboardData;
-
+}
+}
+}
