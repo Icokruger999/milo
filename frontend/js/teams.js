@@ -63,8 +63,8 @@ async function loadTeams() {
     }
 }
 
-// Apply filter
-function applyFilter(filter) {
+// Apply filter - make it global
+window.applyFilter = function(filter) {
     currentFilter = filter;
     
     // Update active tab
@@ -146,8 +146,8 @@ function renderTeams() {
     }).join('');
 }
 
-// Open create team modal
-function openCreateTeamModal() {
+// Open create team modal - make it global
+window.openCreateTeamModal = function() {
     teamMembers = [];
     document.getElementById('teamName').value = '';
     document.getElementById('teamDescription').value = '';
@@ -161,13 +161,13 @@ function openCreateTeamModal() {
     document.getElementById('createTeamModal').style.display = 'flex';
 }
 
-// Close create team modal
-function closeCreateTeamModal() {
+// Close create team modal - make it global
+window.closeCreateTeamModal = function() {
     document.getElementById('createTeamModal').style.display = 'none';
 }
 
-// Add member to team (in modal)
-function addMemberToTeam() {
+// Add member to team (in modal) - make it global
+window.addMemberToTeam = function() {
     const membersList = document.getElementById('membersList');
     
     const memberItem = document.createElement('div');
@@ -189,8 +189,8 @@ function addMemberToTeam() {
     membersList.appendChild(memberItem);
 }
 
-// Remove member from list
-function removeMemberFromList(button) {
+// Remove member from list - make it global
+window.removeMemberFromList = function(button) {
     button.closest('.member-item').remove();
 }
 
@@ -199,8 +199,8 @@ function updateMemberSelection(select) {
     // Could add logic to prevent duplicate selections
 }
 
-// Handle create team
-async function handleCreateTeam(event) {
+// Handle create team - make it global
+window.handleCreateTeam = async function(event) {
     event.preventDefault();
     
     const name = document.getElementById('teamName').value.trim();
@@ -253,8 +253,8 @@ async function handleCreateTeam(event) {
     }
 }
 
-// View team
-function viewTeam(teamId) {
+// View team - make it global
+window.viewTeam = function(teamId) {
     // For now, just show a toast - could open a detail modal
     showToast('Team details view - Coming soon!', 'info');
     console.log('View team:', teamId);
