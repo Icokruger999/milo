@@ -28,11 +28,13 @@ function renderAssignees() {
         return;
     }
 
-    list.innerHTML = assignees.map(assignee => `
+    list.innerHTML = assignees
+        .filter(assignee => assignee && assignee.id && assignee.name && assignee.email) // Filter out invalid assignees
+        .map(assignee => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: white; border: 1px solid #DFE1E6; border-radius: 4px; margin-bottom: 8px;">
             <div>
-                <div style="font-weight: 600; color: #172B4D; margin-bottom: 4px;">${assignee.name}</div>
-                <div style="font-size: 12px; color: #6B778C;">${assignee.email}</div>
+                <div style="font-weight: 600; color: #172B4D; margin-bottom: 4px;">${assignee.name || 'Unnamed Assignee'}</div>
+                <div style="font-size: 12px; color: #6B778C;">${assignee.email || 'No email'}</div>
             </div>
             <button class="btn-secondary" onclick="deleteAssignee(${assignee.id})" style="padding: 6px 12px; font-size: 12px;">
                 Delete
@@ -47,12 +49,14 @@ function updateAssigneeDropdown() {
 
     const currentValue = select.value;
     select.innerHTML = '<option value="">Unassigned</option>';
-    assignees.forEach(assignee => {
-        const option = document.createElement('option');
-        option.value = assignee.id;
-        option.textContent = `${assignee.name} (${assignee.email})`;
-        select.appendChild(option);
-    });
+    assignees
+        .filter(assignee => assignee && assignee.id && assignee.name && assignee.email) // Filter out invalid assignees
+        .forEach(assignee => {
+            const option = document.createElement('option');
+            option.value = assignee.id;
+            option.textContent = `${assignee.name || 'Unnamed'} (${assignee.email || 'No email'})`;
+            select.appendChild(option);
+        });
     if (currentValue) select.value = currentValue;
 }
 
@@ -95,10 +99,25 @@ async function addAssignee() {
 
     try {
         const newAssignee = await apiClient.post('/incidents/assignees', { name, email });
+        
+        // Validate response has required properties
+        if (!newAssignee || !newAssignee.id || !newAssignee.name || !newAssignee.email) {
+            console.error('Invalid response from server:', newAssignee);
+            // Reload all assignees instead of using broken response
+            await loadAssignees();
+            hideAddAssigneeForm();
+            return;
+        }
+        
         assignees.push(newAssignee);
         renderAssignees();
         updateAssigneeDropdown();
         hideAddAssigneeForm();
+        
+        // Clear form fields
+        document.getElementById('assigneeName').value = '';
+        document.getElementById('assigneeEmail').value = '';
+        
         console.log('Assignee created:', newAssignee);
     } catch (error) {
         console.error('Failed to create assignee:', error);
@@ -143,10 +162,12 @@ function renderGroups() {
         return;
     }
 
-    list.innerHTML = groups.map(group => `
+    list.innerHTML = groups
+        .filter(group => group && group.id && group.name) // Filter out invalid groups
+        .map(group => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: white; border: 1px solid #DFE1E6; border-radius: 4px; margin-bottom: 8px;">
             <div>
-                <div style="font-weight: 600; color: #172B4D; margin-bottom: 4px;">${group.name}</div>
+                <div style="font-weight: 600; color: #172B4D; margin-bottom: 4px;">${group.name || 'Unnamed Group'}</div>
                 ${group.description ? `<div style="font-size: 12px; color: #6B778C;">${group.description}</div>` : ''}
             </div>
             <button class="btn-secondary" onclick="deleteGroup(${group.id})" style="padding: 6px 12px; font-size: 12px;">
@@ -162,12 +183,14 @@ function updateGroupDropdown() {
 
     const currentValue = select.value;
     select.innerHTML = '<option value="">Select Group</option>';
-    groups.forEach(group => {
-        const option = document.createElement('option');
-        option.value = group.id;
-        option.textContent = group.name;
-        select.appendChild(option);
-    });
+    groups
+        .filter(group => group && group.id && group.name) // Filter out invalid groups
+        .forEach(group => {
+            const option = document.createElement('option');
+            option.value = group.id;
+            option.textContent = group.name || 'Unnamed Group';
+            select.appendChild(option);
+        });
     if (currentValue) select.value = currentValue;
 }
 
@@ -210,10 +233,25 @@ async function addGroup() {
 
     try {
         const newGroup = await apiClient.post('/incidents/groups', { name, description: description || null });
+        
+        // Validate response has required properties
+        if (!newGroup || !newGroup.id || !newGroup.name) {
+            console.error('Invalid response from server:', newGroup);
+            // Reload all groups instead of using broken response
+            await loadGroups();
+            hideAddGroupForm();
+            return;
+        }
+        
         groups.push(newGroup);
         renderGroups();
         updateGroupDropdown();
         hideAddGroupForm();
+        
+        // Clear form fields
+        document.getElementById('groupName').value = '';
+        document.getElementById('groupDescription').value = '';
+        
         console.log('Group created:', newGroup);
     } catch (error) {
         console.error('Failed to create group:', error);
@@ -258,11 +296,13 @@ function renderRequesters() {
         return;
     }
 
-    list.innerHTML = requesters.map(requester => `
+    list.innerHTML = requesters
+        .filter(requester => requester && requester.id && requester.name && requester.email) // Filter out invalid requesters
+        .map(requester => `
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: white; border: 1px solid #DFE1E6; border-radius: 4px; margin-bottom: 8px;">
             <div>
-                <div style="font-weight: 600; color: #172B4D; margin-bottom: 4px;">${requester.name}</div>
-                <div style="font-size: 12px; color: #6B778C;">${requester.email}</div>
+                <div style="font-weight: 600; color: #172B4D; margin-bottom: 4px;">${requester.name || 'Unnamed Requester'}</div>
+                <div style="font-size: 12px; color: #6B778C;">${requester.email || 'No email'}</div>
             </div>
             <button class="btn-secondary" onclick="deleteRequester(${requester.id})" style="padding: 6px 12px; font-size: 12px;">
                 Delete
@@ -277,12 +317,14 @@ function updateRequesterDropdown() {
 
     const currentValue = select.value;
     select.innerHTML = '<option value="">Select Requester (Required)</option>';
-    requesters.forEach(requester => {
-        const option = document.createElement('option');
-        option.value = requester.id;
-        option.textContent = `${requester.name} (${requester.email})`;
-        select.appendChild(option);
-    });
+    requesters
+        .filter(requester => requester && requester.id && requester.name && requester.email) // Filter out invalid requesters
+        .forEach(requester => {
+            const option = document.createElement('option');
+            option.value = requester.id;
+            option.textContent = `${requester.name || 'Unnamed'} (${requester.email || 'No email'})`;
+            select.appendChild(option);
+        });
     if (currentValue) select.value = currentValue;
 }
 
@@ -325,10 +367,25 @@ async function addRequester() {
 
     try {
         const newRequester = await apiClient.post('/incidents/requesters', { name, email });
+        
+        // Validate response has required properties
+        if (!newRequester || !newRequester.id || !newRequester.name || !newRequester.email) {
+            console.error('Invalid response from server:', newRequester);
+            // Reload all requesters instead of using broken response
+            await loadRequesters();
+            hideAddRequesterForm();
+            return;
+        }
+        
         requesters.push(newRequester);
         renderRequesters();
         updateRequesterDropdown();
         hideAddRequesterForm();
+        
+        // Clear form fields
+        document.getElementById('requesterName').value = '';
+        document.getElementById('requesterEmail').value = '';
+        
         console.log('Requester created:', newRequester);
     } catch (error) {
         console.error('Failed to create requester:', error);

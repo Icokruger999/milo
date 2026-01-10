@@ -60,7 +60,7 @@ public class IncidentEntitiesController : ControllerBase
             _context.IncidentAssignees.Add(assignee);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetAssignees), new { id = assignee.Id }, assignee);
+            return Ok(assignee);
         }
         catch (Exception ex)
         {
@@ -136,7 +136,7 @@ public class IncidentEntitiesController : ControllerBase
             _context.IncidentRequesters.Add(requester);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetRequesters), new { id = requester.Id }, requester);
+            return Ok(requester);
         }
         catch (Exception ex)
         {
@@ -212,7 +212,7 @@ public class IncidentEntitiesController : ControllerBase
             _context.IncidentGroups.Add(group);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetGroups), new { id = group.Id }, group);
+            return Ok(group);
         }
         catch (Exception ex)
         {
