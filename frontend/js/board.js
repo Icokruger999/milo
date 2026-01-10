@@ -54,7 +54,7 @@ function getAssigneeColor(assigneeId, assigneeName) {
 }
 
 // Initialize board with faster loading
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // Check authentication
     if (!authService.requireAuth()) {
         return;
@@ -77,6 +77,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Setup user menu
     setupUserMenu();
+
+    // Check if project is selected
+    let currentProject = projectSelector.getCurrentProject();
+    if (!currentProject) {
+        // Try to load projects first
+        try {
+            await projectSelector.loadProjects(user.id);
+            currentProject = projectSelector.getCurrentProject();
+        } catch (error) {
+            console.error('Failed to load projects:', error);
+        }
+        
+        // If still no project, redirect to selector
+        if (!currentProject) {
+            window.location.href = 'milo-select-project.html';
+            return;
+        }
+    }
 
     // Render board immediately with empty state
     renderBoard();
