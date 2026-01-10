@@ -236,44 +236,65 @@ async function loadDashboardData() {
         }
 
         // Load data with timeout protection
-        console.log('Fetching tasks for project:', currentProject.id);
+        console.log('🔍 Fetching tasks for project:', currentProject.id, 'from API endpoint:', `/tasks?projectId=${currentProject.id}`);
         const apiPromise = (async () => {
-            const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
-            
-            if (response.ok) {
-                const tasks = await response.json();
-                console.log('✓ Loaded tasks:', tasks.length, 'tasks');
+            try {
+                const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
                 
-                // Cache the data
-                dataCache.tasks = tasks;
-                dataCache.timestamp = now;
+                console.log('📡 API Response Status:', response.status, response.ok ? '✅' : '❌');
                 
-                dashboardData.tasks = tasks || [];
-                // Start with all tasks visible (no filtering yet)
-                dashboardData.filteredTasks = [...dashboardData.tasks];
-                
-                console.log('Dashboard data set:', {
-                    totalTasks: dashboardData.tasks.length,
-                    filteredTasks: dashboardData.filteredTasks.length,
-                    sampleTask: dashboardData.tasks[0] || 'No tasks'
-                });
-                
-                // Load assignees for filter
-                await loadAssignees();
-                
-                // Apply initial filters and render (this will update stats)
-                console.log('Applying filters and updating UI...');
-                applyFiltersImmediate();
-                
-                // Force update stats even if filters didn't change
-                updateStats();
-                updateCharts();
-                
-                console.log('✓ Dashboard loaded successfully');
-            } else {
-                const errorText = await response.text().catch(() => 'Unknown error');
-                console.error('Failed to load tasks. Status:', response.status, 'Response:', errorText);
+                if (response.ok) {
+                    const tasks = await response.json();
+                    console.log('✅ Loaded tasks:', tasks.length, 'tasks');
+                    
+                    if (tasks.length === 0) {
+                        console.warn('⚠️ No tasks found for this project. Please create some tasks on the Board first!');
+                        console.info('💡 Tip: Click the "Create" button on the Board page to add tasks');
+                    } else {
+                        console.log('📋 Sample task:', tasks[0]);
+                    }
+                    
+                    // Cache the data
+                    dataCache.tasks = tasks;
+                    dataCache.timestamp = now;
+                    
+                    dashboardData.tasks = tasks || [];
+                    // Start with all tasks visible (no filtering yet)
+                    dashboardData.filteredTasks = [...dashboardData.tasks];
+                    
+                    console.log('📊 Dashboard data set:', {
+                        totalTasks: dashboardData.tasks.length,
+                        filteredTasks: dashboardData.filteredTasks.length,
+                        hasData: dashboardData.tasks.length > 0
+                    });
+                    
+                    // Load assignees for filter
+                    await loadAssignees();
+                    
+                    // Apply initial filters and render (this will update stats)
+                    console.log('🔄 Applying filters and updating UI...');
+                    applyFiltersImmediate();
+                    
+                    // Force update stats even if filters didn't change
+                    updateStats();
+                    updateCharts();
+                    
+                    if (dashboardData.tasks.length > 0) {
+                        console.log('✅ Dashboard loaded successfully with', dashboardData.tasks.length, 'tasks');
+                    } else {
+                        console.log('ℹ️ Dashboard loaded but no tasks found. Create tasks on the Board to see data here.');
+                    }
+                } else {
+                    const errorText = await response.text().catch(() => 'Unknown error');
+                    console.error('❌ Failed to load tasks. Status:', response.status, 'Response:', errorText);
+                    console.error('🔧 Check if the API is running at:', apiClient.baseURL);
+                    showErrorState();
+                }
+            } catch (apiError) {
+                console.error('❌ API Request Error:', apiError.message);
+                console.error('🔧 Full error:', apiError);
                 showErrorState();
+                throw apiError;
             }
         })();
         
@@ -313,6 +334,9 @@ function showErrorState() {
     if (completedEl) completedEl.textContent = '0';
     if (completionRateEl) completionRateEl.textContent = '0%';
     
+    // Show helpful message on dashboard
+    showEmptyStateMessage();
+    
     // Clear charts
     Object.values(charts).forEach(chart => {
         if (chart) {
@@ -323,6 +347,52 @@ function showErrorState() {
             }
         }
     });
+}
+
+// Show empty state message when no tasks
+function showEmptyStateMessage() {
+    const dashboardContent = document.querySelector('.dashboard-content');
+    if (!dashboardContent) return;
+    
+    // Check if message already exists
+    if (document.getElementById('emptyStateMessage')) return;
+    
+    const emptyMessage = document.createElement('div');
+    emptyMessage.id = 'emptyStateMessage';
+    emptyMessage.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        padding: 40px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        z-index: 1000;
+        max-width: 500px;
+    `;
+    emptyMessage.innerHTML = `
+        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#0052CC" stroke-width="1.5" style="margin-bottom: 20px;">
+            <rect x="3" y="3" width="7" height="9"></rect>
+            <rect x="14" y="3" width="7" height="5"></rect>
+            <rect x="14" y="12" width="7" height="9"></rect>
+            <rect x="3" y="16" width="7" height="5"></rect>
+        </svg>
+        <h2 style="margin: 0 0 16px 0; color: #172B4D; font-size: 24px;">No Tasks Yet</h2>
+        <p style="margin: 0 0 24px 0; color: #6B778C; font-size: 16px; line-height: 1.5;">
+            Your dashboard will display metrics once you create tasks on the Board.
+        </p>
+        <button onclick="window.location.href='milo-board.html'" 
+                style="background: #0052CC; color: white; border: none; padding: 12px 24px; border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer;">
+            Go to Board & Create Tasks
+        </button>
+        <p style="margin: 16px 0 0 0; color: #6B778C; font-size: 13px;">
+            Or press <kbd style="background: #F4F5F7; padding: 2px 6px; border-radius: 3px;">F12</kbd> to open console for debugging
+        </p>
+    `;
+    
+    dashboardContent.appendChild(emptyMessage);
 }
 
 // Load assignees for filter dropdown - get ALL users from API
