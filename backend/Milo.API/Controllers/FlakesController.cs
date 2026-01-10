@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Milo.API.Data;
 using Milo.API.Models;
-using MimeKit;
 
 namespace Milo.API.Controllers;
 
@@ -291,11 +290,8 @@ public class FlakesController : ControllerBase
 </body>
 </html>";
 
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(fromName, fromEmail));
-            message.To.Add(new MailboxAddress("", request.ToEmail));
-            message.Subject = $"Shared Flake: {flake.Title}";
-
+            var subject = $"Shared Flake: {flake.Title}";
+            
             var textBody = @"Shared Flake: " + flake.Title + @"
 
 Hello,
@@ -318,15 +314,7 @@ Or copy and paste the link above into your browser.
 ---
 This flake was shared from Milo";
 
-            var bodyBuilder = new BodyBuilder
-            {
-                HtmlBody = emailBody,
-                TextBody = textBody
-            };
-
-            message.Body = bodyBuilder.ToMessageBody();
-
-            var sent = await emailService.SendCustomEmailAsync(message, request.ToEmail);
+            var sent = await emailService.SendCustomEmailAsync(request.ToEmail, subject, emailBody, textBody);
             
             if (sent)
             {
@@ -445,19 +433,10 @@ This flake was shared from Milo";
 </body>
 </html>";
 
-                        var message = new MimeMessage();
-                        message.From.Add(new MailboxAddress(fromName, fromEmail));
-                        message.To.Add(new MailboxAddress(task.Assignee.Name, task.Assignee.Email));
-                        message.Subject = $"Flake linked to your task: {task.TaskId}";
-
-                        var bodyBuilder = new BodyBuilder
-                        {
-                            HtmlBody = emailBody,
-                            TextBody = $"Flake Linked to Your Task\n\nHello {task.Assignee.Name},\n\n{sharedByName} linked a flake to your task.\n\nTask: {task.TaskId}: {task.Title}\nFlake: {flake.Title}\n\nView task: {taskUrl}"
-                        };
-
-                        message.Body = bodyBuilder.ToMessageBody();
-                        await emailService.SendCustomEmailAsync(message, task.Assignee.Email);
+                        var subject = $"Flake linked to your task: {task.TaskId}";
+                        var textBody = $"Flake Linked to Your Task\n\nHello {task.Assignee.Name},\n\n{sharedByName} linked a flake to your task.\n\nTask: {task.TaskId}: {task.Title}\nFlake: {flake.Title}\n\nView task: {taskUrl}";
+                        
+                        await emailService.SendCustomEmailAsync(task.Assignee.Email, subject, emailBody, textBody);
                         
                         _logger.LogInformation($"Sent flake link notification to {task.Assignee.Email}");
                     }

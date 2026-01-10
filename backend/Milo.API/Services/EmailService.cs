@@ -9,6 +9,11 @@ public interface IEmailService
 {
     Task<bool> SendDailyIncidentReportAsync(string recipientEmail, string recipientName, DailyReportData reportData);
     Task<bool> SendEmailAsync(string to, string subject, string htmlBody);
+    Task<bool> SendTemporaryPasswordEmailAsync(string email, string name, string temporaryPassword);
+    Task<bool> SendTaskAssignmentEmailAsync(string email, string assigneeName, string taskTitle, string taskId, string projectName, string? taskLink = null);
+    Task<bool> SendTeamProjectAssignmentEmailAsync(string email, string memberName, string teamName, string projectName, string projectKey);
+    Task<bool> SendCustomEmailAsync(string to, string subject, string htmlBody, string? textBody = null);
+    Task<bool> SendProjectInvitationEmailAsync(string email, string name, string projectName, string projectKey, string invitationToken);
 }
 
 public class EmailService : IEmailService
@@ -218,6 +223,246 @@ public class EmailService : IEmailService
 </html>");
 
         return html.ToString();
+    }
+
+    public async Task<bool> SendTemporaryPasswordEmailAsync(string email, string name, string temporaryPassword)
+    {
+        try
+        {
+            var subject = "Your Temporary Password - Milo";
+            var htmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <style>
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 20px; }}
+        .container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; }}
+        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 32px 24px; text-align: center; }}
+        .content {{ padding: 32px 24px; }}
+        .password-box {{ background: #F4F5F7; border: 2px dashed #0052CC; border-radius: 6px; padding: 20px; text-align: center; margin: 24px 0; }}
+        .password {{ font-size: 24px; font-weight: 700; color: #0052CC; letter-spacing: 2px; font-family: 'Courier New', monospace; }}
+        .footer {{ background: #F4F5F7; padding: 24px; text-align: center; font-size: 12px; color: #6B778C; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>Your Temporary Password</h1>
+        </div>
+        <div class='content'>
+            <p>Hello {name},</p>
+            <p>Your temporary password has been generated. Please use the following password to log in:</p>
+            <div class='password-box'>
+                <div class='password'>{temporaryPassword}</div>
+            </div>
+            <p>For security reasons, please change this password after your first login.</p>
+            <p style='margin-top: 32px;'>
+                <a href='https://www.codingeverest.com/milo-login.html' style='display: inline-block; background: #0052CC; color: #FFFFFF; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;'>Log In Now</a>
+            </p>
+        </div>
+        <div class='footer'>
+            <p>This is an automated message from Milo</p>
+            <p>If you didn't request this, please ignore this email.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+            return await SendEmailAsync(email, subject, htmlBody);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending temporary password email to {Email}", email);
+            return false;
+        }
+    }
+
+    public async Task<bool> SendTaskAssignmentEmailAsync(string email, string assigneeName, string taskTitle, string taskId, string projectName, string? taskLink = null)
+    {
+        try
+        {
+            var subject = $"New Task Assigned: {taskId} - {taskTitle}";
+            var link = taskLink ?? $"https://www.codingeverest.com/milo-board.html?task={taskId}";
+            
+            var htmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <style>
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 20px; }}
+        .container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; }}
+        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 32px 24px; text-align: center; }}
+        .content {{ padding: 32px 24px; }}
+        .task-box {{ background: #F4F5F7; border-left: 4px solid #0052CC; padding: 20px; margin: 24px 0; border-radius: 4px; }}
+        .task-id {{ font-size: 16px; font-weight: 600; color: #0052CC; margin-bottom: 8px; }}
+        .task-title {{ font-size: 18px; font-weight: 700; color: #172B4D; }}
+        .project {{ font-size: 14px; color: #6B778C; margin-top: 8px; }}
+        .cta-button {{ display: inline-block; background: #0052CC; color: #FFFFFF; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 24px 0; }}
+        .footer {{ background: #F4F5F7; padding: 24px; text-align: center; font-size: 12px; color: #6B778C; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>New Task Assigned</h1>
+        </div>
+        <div class='content'>
+            <p>Hello {assigneeName},</p>
+            <p>A new task has been assigned to you:</p>
+            <div class='task-box'>
+                <div class='task-id'>{taskId}</div>
+                <div class='task-title'>{taskTitle}</div>
+                <div class='project'>Project: {projectName}</div>
+            </div>
+            <p style='text-align: center;'>
+                <a href='{link}' class='cta-button'>View Task</a>
+            </p>
+        </div>
+        <div class='footer'>
+            <p>This is an automated notification from Milo</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+            return await SendEmailAsync(email, subject, htmlBody);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending task assignment email to {Email}", email);
+            return false;
+        }
+    }
+
+    public async Task<bool> SendTeamProjectAssignmentEmailAsync(string email, string memberName, string teamName, string projectName, string projectKey)
+    {
+        try
+        {
+            var subject = $"Team Assignment: {teamName} - {projectName}";
+            var htmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <style>
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 20px; }}
+        .container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; }}
+        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 32px 24px; text-align: center; }}
+        .content {{ padding: 32px 24px; }}
+        .info-box {{ background: #F4F5F7; border-radius: 6px; padding: 20px; margin: 24px 0; }}
+        .info-row {{ margin: 12px 0; }}
+        .label {{ font-size: 12px; color: #6B778C; text-transform: uppercase; font-weight: 600; }}
+        .value {{ font-size: 16px; color: #172B4D; font-weight: 600; margin-top: 4px; }}
+        .cta-button {{ display: inline-block; background: #0052CC; color: #FFFFFF; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 24px 0; }}
+        .footer {{ background: #F4F5F7; padding: 24px; text-align: center; font-size: 12px; color: #6B778C; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>Team Assignment</h1>
+        </div>
+        <div class='content'>
+            <p>Hello {memberName},</p>
+            <p>You have been assigned to a team for a new project:</p>
+            <div class='info-box'>
+                <div class='info-row'>
+                    <div class='label'>Team</div>
+                    <div class='value'>{teamName}</div>
+                </div>
+                <div class='info-row'>
+                    <div class='label'>Project</div>
+                    <div class='value'>{projectName} ({projectKey})</div>
+                </div>
+            </div>
+            <p style='text-align: center;'>
+                <a href='https://www.codingeverest.com/milo-board.html?project={projectKey}' class='cta-button'>View Project</a>
+            </p>
+        </div>
+        <div class='footer'>
+            <p>This is an automated notification from Milo</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+            return await SendEmailAsync(email, subject, htmlBody);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending team project assignment email to {Email}", email);
+            return false;
+        }
+    }
+
+    public async Task<bool> SendCustomEmailAsync(string to, string subject, string htmlBody, string? textBody = null)
+    {
+        // Simple wrapper for SendEmailAsync - textBody is ignored since SendEmailAsync only uses HTML
+        return await SendEmailAsync(to, subject, htmlBody);
+    }
+
+    public async Task<bool> SendProjectInvitationEmailAsync(string email, string name, string projectName, string projectKey, string invitationToken)
+    {
+        try
+        {
+            var subject = $"Project Invitation: {projectName}";
+            var invitationLink = $"https://www.codingeverest.com/milo-board.html?invite={invitationToken}";
+            
+            var htmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <style>
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 20px; }}
+        .container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; }}
+        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 32px 24px; text-align: center; }}
+        .content {{ padding: 32px 24px; }}
+        .project-box {{ background: #F4F5F7; border-left: 4px solid #0052CC; padding: 20px; margin: 24px 0; border-radius: 4px; }}
+        .project-name {{ font-size: 20px; font-weight: 700; color: #172B4D; }}
+        .project-key {{ font-size: 14px; color: #6B778C; margin-top: 4px; }}
+        .cta-button {{ display: inline-block; background: #0052CC; color: #FFFFFF; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 24px 0; }}
+        .footer {{ background: #F4F5F7; padding: 24px; text-align: center; font-size: 12px; color: #6B778C; }}
+        .token {{ font-size: 11px; color: #6B778C; margin-top: 16px; word-break: break-all; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>Project Invitation</h1>
+        </div>
+        <div class='content'>
+            <p>Hello {name},</p>
+            <p>You have been invited to join a project:</p>
+            <div class='project-box'>
+                <div class='project-name'>{projectName}</div>
+                <div class='project-key'>Project Key: {projectKey}</div>
+            </div>
+            <p>Click the button below to accept the invitation and join the project:</p>
+            <p style='text-align: center;'>
+                <a href='{invitationLink}' class='cta-button'>Accept Invitation</a>
+            </p>
+            <div class='token'>
+                <p>Or use this invitation token: <code>{invitationToken}</code></p>
+            </div>
+        </div>
+        <div class='footer'>
+            <p>This is an automated invitation from Milo</p>
+            <p>If you didn't expect this invitation, you can safely ignore this email.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+            return await SendEmailAsync(email, subject, htmlBody);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending project invitation email to {Email}", email);
+            return false;
+        }
     }
 }
 
