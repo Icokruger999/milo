@@ -78,22 +78,42 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Setup user menu
     setupUserMenu();
 
-    // Check if project is selected
+    // Check if project is selected - try multiple sources
     let currentProject = projectSelector.getCurrentProject();
+    
+    // If not in memory, try loading from storage
     if (!currentProject) {
-        // Try to load projects first
+        const stored = localStorage.getItem('milo_current_project');
+        if (stored) {
+            try {
+                currentProject = JSON.parse(stored);
+                projectSelector.setCurrentProject(currentProject);
+            } catch (e) {
+                console.error('Failed to parse stored project:', e);
+            }
+        }
+    }
+    
+    // If still no project, try loading from API
+    if (!currentProject) {
         try {
             await projectSelector.loadProjects(user.id);
             currentProject = projectSelector.getCurrentProject();
+            
+            // If still no project but we have projects, use the first one
+            if (!currentProject && projectSelector.projects && projectSelector.projects.length > 0) {
+                currentProject = projectSelector.projects[0];
+                projectSelector.setCurrentProject(currentProject);
+            }
         } catch (error) {
             console.error('Failed to load projects:', error);
         }
-        
-        // If still no project, redirect to selector
-        if (!currentProject) {
-            window.location.href = 'milo-select-project.html';
-            return;
-        }
+    }
+    
+    // If still no project, redirect to selector
+    if (!currentProject) {
+        window.location.href = 'milo-select-project.html';
+        return;
     }
 
     // Render board immediately with empty state

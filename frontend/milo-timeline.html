@@ -529,8 +529,8 @@
             <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
                 <!-- Timeline Header -->
                 <div class="timeline-header">
-                    <div class="breadcrumb">
-                        <a href="#">Projects</a> / <span>Milo</span>
+                    <div class="breadcrumb" id="breadcrumb">
+                        <a href="#">Projects</a> / <span id="projectBreadcrumb">Loading...</span>
                     </div>
                     <div class="timeline-title-row">
                         <div class="timeline-title">Timeline</div>
@@ -574,6 +574,7 @@
     <script src="js/config.js"></script>
     <script src="js/api-client.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/project-selector.js"></script>
     <script>
         if (!authService.isAuthenticated()) {
             window.location.href = 'milo-login.html';
@@ -585,6 +586,52 @@
             document.getElementById('globalUserAvatar').textContent = initials;
             document.getElementById('sidebarUserAvatar').textContent = initials;
         }
+
+        // Load and display project info
+        document.addEventListener('DOMContentLoaded', async function() {
+            let currentProject = projectSelector.getCurrentProject();
+            
+            // If not in memory, try loading from storage
+            if (!currentProject) {
+                const stored = localStorage.getItem('milo_current_project');
+                if (stored) {
+                    try {
+                        currentProject = JSON.parse(stored);
+                        projectSelector.setCurrentProject(currentProject);
+                    } catch (e) {
+                        console.error('Failed to parse stored project:', e);
+                    }
+                }
+            }
+            
+            // If still no project, try loading from API
+            if (!currentProject && user) {
+                try {
+                    await projectSelector.loadProjects(user.id);
+                    currentProject = projectSelector.getCurrentProject();
+                    
+                    // If still no project but we have projects, use the first one
+                    if (!currentProject && projectSelector.projects && projectSelector.projects.length > 0) {
+                        currentProject = projectSelector.projects[0];
+                        projectSelector.setCurrentProject(currentProject);
+                    }
+                } catch (error) {
+                    console.error('Failed to load projects:', error);
+                }
+            }
+            
+            if (currentProject) {
+                const projectIcon = document.querySelector('.project-icon');
+                const projectName = document.querySelector('.project-name');
+                const projectBreadcrumb = document.getElementById('projectBreadcrumb');
+                if (projectIcon) projectIcon.textContent = (currentProject.key || currentProject.name).substring(0, 1).toUpperCase();
+                if (projectName) projectName.textContent = currentProject.name;
+                if (projectBreadcrumb) projectBreadcrumb.textContent = currentProject.name;
+            }
+            
+            // Load timeline view by default
+            showTimelineView();
+        });
 
         let currentView = 'timeline';
 
