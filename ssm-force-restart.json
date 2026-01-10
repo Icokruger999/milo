@@ -1,0 +1,18 @@
+{
+    "Parameters": {
+        "commands": [
+            "echo 'Killing ALL dotnet processes...'",
+            "killall -9 dotnet || echo 'No dotnet processes'",
+            "sleep 3",
+            "echo 'Verifying all stopped...'",
+            "ps aux | grep dotnet | grep -v grep || echo 'All stopped'",
+            "echo 'Starting fresh backend...'",
+            "cd /home/ec2-user/milo-backend-publish",
+            "nohup dotnet Milo.API.dll --urls http://0.0.0.0:5001 > /home/ec2-user/backend.log 2>&1 &",
+            "sleep 5",
+            "echo 'Checking new process...'",
+            "ps aux | grep 'Milo.API.dll' | grep -v grep",
+            "netstat -tlnp | grep 5001"
+        ]
+    }
+}

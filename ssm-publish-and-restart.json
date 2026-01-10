@@ -1,0 +1,19 @@
+{
+    "Parameters": {
+        "commands": [
+            "cd /home/ec2-user/milo/backend/Milo.API",
+            "echo 'Publishing as ec2-user...'",
+            "sudo -u ec2-user dotnet publish -c Release -o /home/ec2-user/milo-backend-publish",
+            "echo 'Stopping backend...'",
+            "killall -9 dotnet || echo 'No processes'",
+            "sleep 3",
+            "echo 'Starting backend...'",
+            "cd /home/ec2-user/milo-backend-publish",
+            "nohup dotnet Milo.API.dll --urls http://0.0.0.0:5001 > /home/ec2-user/backend.log 2>&1 &",
+            "sleep 5",
+            "echo 'Checking...'",
+            "ps aux | grep 'Milo.API.dll' | grep -v grep",
+            "ls -la /home/ec2-user/milo-backend-publish/Milo.API.dll"
+        ]
+    }
+}
