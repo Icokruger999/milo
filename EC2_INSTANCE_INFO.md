@@ -4,11 +4,11 @@
 
 - **Instance ID**: `i-06bc5b2218c041802`
 - **Name**: `codingeverest`
-- **Type**: `t2.micro`
+- **Type**: `t3.medium` (upgraded from t2.micro)
 - **Status**: Running
 - **Public IP**: `34.246.3.141`
 - **Private IP**: `172.31.30.186`
-- **Region**: `us-east-1`
+- **Region**: `eu-west-1`
 
 ## API Endpoints
 
