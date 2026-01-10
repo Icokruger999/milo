@@ -1,10 +1,14 @@
 {
-  "commands": [
-    "sudo systemctl start milo-api.service",
-    "sudo systemctl enable milo-api.service",
-    "sleep 5",
-    "sudo systemctl status milo-api.service --no-pager | head -20",
-    "curl -s http://localhost:5001/api/health || echo 'Backend not responding'"
-  ]
+    "Parameters": {
+        "commands": [
+            "cd /home/ec2-user/milo",
+            "chmod +x start-backend-service.sh",
+            "./start-backend-service.sh",
+            "sleep 5",
+            "echo 'Checking if backend is running...'",
+            "ps aux | grep 'Milo.API.dll' | grep -v grep || echo 'Backend not running yet'",
+            "echo 'Checking port 5001...'",
+            "netstat -tlnp | grep 5001 || echo 'Port 5001 not listening yet'"
+        ]
+    }
 }
-

@@ -526,11 +526,10 @@ async function saveAllChanges() {
             saveButton.textContent = 'Save Changes';
         }
 
-        // Show success message
-        alert('All changes saved successfully!');
+        // Success - changes saved
+        console.log('All changes saved successfully!');
     } catch (error) {
         console.error('Failed to save changes:', error);
-        alert('Failed to save some changes. Please try again.');
         
         if (saveButton) {
             saveButton.disabled = false;

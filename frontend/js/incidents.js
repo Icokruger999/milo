@@ -232,7 +232,7 @@ async function createIncident(event) {
     try {
         const currentUser = authService.getCurrentUser();
         if (!currentUser) {
-            alert('Please log in to create incidents');
+            console.error('User not logged in');
             return;
         }
 
@@ -250,7 +250,7 @@ async function createIncident(event) {
         const description = document.getElementById('incidentDescription')?.value;
 
         if (!subject || !requesterId) {
-            alert('Please fill in all required fields');
+            console.error('Missing required fields');
             return;
         }
 
@@ -282,11 +282,10 @@ async function createIncident(event) {
         // Reload incidents
         await loadIncidents();
 
-        // Show success message (optional)
-        alert(`Incident ${newIncident.incidentNumber} created successfully!`);
+        // Success - incident created
+        console.log(`Incident ${newIncident.incidentNumber} created successfully!`);
     } catch (error) {
         console.error('Failed to create incident:', error);
-        alert('Failed to create incident. Please try again.');
     }
 }
 
@@ -318,7 +317,6 @@ async function showIncidentDetails(incidentId) {
         }
     } catch (error) {
         console.error('Failed to load incident details:', error);
-        alert('Failed to load incident details');
     }
 }
 
@@ -481,13 +479,13 @@ async function updateIncidentStatus() {
     
     const validStatuses = ['New', 'Open', 'Pending', 'Resolved', 'Closed'];
     if (!validStatuses.includes(newStatus)) {
-        alert('Invalid status. Please use: New, Open, Pending, Resolved, or Closed');
+        console.error('Invalid status:', newStatus);
         return;
     }
     
     try {
         await apiClient.put(`/incidents/${currentIncident.id}`, { status: newStatus });
-        alert('Status updated successfully');
+        console.log('Status updated successfully');
         
         // Reload incident details
         await showIncidentDetails(currentIncident.id);
@@ -496,18 +494,17 @@ async function updateIncidentStatus() {
         await loadIncidents();
     } catch (error) {
         console.error('Failed to update status:', error);
-        alert('Failed to update status');
     }
 }
 
 // Edit incident (placeholder)
 function editIncident() {
-    alert('Edit functionality coming soon!');
+    console.log('Edit functionality coming soon!');
 }
 
 // Export incidents (placeholder)
 function exportIncidents() {
-    alert('Export functionality coming soon!');
+    console.log('Export functionality coming soon!');
 }
 
 // Utility function to escape HTML

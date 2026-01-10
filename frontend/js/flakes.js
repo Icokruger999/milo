@@ -263,15 +263,14 @@ async function handleCreateFlake(event) {
         } else {
             try {
                 const error = await response.json();
-                alert(error.message || 'Failed to create flake');
+                console.error(error.message || 'Failed to create flake');
             } catch (parseError) {
                 // If response is not JSON (e.g., 404 HTML page), show generic error
-                alert(`Failed to create flake (${response.status}). Please ensure the API server is running.`);
+                console.error(`Failed to create flake (${response.status}). Please ensure the API server is running.`);
             }
         }
     } catch (error) {
         console.error('Error creating flake:', error);
-        alert('Failed to create flake. Please check your connection and try again.');
     }
 }
 

@@ -1,0 +1,19 @@
+{
+    "Parameters": {
+        "commands": [
+            "cd /home/ec2-user/milo-backend-publish",
+            "echo 'Killing any existing backend processes...'",
+            "pkill -f 'Milo.API.dll' || echo 'No existing process'",
+            "sleep 2",
+            "echo 'Starting backend on port 5001...'",
+            "nohup dotnet Milo.API.dll --urls http://0.0.0.0:5001 > /home/ec2-user/backend.log 2>&1 &",
+            "sleep 3",
+            "echo 'Checking if running...'",
+            "ps aux | grep 'Milo.API.dll' | grep -v grep",
+            "echo 'Checking port...'",
+            "netstat -tlnp | grep 5001 || echo 'Not listening yet - check logs'",
+            "echo 'Recent logs:'",
+            "tail -20 /home/ec2-user/backend.log"
+        ]
+    }
+}

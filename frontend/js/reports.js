@@ -31,7 +31,9 @@ async function loadRecipients() {
         renderRecipients();
     } catch (error) {
         console.error('Error loading recipients:', error);
-        showError('Failed to load recipients');
+        // Silent fail - just show empty state
+        recipients = [];
+        renderRecipients();
     }
 }
 
@@ -257,11 +259,11 @@ function formatDate(date) {
 }
 
 function showSuccess(message) {
-    // Simple success notification - you can enhance this
-    alert(message);
+    console.log('SUCCESS:', message);
+    // Silent success - no popup
 }
 
 function showError(message) {
-    // Simple error notification - you can enhance this
-    alert(message);
+    console.error('ERROR:', message);
+    // Silent error - no popup, just log to console
 }

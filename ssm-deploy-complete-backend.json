@@ -1,0 +1,15 @@
+{
+    "Parameters": {
+        "commands": [
+            "cd /home/ec2-user/milo",
+            "echo 'Pulling latest code...'",
+            "sudo -u ec2-user git pull origin main",
+            "cd /home/ec2-user/milo/backend/Milo.API",
+            "echo 'Building backend...'",
+            "sudo -u ec2-user dotnet build --configuration Release",
+            "echo 'Publishing backend...'",
+            "sudo -u ec2-user dotnet publish -c Release -o /home/ec2-user/milo-backend-publish",
+            "echo 'Backend build complete'"
+        ]
+    }
+}

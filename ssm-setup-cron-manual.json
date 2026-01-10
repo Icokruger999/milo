@@ -1,0 +1,23 @@
+{
+    "Parameters": {
+        "commands": [
+            "cat > /home/ec2-user/send-daily-reports.sh << 'CRONEOF'",
+            "#!/bin/bash",
+            "LOG_FILE=/home/ec2-user/logs/daily-reports.log",
+            "mkdir -p /home/ec2-user/logs",
+            "echo \"$(date): Starting daily report send\" >> \"$LOG_FILE\"",
+            "RESPONSE=$(curl -s -X POST https://api.codingeverest.com/api/reports/incidents/send-daily)",
+            "echo \"$(date): Response: $RESPONSE\" >> \"$LOG_FILE\"",
+            "if echo \"$RESPONSE\" | grep -q '\"sent\"'; then",
+            "    echo \"$(date): Daily reports sent successfully\" >> \"$LOG_FILE\"",
+            "else",
+            "    echo \"$(date): ERROR: Failed to send daily reports\" >> \"$LOG_FILE\"",
+            "fi",
+            "CRONEOF",
+            "chmod +x /home/ec2-user/send-daily-reports.sh",
+            "(crontab -l 2>/dev/null | grep -v 'send-daily-reports.sh'; echo '0 8 * * * /home/ec2-user/send-daily-reports.sh') | crontab -",
+            "echo 'Cron job installed'",
+            "crontab -l | grep 'send-daily-reports'"
+        ]
+    }
+}
