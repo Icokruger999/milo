@@ -14,11 +14,11 @@ namespace Milo.API.Controllers;
 public class TasksController : ControllerBase
 {
     private readonly MiloDbContext _context;
-    private readonly EmailService _emailService;
+    private readonly IEmailService _emailService;
     private readonly ILogger<TasksController> _logger;
     private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public TasksController(MiloDbContext context, EmailService emailService, ILogger<TasksController> logger, IServiceScopeFactory serviceScopeFactory)
+    public TasksController(MiloDbContext context, IEmailService emailService, ILogger<TasksController> logger, IServiceScopeFactory serviceScopeFactory)
     {
         _context = context;
         _emailService = emailService;
@@ -323,7 +323,7 @@ public class TasksController : ControllerBase
                         {
                             using (var scope = _serviceScopeFactory.CreateScope())
                             {
-                                var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
+                                var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
                                 var logger = scope.ServiceProvider.GetRequiredService<ILogger<TasksController>>();
                                 
                                 logger.LogInformation($"[EMAIL] Attempting to send task assignment email to {assigneeEmail} for task {taskIdForEmail}");
@@ -483,7 +483,7 @@ public class TasksController : ControllerBase
                         {
                             using (var scope = _serviceScopeFactory.CreateScope())
                             {
-                                var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
+                                var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
                                 var logger = scope.ServiceProvider.GetRequiredService<ILogger<TasksController>>();
                                 
                                 logger.LogInformation($"Sending task assignment email to {assigneeEmail} for task {taskIdForEmail}");
