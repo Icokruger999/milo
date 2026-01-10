@@ -48,6 +48,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadUsers();
     await loadTeams();
     await loadIncidents();
+    
+    // Close modal when clicking outside
+    const createModal = document.getElementById('createIncidentModal');
+    if (createModal) {
+        createModal.addEventListener('click', function(e) {
+            if (e.target === createModal) {
+                closeCreateIncidentModal();
+            }
+        });
+    }
 });
 
 // Load users for requester/agent dropdowns
@@ -245,17 +255,6 @@ function closeCreateIncidentModal() {
     }
 }
 
-// Close modal when clicking outside
-document.addEventListener('DOMContentLoaded', function() {
-    const modal = document.getElementById('createIncidentModal');
-    if (modal) {
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) {
-                closeCreateIncidentModal();
-            }
-        });
-    }
-});
 
 // Create incident
 async function createIncident(event) {
