@@ -153,6 +153,11 @@ function openCreateTeamModal() {
     document.getElementById('teamDescription').value = '';
     document.getElementById('teamProject').value = '';
     document.getElementById('membersList').innerHTML = '';
+    
+    // Add two initial member rows
+    addMemberToTeam();
+    addMemberToTeam();
+    
     document.getElementById('createTeamModal').style.display = 'flex';
 }
 
@@ -211,15 +216,16 @@ async function handleCreateTeam(event) {
     // Collect members
     const members = [];
     document.querySelectorAll('#membersList .member-item').forEach(item => {
-        const userSelect = item.querySelector('select:first-child');
+        const selects = item.querySelectorAll('select');
+        const userSelect = selects[0]; // First select is the user
+        const roleSelect = selects[1]; // Second select is the role
         const titleInput = item.querySelector('input[type="text"]');
-        const roleSelect = item.querySelector('select:last-child');
         
-        if (userSelect.value) {
+        if (userSelect && userSelect.value) {
             members.push({
                 userId: parseInt(userSelect.value),
-                title: titleInput.value.trim() || null,
-                role: roleSelect.value
+                title: titleInput ? titleInput.value.trim() || null : null,
+                role: roleSelect ? roleSelect.value : 'member'
             });
         }
     });
