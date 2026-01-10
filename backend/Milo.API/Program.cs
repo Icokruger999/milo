@@ -27,32 +27,16 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.SetIsOriginAllowed(origin => 
-              {
-                  // Production-only: Allow specific production domains
-                  if (string.IsNullOrEmpty(origin)) return false;
-                  
-                  // Production domains
-                  var allowedOrigins = new[]
-                  {
-                      "https://www.codingeverest.com",
-                      "https://codingeverest.com",
-                      "http://www.codingeverest.com",
-                      "http://codingeverest.com"
-                  };
-                  
-                  if (allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase))
-                      return true;
-                  
-                  // Allow any Amplify app domain (for frontend hosting)
-                  if (origin.Contains("amplifyapp.com", StringComparison.OrdinalIgnoreCase))
-                      return true;
-                  
-                  return false;
-              })
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        policy.WithOrigins(
+                "https://www.codingeverest.com",
+                "https://codingeverest.com",
+                "http://www.codingeverest.com",
+                "http://codingeverest.com"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials()
+            .SetPreflightMaxAge(TimeSpan.FromSeconds(86400)); // Cache preflight for 24 hours
     });
 });
 
@@ -88,9 +72,12 @@ _ = Task.Run(async () =>
 // Add error handling middleware
 app.UseExceptionHandler("/api/error");
 
+// CORS must be early in the pipeline, before UseAuthorization
 app.UseCors("AllowFrontend");
+
 app.UseAuthorization();
-app.MapControllers();
+
+app.MapControllers().RequireCors("AllowFrontend");
 
 app.MapGet("/api/health", () => new { status = "ok", message = "Milo API is running" });
 
