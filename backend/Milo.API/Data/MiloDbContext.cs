@@ -236,6 +236,7 @@ public class MiloDbContext : DbContext
         // Incident configuration
         modelBuilder.Entity<Incident>(entity =>
         {
+            entity.ToTable("incidents"); // Map to lowercase table name
             entity.HasIndex(e => e.IncidentNumber).IsUnique();
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.Priority);
@@ -262,6 +263,7 @@ public class MiloDbContext : DbContext
         // ReportRecipient configuration
         modelBuilder.Entity<ReportRecipient>(entity =>
         {
+            entity.ToTable("report_recipients"); // Map to lowercase table name
             entity.HasIndex(e => e.Email);
             entity.HasIndex(e => e.ProjectId);
             entity.HasIndex(e => e.IsActive);
