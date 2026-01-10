@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Milo.API.Data;
 using Milo.API.Models;
+using Milo.API.Services;
 
 namespace Milo.API.Controllers;
 
