@@ -934,5 +934,44 @@
     <script src="js/project-selector-enhanced.js"></script>
     <script src="js/incidents.js"></script>
     <script src="js/reports.js"></script>
+    <script>
+        // CRITICAL: Ensure Create Incident button works - test immediately
+        (function() {
+            console.log('=== CREATE INCIDENT BUTTON INITIALIZATION ===');
+            function testCreateButton() {
+                const btn = document.getElementById('createIncidentBtn') || document.querySelector('.global-nav-create');
+                if (btn) {
+                    console.log('Create Incident button found:', btn);
+                    // Remove existing onclick to avoid conflicts
+                    btn.removeAttribute('onclick');
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Create Incident button CLICKED!');
+                        if (typeof window.showCreateIncidentModal === 'function') {
+                            console.log('Calling showCreateIncidentModal...');
+                            window.showCreateIncidentModal();
+                        } else {
+                            console.error('showCreateIncidentModal is not a function!', typeof window.showCreateIncidentModal);
+                            alert('Error: Create Incident function not loaded. Please refresh the page.');
+                        }
+                        return false;
+                    });
+                    console.log('Event listener attached to Create Incident button');
+                } else {
+                    console.error('Create Incident button NOT FOUND!');
+                }
+            }
+            
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', testCreateButton);
+            } else {
+                testCreateButton();
+            }
+            // Also try again after a short delay to catch any late-loading elements
+            setTimeout(testCreateButton, 500);
+            setTimeout(testCreateButton, 1000);
+        })();
+    </script>
 </body>
 </html>
