@@ -681,23 +681,6 @@ body {
 
 .milo-text {
     padding-right: 40px;
-    text-align: left;
-}
-
-@media (max-width: 768px) {
-    .milo-content {
-        grid-template-columns: 1fr !important;
-        gap: 40px !important;
-    }
-    
-    .milo-text {
-        padding-right: 0 !important;
-        text-align: center !important;
-    }
-    
-    .milo-visual {
-        order: -1;
-    }
 }
 
 .section-badge {
@@ -1047,22 +1030,28 @@ body {
     .milo-content {
         grid-template-columns: 1fr !important;
         gap: 35px !important;
-        text-align: center !important;
         width: 100%;
         margin: 0 auto;
         padding: 0;
         box-sizing: border-box;
     }
 
+    .milo-visual {
+        order: -1 !important;
+        margin-bottom: 20px;
+        width: 100%;
+    }
+
     .milo-text {
         padding: 0 !important;
+        padding-right: 0 !important;
         margin: 0 auto;
         width: 100%;
         max-width: 100%;
         display: flex;
         flex-direction: column;
         align-items: center;
-        text-align: center;
+        text-align: center !important;
         box-sizing: border-box;
     }
 
