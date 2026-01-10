@@ -757,17 +757,18 @@ function updateAssigneeChart() {
     const labels = sortedAssignees.map(a => a[0]);
     const data = sortedAssignees.map(a => a[1]);
     
+    // If no data, create a chart with placeholder
+    if (labels.length === 0) {
+        labels.push('No Data');
+        data.push(0);
+    }
+    
     // Update existing chart if possible
     if (charts.assigneeChart) {
         charts.assigneeChart.data.labels = labels;
         charts.assigneeChart.data.datasets[0].data = data;
         charts.assigneeChart.update('none');
     } else {
-        // Destroy existing chart if it exists
-        if (charts.assigneeChart) {
-            charts.assigneeChart.destroy();
-        }
-        
         charts.assigneeChart = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -813,7 +814,8 @@ function updateAssigneeChart() {
                 }
             }
         }
-    });
+        });
+    }
 }
 
 // Update priority chart with optimization
@@ -832,6 +834,12 @@ function updatePriorityChart() {
         'high': tasks.filter(t => (t.priority || 0) === 2).length
     };
     
+    // Check if all counts are zero
+    const totalCount = priorityCounts.low + priorityCounts.medium + priorityCounts.high;
+    if (totalCount === 0) {
+        priorityCounts.low = 1; // Show at least something
+    }
+    
     // Update existing chart if possible
     if (charts.priorityChart) {
         charts.priorityChart.data.datasets[0].data = [
@@ -841,11 +849,6 @@ function updatePriorityChart() {
         ];
         charts.priorityChart.update('none');
     } else {
-        // Destroy existing chart if it exists
-        if (charts.priorityChart) {
-            charts.priorityChart.destroy();
-        }
-        
         charts.priorityChart = new Chart(ctx, {
         type: 'pie',
         data: {
@@ -876,7 +879,8 @@ function updatePriorityChart() {
                 }
             }
         }
-    });
+        });
+    }
 }
 
 // Invalidate cache (call this when tasks are updated elsewhere)
@@ -948,11 +952,6 @@ function updateTimelineChart() {
         charts.timelineChart.data.datasets[1].data = createdCounts;
         charts.timelineChart.update('none');
     } else {
-        // Destroy existing chart if it exists
-        if (charts.timelineChart) {
-            charts.timelineChart.destroy();
-        }
-        
         charts.timelineChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -1031,6 +1030,4 @@ window.applyFilters = applyFilters;
 window.showCreateTaskModal = showCreateTaskModal;
 window.invalidateDashboardCache = invalidateDashboardCache;
 window.loadDashboardData = loadDashboardData;
-}
-}
 }
