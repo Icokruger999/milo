@@ -312,9 +312,9 @@
                         // Redirect to change password page
                         window.location.href = `milo-change-password.html?email=${encodeURIComponent(email)}`;
                     } else {
-                        // User successfully logged in - NOW redirect to project selector
-                        // This is the ONLY place we redirect to project selector after login
+                        // User successfully logged in
                         const projects = result.projects || [];
+                        
                         if (projects.length === 0) {
                             // No projects yet - go to project selector where they can create or join
                             window.location.href = 'milo-select-project.html';
@@ -323,8 +323,15 @@
                             projectSelector.setCurrentProject(projects[0]);
                             window.location.href = 'milo-board.html';
                         } else {
-                            // Multiple projects - show selector to choose
-                            window.location.href = 'milo-select-project.html';
+                            // Multiple projects - check if they have a saved selection
+                            const currentProject = projectSelector.getCurrentProject();
+                            if (currentProject && projects.find(p => p.id === currentProject.id)) {
+                                // User has a saved project and it's still valid - go directly to board
+                                window.location.href = 'milo-board.html';
+                            } else {
+                                // No saved project or saved project no longer valid - show selector
+                                window.location.href = 'milo-select-project.html';
+                            }
                         }
                     }
                 } else {
