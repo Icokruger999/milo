@@ -273,6 +273,15 @@ async function createIncident(event) {
 
         if (!requesterId || isNaN(requesterId)) {
             console.error('Requester is required. Please select a requester.');
+            // Highlight the requester field
+            const requesterSelect = document.getElementById('incidentRequester');
+            if (requesterSelect) {
+                requesterSelect.focus();
+                requesterSelect.style.borderColor = '#DE350B';
+                setTimeout(() => {
+                    requesterSelect.style.borderColor = '';
+                }, 3000);
+            }
             return;
         }
 

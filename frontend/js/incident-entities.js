@@ -350,6 +350,13 @@ async function deleteRequester(id) {
 }
 
 // Export functions to global scope
+window.loadAssignees = loadAssignees;
+window.loadGroups = loadGroups;
+window.loadRequesters = loadRequesters;
+window.updateAssigneeDropdown = updateAssigneeDropdown;
+window.updateGroupDropdown = updateGroupDropdown;
+window.updateRequesterDropdown = updateRequesterDropdown;
+
 window.showManageAssignees = showManageAssignees;
 window.closeManageAssignees = closeManageAssignees;
 window.showAddAssigneeForm = showAddAssigneeForm;
