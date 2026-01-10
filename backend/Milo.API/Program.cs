@@ -20,7 +20,7 @@ builder.Services.AddDbContext<MiloDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // Add email service
-builder.Services.AddScoped<Milo.API.Services.EmailService>();
+builder.Services.AddScoped<Milo.API.Services.IEmailService, Milo.API.Services.EmailService>();
 
 // Configure CORS for frontend
 builder.Services.AddCors(options =>

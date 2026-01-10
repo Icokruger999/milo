@@ -1,10 +1,17 @@
-using MailKit.Net.Smtp;
-using MailKit.Security;
-using MimeKit;
+using System.Net;
+using System.Net.Mail;
+using System.Text;
+using Milo.API.Models;
 
 namespace Milo.API.Services;
 
-public class EmailService
+public interface IEmailService
+{
+    Task<bool> SendDailyIncidentReportAsync(string recipientEmail, string recipientName, DailyReportData reportData);
+    Task<bool> SendEmailAsync(string to, string subject, string htmlBody);
+}
+
+public class EmailService : IEmailService
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<EmailService> _logger;
@@ -15,646 +22,222 @@ public class EmailService
         _logger = logger;
     }
 
-    public async Task<bool> SendWelcomeEmailAsync(string toEmail, string toName)
+    public async Task<bool> SendDailyIncidentReportAsync(string recipientEmail, string recipientName, DailyReportData reportData)
     {
         try
         {
-            var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
-            var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
-            var smtpUser = _configuration["Email:SmtpUser"];
-            var smtpPassword = _configuration["Email:SmtpPassword"];
-            var fromEmail = _configuration["Email:FromEmail"] ?? "noreply@codingeverest.com";
-            var fromName = _configuration["Email:FromName"] ?? "Milo";
-
-            // If email is not configured, log and return false
-            if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPassword))
-            {
-                _logger.LogWarning("Email service not configured. Skipping email send.");
-                return false;
-            }
-
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(fromName, fromEmail));
-            message.To.Add(new MailboxAddress(toName, toEmail));
-            message.Subject = "Welcome to Milo - Your Account is Ready!";
-
-            var bodyBuilder = new BodyBuilder
-            {
-                HtmlBody = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        .header {{ background: #0052CC; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
-        .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
-        .button {{ display: inline-block; background: #0052CC; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 20px; }}
-    </style>
-</head>
-<body>
-    <div class=""container"">
-        <div class=""header"">
-            <h1>Welcome to Milo!</h1>
-        </div>
-        <div class=""content"">
-            <p>Hi {toName},</p>
-            <p>Thank you for signing up for Milo - your project management solution!</p>
-            <p>Your account has been successfully created. You can now:</p>
-            <ul>
-                <li>Log in to your account</li>
-                <li>Create and manage projects</li>
-                <li>Collaborate with your team</li>
-                <li>Track progress and deadlines</li>
-            </ul>
-            <p style=""text-align: center;"">
-                <a href=""https://www.codingeverest.com/milo-login.html"" class=""button"">Get Started</a>
-            </p>
-            <p>If you have any questions, feel free to reach out to our support team.</p>
-            <p>Best regards,<br>The Milo Team</p>
-        </div>
-    </div>
-</body>
-</html>",
-                TextBody = $@"
-Welcome to Milo!
-
-Hi {toName},
-
-Thank you for signing up for Milo - your project management solution!
-
-Your account has been successfully created. You can now log in and start managing your projects.
-
-Get started: https://www.codingeverest.com/milo-login.html
-
-If you have any questions, feel free to reach out to our support team.
-
-Best regards,
-The Milo Team
-"
-            };
-
-            message.Body = bodyBuilder.ToMessageBody();
-
-            using var client = new SmtpClient();
-            await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
-            await client.AuthenticateAsync(smtpUser, smtpPassword);
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
-
-            _logger.LogInformation($"Welcome email sent successfully to {toEmail}");
-            return true;
+            var subject = $"Daily Incident Report - {reportData.Date:MMMM dd, yyyy}";
+            var htmlBody = GenerateReportHtml(recipientName, reportData);
+            
+            return await SendEmailAsync(recipientEmail, subject, htmlBody);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Failed to send welcome email to {toEmail}");
+            _logger.LogError(ex, "Error sending daily report to {Email}", recipientEmail);
             return false;
         }
     }
 
-    public async Task<bool> SendTemporaryPasswordEmailAsync(string toEmail, string toName, string tempPassword)
+    public async Task<bool> SendEmailAsync(string to, string subject, string htmlBody)
     {
         try
         {
             var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
             var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
-            var smtpUser = _configuration["Email:SmtpUser"];
-            var smtpPassword = _configuration["Email:SmtpPassword"];
-            var fromEmail = _configuration["Email:FromEmail"] ?? "noreply@codingeverest.com";
-            var fromName = _configuration["Email:FromName"] ?? "Milo";
+            var smtpUsername = _configuration["Email:Username"] ?? "";
+            var smtpPassword = _configuration["Email:Password"] ?? "";
+            var fromEmail = _configuration["Email:FromEmail"] ?? smtpUsername;
+            var fromName = _configuration["Email:FromName"] ?? "Milo - Incident Management";
 
-            // If email is not configured, log and return false
-            if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPassword))
+            if (string.IsNullOrEmpty(smtpUsername) || string.IsNullOrEmpty(smtpPassword))
             {
-                _logger.LogWarning("Email service not configured. Skipping email send.");
+                _logger.LogWarning("Email configuration not set. Skipping email send.");
                 return false;
             }
 
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(fromName, fromEmail));
-            message.To.Add(new MailboxAddress(toName, toEmail));
-            message.Subject = "Your Milo Account - Temporary Password";
-
-            var bodyBuilder = new BodyBuilder
+            using var client = new SmtpClient(smtpHost, smtpPort)
             {
-                HtmlBody = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <style>
-        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
-        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
-        .header {{ background: #0052CC; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }}
-        .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }}
-        .password-box {{ background: #fff; border: 2px solid #0052CC; border-radius: 4px; padding: 15px; margin: 20px 0; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 2px; color: #0052CC; }}
-        .button {{ display: inline-block; background: #0052CC; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin-top: 20px; }}
-        .warning {{ background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 20px 0; }}
-    </style>
-</head>
-<body>
-    <div class=""container"">
-        <div class=""header"">
-            <h1>Welcome to Milo!</h1>
-        </div>
-        <div class=""content"">
-            <p>Hi {toName},</p>
-            <p>Your Milo account has been created successfully!</p>
-            <p>Please use the temporary password below to log in. You will be required to create a new password on your first login.</p>
-            
-            <div class=""password-box"">
-                {tempPassword}
-            </div>
-            
-            <div class=""warning"">
-                <strong>Important:</strong> This is a temporary password. You must change it when you first log in.
-            </div>
-            
-            <p style=""text-align: center;"">
-                <a href=""https://www.codingeverest.com/milo-login.html"" class=""button"">Log in to Milo</a>
-            </p>
-            
-            <p>If you have any questions, feel free to reach out to our support team.</p>
-            <p>Best regards,<br>The Milo Team</p>
-        </div>
-    </div>
-</body>
-</html>",
-                TextBody = $@"
-Welcome to Milo!
-
-Hi {toName},
-
-Your Milo account has been created successfully!
-
-Your temporary password is: {tempPassword}
-
-IMPORTANT: This is a temporary password. You must change it when you first log in.
-
-Log in at: https://www.codingeverest.com/milo-login.html
-
-If you have any questions, feel free to reach out to our support team.
-
-Best regards,
-The Milo Team
-"
+                EnableSsl = true,
+                Credentials = new NetworkCredential(smtpUsername, smtpPassword)
             };
 
-            message.Body = bodyBuilder.ToMessageBody();
+            var message = new MailMessage
+            {
+                From = new MailAddress(fromEmail, fromName),
+                Subject = subject,
+                Body = htmlBody,
+                IsBodyHtml = true
+            };
 
-            using var client = new SmtpClient();
-            await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
-            await client.AuthenticateAsync(smtpUser, smtpPassword);
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
+            message.To.Add(new MailAddress(to));
 
-            _logger.LogInformation($"Temporary password email sent successfully to {toEmail}");
+            await client.SendMailAsync(message);
+            _logger.LogInformation("Email sent successfully to {To}", to);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Failed to send temporary password email to {toEmail}");
+            _logger.LogError(ex, "Error sending email to {To}", to);
             return false;
         }
     }
 
-    public async Task<bool> SendTaskAssignmentEmailAsync(string toEmail, string toName, string taskTitle, string taskId, string productName, string? taskLink = null)
+    private string GenerateReportHtml(string recipientName, DailyReportData reportData)
     {
-        try
-        {
-            var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
-            var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
-            var smtpUser = _configuration["Email:SmtpUser"];
-            var smtpPassword = _configuration["Email:SmtpPassword"];
-            var fromEmail = _configuration["Email:FromEmail"] ?? "noreply@codingeverest.com";
-            var fromName = _configuration["Email:FromName"] ?? "Milo";
-
-            // If email is not configured, log and return false
-            if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPassword))
-            {
-                _logger.LogWarning("Email service not configured. Skipping email send.");
-                return false;
-            }
-
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(fromName, fromEmail));
-            message.To.Add(new MailboxAddress(toName, toEmail));
-            message.Subject = $"New Task Assigned: {taskId} - {taskTitle}";
-
-            var bodyBuilder = new BodyBuilder
-            {
-                HtmlBody = $@"
+        var html = new StringBuilder();
+        
+        html.Append(@"
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset=""utf-8"">
-    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; }}
-        .email-wrapper {{ background-color: #F4F5F7; padding: 40px 20px; }}
-        .email-container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
-        .email-header {{ background: linear-gradient(135deg, #0052CC 0%, #0065FF 100%); color: #FFFFFF; padding: 40px 30px; text-align: center; }}
-        .email-header h1 {{ font-size: 28px; font-weight: 600; margin: 0; letter-spacing: -0.5px; }}
-        .email-body {{ padding: 40px 30px; }}
-        .greeting {{ font-size: 16px; color: #172B4D; margin-bottom: 20px; }}
-        .message {{ font-size: 15px; color: #42526E; margin-bottom: 30px; line-height: 1.7; }}
-        .task-card {{ background: #F4F5F7; border-left: 4px solid #0052CC; border-radius: 4px; padding: 20px; margin: 30px 0; }}
-        .task-id {{ font-size: 14px; font-weight: 600; color: #0052CC; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-family: 'Monaco', 'Menlo', monospace; }}
-        .task-title {{ font-size: 20px; font-weight: 600; color: #172B4D; margin: 8px 0 12px 0; line-height: 1.4; }}
-        .task-meta {{ font-size: 14px; color: #6B778C; margin-top: 8px; }}
-        .task-meta strong {{ color: #42526E; }}
-        .cta-button {{ display: inline-block; background: #0052CC; color: #FFFFFF !important; padding: 14px 32px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 15px; margin: 30px 0; text-align: center; transition: background-color 0.2s; }}
-        .cta-button:hover {{ background: #0065FF; }}
-        .button-container {{ text-align: center; margin: 30px 0; }}
-        .email-footer {{ padding: 30px; background-color: #F4F5F7; border-top: 1px solid #DFE1E6; text-align: center; }}
-        .email-footer p {{ font-size: 13px; color: #6B778C; margin: 5px 0; }}
-        .email-footer .brand {{ color: #0052CC; font-weight: 600; }}
-        .divider {{ height: 1px; background-color: #DFE1E6; margin: 30px 0; }}
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #FFFFFF; }
+        .header { background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 32px 24px; text-align: center; }
+        .header h1 { margin: 0; font-size: 28px; font-weight: 600; }
+        .header p { margin: 8px 0 0; font-size: 14px; opacity: 0.9; }
+        .content { padding: 32px 24px; }
+        .greeting { font-size: 16px; margin-bottom: 24px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 32px; }
+        .stat-card { background: #F4F5F7; border-radius: 8px; padding: 20px; text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 700; margin-bottom: 4px; }
+        .stat-label { font-size: 13px; color: #6B778C; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-total { color: #0052CC; }
+        .stat-resolved { color: #36B37E; }
+        .stat-high { color: #FF991F; }
+        .stat-new { color: #6554C0; }
+        .incidents-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+        .incidents-table th { background: #F4F5F7; padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #6B778C; text-transform: uppercase; border-bottom: 2px solid #DFE1E6; }
+        .incidents-table td { padding: 12px; border-bottom: 1px solid #DFE1E6; font-size: 14px; }
+        .incident-number { font-weight: 600; color: #0052CC; }
+        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+        .status-new { background: #EAE6FF; color: #6554C0; }
+        .status-open { background: #DEEBFF; color: #0052CC; }
+        .status-resolved { background: #E3FCEF; color: #006644; }
+        .priority-high, .priority-urgent { color: #DE350B; font-weight: 600; }
+        .priority-medium { color: #FF991F; }
+        .priority-low { color: #6B778C; }
+        .footer { background: #F4F5F7; padding: 24px; text-align: center; font-size: 12px; color: #6B778C; }
+        .footer a { color: #0052CC; text-decoration: none; }
+        .cta-button { display: inline-block; background: #0052CC; color: #FFFFFF; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 16px 0; }
+        @media only screen and (max-width: 600px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .incidents-table { font-size: 12px; }
+            .incidents-table th, .incidents-table td { padding: 8px; }
+        }
     </style>
 </head>
 <body>
-    <div class=""email-wrapper"">
-        <div class=""email-container"">
-            <div class=""email-header"">
-                <h1>New Task Assigned</h1>
-            </div>
-            <div class=""email-body"">
-                <div class=""greeting"">Hi {toName},</div>
-                <div class=""message"">A new task has been assigned to you in Milo. Please review the details below and take action when ready.</div>
-                
-                <div class=""task-card"">
-                    <div class=""task-id"">{taskId}</div>
-                    <div class=""task-title"">{taskTitle}</div>
-                    <div class=""task-meta"">
-                        <strong>Product:</strong> {productName}
-                    </div>
-                </div>
-                
-                <div class=""button-container"">
-                    <a href=""{(string.IsNullOrEmpty(taskLink) ? "https://www.codingeverest.com/milo-board.html" : taskLink)}"" class=""cta-button"">View Task in Milo</a>
-                </div>
-            </div>
-            <div class=""email-footer"">
-                <p><span class=""brand"">Milo</span> - Project Management by Coding Everest</p>
-                <p style=""margin-top: 10px; font-size: 12px; color: #8993A4;"">This is an automated notification. Please do not reply to this email.</p>
-            </div>
+    <div class='container'>
+        <div class='header'>
+            <h1>Daily Incident Report</h1>
+            <p>" + reportData.Date.ToString("MMMM dd, yyyy") + @"</p>
         </div>
-    </div>
-</body>
-</html>",
-                TextBody = $@"
-New Task Assigned
-
-Hi {toName},
-
-A new task has been assigned to you in Milo.
-
-Task ID: {taskId}
-Title: {taskTitle}
-Product: {productName}
-
-View the task: https://www.codingeverest.com/milo-board.html
-
-Best regards,
-The Milo Team
-"
-            };
-
-            message.Body = bodyBuilder.ToMessageBody();
-
-            using var client = new SmtpClient();
+        <div class='content'>
+            <div class='greeting'>
+                Hello " + recipientName + @",
+            </div>
+            <p>Here's your daily summary of incidents:</p>
             
-            try
+            <div class='stats-grid'>
+                <div class='stat-card'>
+                    <div class='stat-value stat-total'>" + reportData.TotalCount + @"</div>
+                    <div class='stat-label'>Total Incidents</div>
+                </div>
+                <div class='stat-card'>
+                    <div class='stat-value stat-resolved'>" + reportData.ResolvedCount + @"</div>
+                    <div class='stat-label'>Resolved</div>
+                </div>
+                <div class='stat-card'>
+                    <div class='stat-value stat-high'>" + reportData.HighPriorityCount + @"</div>
+                    <div class='stat-label'>High Priority</div>
+                </div>
+                <div class='stat-card'>
+                    <div class='stat-value stat-new'>" + reportData.NewCount + @"</div>
+                    <div class='stat-label'>New</div>
+                </div>
+            </div>");
+
+        if (reportData.Incidents.Any())
+        {
+            html.Append(@"
+            <h3 style='margin-top: 32px; margin-bottom: 16px;'>Today's Incidents</h3>
+            <table class='incidents-table'>
+                <thead>
+                    <tr>
+                        <th>Incident</th>
+                        <th>Subject</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                    </tr>
+                </thead>
+                <tbody>");
+
+            foreach (var incident in reportData.Incidents.Take(20))
             {
-                _logger.LogInformation($"[Email] Connecting to SMTP server: {smtpHost}:{smtpPort}");
-                await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
+                var statusClass = incident.Status.ToLower().Replace(" ", "-");
+                var priorityClass = incident.Priority.ToLower();
                 
-                _logger.LogInformation($"[Email] Authenticating with SMTP server as: {smtpUser}");
-                await client.AuthenticateAsync(smtpUser, smtpPassword);
-                
-                _logger.LogInformation($"[Email] Sending email to: {toEmail}");
-                await client.SendAsync(message);
-                
-                await client.DisconnectAsync(true);
-                
-                _logger.LogInformation($"[Email] ✓ Task assignment email sent successfully to {toEmail} for task {taskId}");
-                return true;
+                html.Append($@"
+                    <tr>
+                        <td class='incident-number'>{incident.IncidentNumber}</td>
+                        <td>{incident.Subject}</td>
+                        <td><span class='status-badge status-{statusClass}'>{incident.Status}</span></td>
+                        <td class='priority-{priorityClass}'>{incident.Priority}</td>
+                    </tr>");
             }
-            catch (Exception ex)
+
+            html.Append(@"
+                </tbody>
+            </table>");
+
+            if (reportData.Incidents.Count > 20)
             {
-                _logger.LogError(ex, $"[Email] ✗ Failed to send email to {toEmail} for task {taskId}. Error: {ex.Message}");
-                try
-                {
-                    if (client.IsConnected)
-                    {
-                        await client.DisconnectAsync(true);
-                    }
-                }
-                catch { }
-                throw; // Re-throw to be caught by outer try-catch
+                html.Append($"<p style='color: #6B778C; font-size: 13px;'>... and {reportData.Incidents.Count - 20} more incidents</p>");
             }
         }
-        catch (Exception ex)
+        else
         {
-            _logger.LogError(ex, $"Failed to send task assignment email to {toEmail}");
-            return false;
+            html.Append("<p style='text-align: center; color: #6B778C; padding: 32px 0;'>No incidents reported today.</p>");
         }
-    }
 
-    public async Task<bool> SendProjectInvitationEmailAsync(string toEmail, string toName, string projectName, string projectKey, string invitationToken)
-    {
-        try
-        {
-            var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
-            var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
-            var smtpUser = _configuration["Email:SmtpUser"];
-            var smtpPassword = _configuration["Email:SmtpPassword"];
-            var fromEmail = _configuration["Email:FromEmail"] ?? "noreply@codingeverest.com";
-            var fromName = _configuration["Email:FromName"] ?? "Milo";
-
-            if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPassword))
-            {
-                _logger.LogWarning("Email service not configured. Skipping email send.");
-                return false;
-            }
-
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(fromName, fromEmail));
-            message.To.Add(new MailboxAddress(toName, toEmail));
-            message.Subject = $"You've been invited to join {projectName} on Milo";
-
-            var signupUrl = $"https://www.codingeverest.com/milo-signup.html?invite={invitationToken}";
-
-            var bodyBuilder = new BodyBuilder
-            {
-                HtmlBody = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset=""utf-8"">
-    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-    <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; }}
-        .email-wrapper {{ background-color: #F4F5F7; padding: 40px 20px; }}
-        .email-container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
-        .email-header {{ background: linear-gradient(135deg, #0052CC 0%, #0065FF 100%); color: #FFFFFF; padding: 40px 30px; text-align: center; }}
-        .email-header h1 {{ font-size: 28px; font-weight: 600; margin: 0; letter-spacing: -0.5px; }}
-        .email-body {{ padding: 40px 30px; }}
-        .greeting {{ font-size: 16px; color: #172B4D; margin-bottom: 20px; }}
-        .message {{ font-size: 15px; color: #42526E; margin-bottom: 30px; line-height: 1.7; }}
-        .project-card {{ background: #F4F5F7; border-left: 4px solid #0052CC; border-radius: 4px; padding: 20px; margin: 30px 0; }}
-        .project-name {{ font-size: 22px; font-weight: 600; color: #172B4D; margin-bottom: 10px; }}
-        .project-key {{ font-size: 13px; color: #6B778C; text-transform: uppercase; letter-spacing: 1px; font-family: 'Monaco', 'Menlo', monospace; }}
-        .steps {{ background: #F4F5F7; border-radius: 4px; padding: 20px; margin: 30px 0; }}
-        .steps ol {{ margin-left: 20px; color: #42526E; }}
-        .steps li {{ margin-bottom: 10px; font-size: 14px; line-height: 1.6; }}
-        .cta-button {{ display: inline-block; background: #0052CC; color: #FFFFFF !important; padding: 14px 32px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 15px; margin: 30px 0; text-align: center; transition: background-color 0.2s; }}
-        .cta-button:hover {{ background: #0065FF; }}
-        .button-container {{ text-align: center; margin: 30px 0; }}
-        .email-footer {{ padding: 30px; background-color: #F4F5F7; border-top: 1px solid #DFE1E6; text-align: center; }}
-        .email-footer p {{ font-size: 13px; color: #6B778C; margin: 5px 0; }}
-        .email-footer .brand {{ color: #0052CC; font-weight: 600; }}
-    </style>
-</head>
-<body>
-    <div class=""email-wrapper"">
-        <div class=""email-container"">
-            <div class=""email-header"">
-                <h1>You're Invited!</h1>
+        html.Append(@"
+            <div style='text-align: center; margin-top: 32px;'>
+                <a href='https://www.codingeverest.com/milo-incidents.html' class='cta-button'>View All Incidents</a>
             </div>
-            <div class=""email-body"">
-                <div class=""greeting"">Hi {toName},</div>
-                <div class=""message"">You've been invited to collaborate on a project in Milo, a modern project management platform.</div>
-                
-                <div class=""project-card"">
-                    <div class=""project-name"">{projectName}</div>
-                    <div class=""project-key"">Project Key: {projectKey}</div>
-                </div>
-                
-                <div class=""steps"">
-                    <p style=""font-weight: 600; color: #172B4D; margin-bottom: 12px;"">To get started:</p>
-                    <ol>
-                        <li>Click the button below to create your Milo account (or sign in if you already have one)</li>
-                        <li>Once signed in, you'll automatically be added to this project</li>
-                        <li>Start collaborating with your team!</li>
-                    </ol>
-                </div>
-                
-                <div class=""button-container"">
-                    <a href=""{signupUrl}"" class=""cta-button"">Accept Invitation & Get Started</a>
-                </div>
-                
-                <div style=""font-size: 13px; color: #6B778C; margin-top: 30px; padding-top: 20px; border-top: 1px solid #DFE1E6;"">
-                    <p>If you have any questions or didn't expect this invitation, please contact the project owner.</p>
-                </div>
-            </div>
-            <div class=""email-footer"">
-                <p><span class=""brand"">Milo</span> - Project Management by Coding Everest</p>
-                <p style=""margin-top: 10px; font-size: 12px; color: #8993A4;"">This invitation will expire in 7 days.</p>
-            </div>
+        </div>
+        <div class='footer'>
+            <p>This is an automated report from Milo Incident Management</p>
+            <p><a href='https://www.codingeverest.com'>www.codingeverest.com</a></p>
+            <p style='margin-top: 16px; font-size: 11px;'>To stop receiving these reports, please contact your administrator.</p>
         </div>
     </div>
 </body>
-</html>",
-                TextBody = $@"
-Project Invitation
+</html>");
 
-Hi {toName},
-
-You've been invited to join {projectName} on Milo!
-
-Project Key: {projectKey}
-
-To accept this invitation, sign up at: {signupUrl}
-
-If you have any questions, feel free to reach out to the project owner.
-
-Best regards,
-The Milo Team
-"
-            };
-
-            message.Body = bodyBuilder.ToMessageBody();
-
-            using var client = new SmtpClient();
-            await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
-            await client.AuthenticateAsync(smtpUser, smtpPassword);
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
-
-            _logger.LogInformation($"Project invitation email sent successfully to {toEmail}");
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Failed to send project invitation email to {toEmail}");
-            return false;
-        }
-    }
-
-    public async Task<bool> SendTeamProjectAssignmentEmailAsync(string toEmail, string toName, string teamName, string projectName, string projectKey)
-    {
-        try
-        {
-            var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
-            var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
-            var smtpUser = _configuration["Email:SmtpUser"];
-            var smtpPassword = _configuration["Email:SmtpPassword"];
-            var fromEmail = _configuration["Email:FromEmail"] ?? "noreply@codingeverest.com";
-            var fromName = _configuration["Email:FromName"] ?? "Milo";
-
-            if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPassword))
-            {
-                _logger.LogWarning("Email service not configured. Skipping email send.");
-                return false;
-            }
-
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(fromName, fromEmail));
-            message.To.Add(new MailboxAddress(toName, toEmail));
-            message.Subject = $"Team {teamName} assigned to {projectName}";
-
-            var boardUrl = "https://www.codingeverest.com/milo-board.html";
-
-            var bodyBuilder = new BodyBuilder
-            {
-                HtmlBody = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset=""utf-8"">
-    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-    <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; }}
-        .email-wrapper {{ background-color: #F4F5F7; padding: 40px 20px; }}
-        .email-container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }}
-        .email-header {{ background: linear-gradient(135deg, #6554C0 0%, #8777D9 100%); color: #FFFFFF; padding: 40px 30px; text-align: center; }}
-        .email-header h1 {{ font-size: 28px; font-weight: 600; margin: 0; letter-spacing: -0.5px; }}
-        .email-body {{ padding: 40px 30px; }}
-        .greeting {{ font-size: 16px; color: #172B4D; margin-bottom: 20px; }}
-        .message {{ font-size: 15px; color: #42526E; margin-bottom: 30px; line-height: 1.7; }}
-        .assignment-card {{ background: #F4F5F7; border-left: 4px solid #6554C0; border-radius: 4px; padding: 20px; margin: 30px 0; }}
-        .team-name {{ font-size: 20px; font-weight: 600; color: #172B4D; margin-bottom: 12px; }}
-        .project-info {{ font-size: 15px; color: #42526E; margin: 8px 0; }}
-        .project-info strong {{ color: #172B4D; }}
-        .project-key {{ display: inline-block; background: #DEEBFF; color: #0052CC; padding: 4px 12px; border-radius: 3px; font-size: 13px; font-weight: 600; font-family: 'Monaco', 'Menlo', monospace; margin-top: 8px; }}
-        .cta-button {{ display: inline-block; background: #6554C0; color: #FFFFFF !important; padding: 14px 32px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 15px; margin: 30px 0; text-align: center; transition: background-color 0.2s; }}
-        .cta-button:hover {{ background: #8777D9; }}
-        .button-container {{ text-align: center; margin: 30px 0; }}
-        .email-footer {{ padding: 30px; background-color: #F4F5F7; border-top: 1px solid #DFE1E6; text-align: center; }}
-        .email-footer p {{ font-size: 13px; color: #6B778C; margin: 5px 0; }}
-        .email-footer .brand {{ color: #0052CC; font-weight: 600; }}
-        .info-box {{ background: #DEEBFF; border: 1px solid #B3D4FF; border-radius: 4px; padding: 15px; margin: 20px 0; }}
-        .info-box p {{ font-size: 14px; color: #0052CC; margin: 0; }}
-    </style>
-</head>
-<body>
-    <div class=""email-wrapper"">
-        <div class=""email-container"">
-            <div class=""email-header"">
-                <h1>🎉 Team Project Assignment</h1>
-            </div>
-            <div class=""email-body"">
-                <div class=""greeting"">Hi {toName},</div>
-                <div class=""message"">Great news! Your team has been assigned to a new project in Milo.</div>
-                
-                <div class=""assignment-card"">
-                    <div class=""team-name"">Team: {teamName}</div>
-                    <div class=""project-info""><strong>Project:</strong> {projectName}</div>
-                    <div><span class=""project-key"">{projectKey}</span></div>
-                </div>
-                
-                <div class=""info-box"">
-                    <p><strong>📌 What this means:</strong> You now have access to all tasks, boards, and resources for this project. You can start collaborating with your team right away!</p>
-                </div>
-                
-                <div class=""button-container"">
-                    <a href=""{boardUrl}"" class=""cta-button"">View Project Board</a>
-                </div>
-                
-                <div style=""font-size: 13px; color: #6B778C; margin-top: 30px; padding-top: 20px; border-top: 1px solid #DFE1E6;"">
-                    <p>If you have any questions, please reach out to your team lead or project administrator.</p>
-                </div>
-            </div>
-            <div class=""email-footer"">
-                <p><span class=""brand"">Milo</span> - Project Management by Coding Everest</p>
-                <p style=""margin-top: 10px; font-size: 12px; color: #8993A4;"">This is an automated notification. Please do not reply to this email.</p>
-            </div>
-        </div>
-    </div>
-</body>
-</html>",
-                TextBody = $@"
-Team Project Assignment
-
-Hi {toName},
-
-Great news! Your team has been assigned to a new project in Milo.
-
-Team: {teamName}
-Project: {projectName}
-Project Key: {projectKey}
-
-You now have access to all tasks, boards, and resources for this project.
-
-View the project board: {boardUrl}
-
-If you have any questions, please reach out to your team lead or project administrator.
-
-Best regards,
-The Milo Team
-"
-            };
-
-            message.Body = bodyBuilder.ToMessageBody();
-
-            using var client = new SmtpClient();
-            await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
-            await client.AuthenticateAsync(smtpUser, smtpPassword);
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
-
-            _logger.LogInformation($"Team project assignment email sent successfully to {toEmail}");
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Failed to send team project assignment email to {toEmail}");
-            return false;
-        }
-    }
-
-    public async Task<bool> SendCustomEmailAsync(MimeMessage message, string toEmail)
-    {
-        try
-        {
-            var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
-            var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
-            var smtpUser = _configuration["Email:SmtpUser"];
-            var smtpPassword = _configuration["Email:SmtpPassword"];
-
-            if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPassword))
-            {
-                _logger.LogWarning("Email service not configured. Skipping email send.");
-                return false;
-            }
-
-            using var client = new SmtpClient();
-            await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
-            await client.AuthenticateAsync(smtpUser, smtpPassword);
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
-
-            _logger.LogInformation($"Custom email sent successfully to {toEmail}");
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Failed to send custom email to {toEmail}");
-            return false;
-        }
+        return html.ToString();
     }
 }
 
+public class DailyReportData
+{
+    public DateTime Date { get; set; }
+    public int TotalCount { get; set; }
+    public int NewCount { get; set; }
+    public int OpenCount { get; set; }
+    public int ResolvedCount { get; set; }
+    public int HighPriorityCount { get; set; }
+    public List<IncidentSummary> Incidents { get; set; } = new();
+}
+
+public class IncidentSummary
+{
+    public string IncidentNumber { get; set; } = string.Empty;
+    public string Subject { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string Priority { get; set; } = string.Empty;
+    public string RequesterName { get; set; } = string.Empty;
+    public string AgentName { get; set; } = string.Empty;
+}

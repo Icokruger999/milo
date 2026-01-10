@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Milo.API.Data;
 using Milo.API.Models;
+using Milo.API.Services;
 using System.Text;
 
 namespace Milo.API.Controllers;
@@ -12,11 +13,13 @@ public class ReportsController : ControllerBase
 {
     private readonly MiloDbContext _context;
     private readonly ILogger<ReportsController> _logger;
+    private readonly IEmailService _emailService;
 
-    public ReportsController(MiloDbContext context, ILogger<ReportsController> logger)
+    public ReportsController(MiloDbContext context, ILogger<ReportsController> logger, IEmailService emailService)
     {
         _context = context;
         _logger = logger;
+        _emailService = emailService;
     }
 
     // GET: api/reports/recipients
@@ -205,25 +208,74 @@ public class ReportsController : ControllerBase
             }
 
             // Get report data
-            var reportData = await GetDailyIncidentsReport(projectId);
-            
-            // In a real implementation, you would:
-            // 1. Generate HTML email from report data
-            // 2. Send email to each recipient using EmailService
-            // 3. Update LastSentAt for each recipient
+            var today = DateTime.UtcNow.Date;
+            var tomorrow = today.AddDays(1);
 
-            // For now, just return success
+            var query = _context.Incidents
+                .Include(i => i.Requester)
+                .Include(i => i.Agent)
+                .Where(i => i.CreatedAt >= today && i.CreatedAt < tomorrow);
+
+            if (projectId.HasValue)
+            {
+                query = query.Where(i => i.ProjectId == projectId.Value);
+            }
+
+            var incidents = await query
+                .OrderByDescending(i => i.CreatedAt)
+                .ToListAsync();
+
+            // Prepare report data
+            var reportData = new DailyReportData
+            {
+                Date = today,
+                TotalCount = incidents.Count,
+                NewCount = incidents.Count(i => i.Status == "New"),
+                OpenCount = incidents.Count(i => i.Status == "Open"),
+                ResolvedCount = incidents.Count(i => i.Status == "Resolved"),
+                HighPriorityCount = incidents.Count(i => i.Priority == "High" || i.Priority == "Urgent"),
+                Incidents = incidents.Select(i => new IncidentSummary
+                {
+                    IncidentNumber = i.IncidentNumber,
+                    Subject = i.Subject,
+                    Status = i.Status,
+                    Priority = i.Priority,
+                    RequesterName = i.Requester?.Name ?? "Unknown",
+                    AgentName = i.Agent?.Name ?? "Unassigned"
+                }).ToList()
+            };
+
+            // Send emails
+            int successCount = 0;
+            var failedRecipients = new List<string>();
+
             foreach (var recipient in recipients)
             {
-                recipient.LastSentAt = DateTime.UtcNow;
+                var sent = await _emailService.SendDailyIncidentReportAsync(
+                    recipient.Email, 
+                    recipient.Name, 
+                    reportData
+                );
+
+                if (sent)
+                {
+                    recipient.LastSentAt = DateTime.UtcNow;
+                    successCount++;
+                }
+                else
+                {
+                    failedRecipients.Add(recipient.Email);
+                }
             }
+
             await _context.SaveChangesAsync();
 
             return Ok(new
             {
-                message = "Daily report sent successfully",
-                sent = recipients.Count,
-                recipients = recipients.Select(r => r.Email)
+                message = $"Daily report sent to {successCount} of {recipients.Count} recipients",
+                sent = successCount,
+                failed = failedRecipients.Count,
+                failedRecipients = failedRecipients.Any() ? failedRecipients : null
             });
         }
         catch (Exception ex)
