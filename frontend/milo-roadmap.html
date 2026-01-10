@@ -705,6 +705,205 @@
             stroke-width: 2;
             fill: none;
         }
+
+        /* Detail Panel */
+        .detail-panel {
+            position: fixed;
+            right: -500px;
+            top: 48px;
+            width: 500px;
+            height: calc(100vh - 48px);
+            background: #FFFFFF;
+            border-left: 1px solid #DFE1E6;
+            box-shadow: -2px 0 8px rgba(9, 30, 66, 0.08);
+            z-index: 300;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .detail-panel.open {
+            right: 0;
+        }
+
+        .detail-panel-header {
+            padding: 16px;
+            border-bottom: 1px solid #DFE1E6;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .detail-panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #172B4D;
+            flex: 1;
+        }
+
+        .detail-panel-close {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            cursor: pointer;
+            color: #42526E;
+        }
+
+        .detail-panel-close:hover {
+            background: #F4F5F7;
+        }
+
+        .detail-panel-content {
+            padding: 16px;
+        }
+
+        .detail-section {
+            margin-bottom: 24px;
+        }
+
+        .detail-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #6B778C;
+            margin-bottom: 12px;
+        }
+
+        .detail-field {
+            margin-bottom: 16px;
+        }
+
+        .detail-field-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6B778C;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .detail-field-value {
+            font-size: 14px;
+            color: #172B4D;
+        }
+
+        .detail-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #DFE1E6;
+            border-radius: 3px;
+            font-size: 14px;
+            color: #172B4D;
+            background: white;
+        }
+
+        .assignee-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #0052CC;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .issue-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .issue-item {
+            padding: 8px 12px;
+            border: 1px solid #DFE1E6;
+            border-radius: 3px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .issue-item:hover {
+            background: #F4F5F7;
+        }
+
+        .issue-id {
+            font-size: 12px;
+            font-weight: 600;
+            color: #0052CC;
+            margin-right: 8px;
+        }
+
+        .issue-title {
+            font-size: 13px;
+            color: #172B4D;
+        }
+
+        .issue-status {
+            font-size: 11px;
+            color: #6B778C;
+            margin-left: 8px;
+        }
+
+        .comment-item {
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #F4F5F7;
+        }
+
+        .comment-author {
+            font-size: 13px;
+            font-weight: 600;
+            color: #172B4D;
+            margin-bottom: 4px;
+        }
+
+        .comment-text {
+            font-size: 14px;
+            color: #172B4D;
+            margin-bottom: 4px;
+        }
+
+        .comment-date {
+            font-size: 11px;
+            color: #6B778C;
+        }
+
+        .comment-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .comment-input {
+            width: 100%;
+            min-height: 80px;
+            padding: 8px;
+            border: 1px solid #DFE1E6;
+            border-radius: 3px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .comment-button {
+            align-self: flex-start;
+            padding: 6px 12px;
+            background: #0052CC;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .comment-button:hover {
+            background: #0747A6;
+        }
     </style>
 </head>
 <body>
@@ -901,6 +1100,22 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Detail Panel (slides in from right) -->
+    <div class="detail-panel" id="detailPanel">
+        <div class="detail-panel-header">
+            <div class="detail-panel-title" id="detailPanelTitle">Task Details</div>
+            <div class="detail-panel-close" onclick="closeDetailPanel()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </div>
+        </div>
+        <div class="detail-panel-content" id="detailPanelContent">
+            <!-- Content populated by JavaScript -->
         </div>
     </div>
 
