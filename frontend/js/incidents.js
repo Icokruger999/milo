@@ -205,15 +205,34 @@ function filterIncidents() {
 
 // Show create incident modal
 function showCreateIncidentModal() {
+    console.log('showCreateIncidentModal called');
     const modal = document.getElementById('createIncidentModal');
     if (modal) {
+        console.log('Modal found, adding active class');
         modal.classList.add('active');
+        document.body.style.overflow = 'hidden'; // Prevent body scroll when modal is open
         
         // Reset form
         const form = document.getElementById('createIncidentForm');
         if (form) {
             form.reset();
         }
+        
+        // Load users for requester dropdown
+        loadUsers().then(() => {
+            const requesterSelect = document.getElementById('incidentRequester');
+            if (requesterSelect && users.length > 0) {
+                requesterSelect.innerHTML = '<option value="">Select Requester</option>';
+                users.forEach(user => {
+                    const option = document.createElement('option');
+                    option.value = user.id;
+                    option.textContent = user.name || user.email;
+                    requesterSelect.appendChild(option);
+                });
+            }
+        });
+    } else {
+        console.error('Modal element not found!');
     }
 }
 
@@ -222,8 +241,21 @@ function closeCreateIncidentModal() {
     const modal = document.getElementById('createIncidentModal');
     if (modal) {
         modal.classList.remove('active');
+        document.body.style.overflow = ''; // Restore body scroll
     }
 }
+
+// Close modal when clicking outside
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('createIncidentModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeCreateIncidentModal();
+            }
+        });
+    }
+});
 
 // Create incident
 async function createIncident(event) {

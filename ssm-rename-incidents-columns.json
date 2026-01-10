@@ -1,0 +1,27 @@
+{
+    "Parameters": {
+        "commands": [
+            "echo 'Renaming Incidents table columns to PascalCase...'",
+            "PGPASSWORD='Stacey1122' psql -h codingeverest-new.cl4qcomc6fj0.eu-west-1.rds.amazonaws.com -U postgres -d MiloDB << 'EOF'",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN incident_number TO \"IncidentNumber\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN requester_id TO \"RequesterId\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN agent_id TO \"AgentId\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN group_id TO \"GroupId\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN project_id TO \"ProjectId\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN sub_category TO \"SubCategory\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN created_at TO \"CreatedAt\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN updated_at TO \"UpdatedAt\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN resolved_at TO \"ResolvedAt\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN closed_at TO \"ClosedAt\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN planned_start_date TO \"PlannedStartDate\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN planned_end_date TO \"PlannedEndDate\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN planned_effort TO \"PlannedEffort\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN first_response_due TO \"FirstResponseDue\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN resolution_due TO \"ResolutionDue\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN first_response_at TO \"FirstResponseAt\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN associated_assets TO \"AssociatedAssets\";",
+            "EOF",
+            "echo 'Columns renamed successfully!'"
+        ]
+    }
+}

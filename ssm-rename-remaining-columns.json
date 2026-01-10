@@ -1,0 +1,23 @@
+{
+    "Parameters": {
+        "commands": [
+            "echo 'Renaming remaining lowercase columns...'",
+            "PGPASSWORD='Stacey1122' psql -h codingeverest-new.cl4qcomc6fj0.eu-west-1.rds.amazonaws.com -U postgres -d MiloDB << 'EOF'",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN id TO \"Id\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN subject TO \"Subject\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN description TO \"Description\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN department TO \"Department\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN status TO \"Status\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN priority TO \"Priority\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN urgency TO \"Urgency\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN impact TO \"Impact\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN source TO \"Source\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN category TO \"Category\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN tags TO \"Tags\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN attachments TO \"Attachments\";",
+            "ALTER TABLE \"Incidents\" RENAME COLUMN resolution TO \"Resolution\";",
+            "EOF",
+            "echo 'All columns renamed!'"
+        ]
+    }
+}

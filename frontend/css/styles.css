@@ -681,6 +681,23 @@ body {
 
 .milo-text {
     padding-right: 40px;
+    text-align: left;
+}
+
+@media (max-width: 768px) {
+    .milo-content {
+        grid-template-columns: 1fr !important;
+        gap: 40px !important;
+    }
+    
+    .milo-text {
+        padding-right: 0 !important;
+        text-align: center !important;
+    }
+    
+    .milo-visual {
+        order: -1;
+    }
 }
 
 .section-badge {
