@@ -6,7 +6,7 @@ let timelineMonths = [];
 let currentDatePosition = 0;
 
 // Initialize roadmap
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     if (!authService.isAuthenticated()) {
         window.location.href = 'milo-login.html';
         return;
@@ -22,28 +22,68 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (nameParts.length === 1) {
             initials = nameParts[0].substring(0, 2).toUpperCase();
         }
-        document.getElementById('globalUserAvatar').textContent = initials;
-        document.getElementById('sidebarUserAvatar').textContent = initials;
+        const globalAvatar = document.getElementById('globalUserAvatar');
+        const sidebarAvatar = document.getElementById('sidebarUserAvatar');
+        if (globalAvatar) globalAvatar.textContent = initials;
+        if (sidebarAvatar) sidebarAvatar.textContent = initials;
     }
 
     // Setup user menu dropdown
     setupUserMenu();
 
-    // Load project info
-    const currentProject = projectSelector.getCurrentProject();
-    if (currentProject) {
-        document.getElementById('projectName').textContent = currentProject.name;
-        document.getElementById('projectIcon').textContent = (currentProject.key || currentProject.name).substring(0, 1).toUpperCase();
-    } else {
+    // Load project info - try multiple sources
+    let currentProject = projectSelector.getCurrentProject();
+    
+    // If not in memory, try localStorage
+    if (!currentProject) {
+        const stored = localStorage.getItem('milo_current_project');
+        if (stored) {
+            try {
+                currentProject = JSON.parse(stored);
+                projectSelector.setCurrentProject(currentProject);
+            } catch (e) {
+                console.error('Error parsing stored project:', e);
+            }
+        }
+    }
+    
+    // If still no project, try loading from API
+    if (!currentProject && user) {
+        try {
+            await projectSelector.loadProjects(user.id);
+            currentProject = projectSelector.getCurrentProject();
+            
+            // If still no project but we have projects, use the first one
+            if (!currentProject && projectSelector.projects && projectSelector.projects.length > 0) {
+                currentProject = projectSelector.projects[0];
+                projectSelector.setCurrentProject(currentProject);
+            }
+        } catch (error) {
+            console.error('Failed to load projects:', error);
+        }
+    }
+    
+    if (!currentProject) {
         window.location.href = 'milo-select-project.html';
         return;
     }
 
+    // Update UI with project info
+    const projectNameEl = document.getElementById('projectName');
+    const projectIconEl = document.getElementById('projectIcon');
+    if (projectNameEl) projectNameEl.textContent = currentProject.name;
+    if (projectIconEl) projectIconEl.textContent = (currentProject.key || currentProject.name).substring(0, 1).toUpperCase();
+
     // Initialize timeline
     initializeTimeline();
     
-    // Load roadmap data
-    loadRoadmap();
+    // Load roadmap data immediately
+    await loadRoadmap();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(async () => {
+        await loadRoadmap();
+    }, 30000);
 });
 
 // Setup user menu with dropdown
@@ -102,11 +142,13 @@ function initializeTimeline() {
     
     timelineMonths = months;
     
-    // Render month headers
-    const monthsContainer = document.getElementById('timelineMonths');
-    monthsContainer.innerHTML = months.map(m => 
-        `<div class="timeline-month">${m.label}</div>`
-    ).join('');
+    // Render month headers - use timelineHeader if timelineMonths doesn't exist
+    const monthsContainer = document.getElementById('timelineMonths') || document.getElementById('timelineHeader');
+    if (monthsContainer) {
+        monthsContainer.innerHTML = months.map(m => 
+            `<div class="timeline-month" style="flex: 1; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px; color: #42526E; border-right: 1px solid #DFE1E6; padding: 12px 0;">${m.label}</div>`
+        ).join('');
+    }
     
     // Calculate current date position
     updateCurrentDateLine();
@@ -121,6 +163,8 @@ function getDayOfYear(date) {
 
 // Update current date line position
 function updateCurrentDateLine() {
+    if (!timelineMonths || timelineMonths.length === 0) return;
+    
     const now = new Date();
     const firstMonth = timelineMonths[0];
     const lastMonth = timelineMonths[timelineMonths.length - 1];
@@ -131,23 +175,40 @@ function updateCurrentDateLine() {
     const totalDays = Math.ceil((lastDate - firstDate) / (1000 * 60 * 60 * 24));
     const daysFromStart = Math.ceil((now - firstDate) / (1000 * 60 * 60 * 24));
     
-    const timelineWidth = document.getElementById('timelineMonths').offsetWidth;
+    const timelineElement = document.getElementById('timelineMonths') || document.getElementById('timelineHeader');
+    if (!timelineElement) return;
+    
+    const timelineWidth = timelineElement.offsetWidth || 600; // Fallback width
     currentDatePosition = (daysFromStart / totalDays) * timelineWidth;
     
     const currentDateLine = document.getElementById('currentDateLine');
     if (currentDateLine) {
         currentDateLine.style.left = currentDatePosition + 'px';
+        currentDateLine.style.position = 'absolute';
+        currentDateLine.style.top = '0';
+        currentDateLine.style.bottom = '0';
+        currentDateLine.style.width = '2px';
+        currentDateLine.style.background = '#FF5630';
+        currentDateLine.style.zIndex = '10';
+        currentDateLine.style.pointerEvents = 'none';
     }
 }
 
-// Load roadmap tasks
+// Load roadmap tasks - optimized for fast loading
 async function loadRoadmap() {
     try {
         const currentProject = projectSelector.getCurrentProject();
         if (!currentProject) {
-            window.location.href = 'milo-select-project.html';
+            const epicList = document.getElementById('epicList');
+            if (epicList) epicList.innerHTML = '<div style="color: #6B778C; font-size: 13px; padding: 16px; text-align: center;">Loading project...</div>';
             return;
         }
+
+        // Show loading state
+        const tasksTree = document.getElementById('tasksTree');
+        const timelineRows = document.getElementById('timelineRows');
+        if (tasksTree) tasksTree.innerHTML = '<div style="color: #6B778C; font-size: 13px; padding: 16px; text-align: center;">Loading tasks...</div>';
+        if (timelineRows) timelineRows.innerHTML = '';
 
         const statusFilter = document.getElementById('statusFilter')?.value || '';
         let url = `/tasks?projectId=${currentProject.id}`;
@@ -158,14 +219,17 @@ async function loadRoadmap() {
         const response = await apiClient.get(url);
         if (response.ok) {
             roadmapTasks = await response.json();
+            console.log(`✓ Roadmap loaded: ${roadmapTasks.length} tasks`);
             renderRoadmap();
         } else {
-            console.error('Failed to load roadmap tasks');
-            document.getElementById('epicList').innerHTML = '<div style="color: #DE350B;">Failed to load tasks</div>';
+            console.error('Failed to load roadmap tasks:', response.status);
+            const tasksTree = document.getElementById('tasksTree');
+            if (tasksTree) tasksTree.innerHTML = '<div style="color: #DE350B; padding: 16px; text-align: center;">Failed to load tasks. <button onclick="loadRoadmap()" style="margin-top: 8px; padding: 6px 12px; background: #0052CC; color: white; border: none; border-radius: 3px; cursor: pointer;">Retry</button></div>';
         }
     } catch (error) {
         console.error('Error loading roadmap:', error);
-        document.getElementById('epicList').innerHTML = '<div style="color: #DE350B;">Error loading roadmap</div>';
+        const tasksTree = document.getElementById('tasksTree');
+        if (tasksTree) tasksTree.innerHTML = '<div style="color: #DE350B; padding: 16px; text-align: center;">Error loading roadmap. <button onclick="loadRoadmap()" style="margin-top: 8px; padding: 6px 12px; background: #0052CC; color: white; border: none; border-radius: 3px; cursor: pointer;">Retry</button></div>';
     }
 }
 
@@ -177,20 +241,40 @@ function renderRoadmap() {
 
 // Render epic list (left column)
 function renderEpicList() {
-    const epicList = document.getElementById('epicList');
+    // Render to tasksTree instead of epicList (based on actual HTML structure)
+    const tasksTree = document.getElementById('tasksTree');
+    const timelineRows = document.getElementById('timelineRows');
     
     if (roadmapTasks.length === 0) {
-        epicList.innerHTML = '<div style="color: #6B778C; font-size: 13px; padding: 16px; text-align: center;">No tasks found</div>';
+        if (tasksTree) tasksTree.innerHTML = '<div style="color: #6B778C; font-size: 13px; padding: 16px; text-align: center;">No tasks found for this project</div>';
+        if (timelineRows) timelineRows.innerHTML = '<div style="color: #6B778C; padding: 24px; text-align: center;">No tasks to display</div>';
         return;
     }
 
-    epicList.innerHTML = roadmapTasks.map(task => `
-        <div class="epic-item ${selectedTask && selectedTask.id === task.id ? 'selected' : ''}" 
-             onclick="selectTask(${task.id})">
-            <div class="epic-icon"></div>
-            <div class="epic-title">${task.title || 'Untitled Task'}</div>
-        </div>
-    `).join('');
+    if (tasksTree) {
+        tasksTree.innerHTML = roadmapTasks.map(task => {
+            const isSelected = selectedTask && selectedTask.id === task.id;
+            const taskId = task.taskId || `TASK-${task.id}`;
+            return `
+            <div class="epic-item ${isSelected ? 'selected' : ''}" 
+                 onclick="selectTask(${task.id})"
+                 style="padding: 8px 12px; cursor: pointer; border-radius: 3px; margin-bottom: 4px; ${isSelected ? 'background: #DEEBFF;' : ''}">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div class="epic-icon" style="width: 8px; height: 8px; border-radius: 2px; background: #0052CC;"></div>
+                    <div style="flex: 1; font-size: 13px; color: #172B4D;">${escapeHtml(task.title || 'Untitled Task')} <span style="color: #6B778C; font-size: 11px;">(${taskId})</span></div>
+                </div>
+            </div>
+            `;
+        }).join('');
+    }
+}
+
+// Escape HTML helper
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // Render timeline with bars
@@ -204,7 +288,14 @@ function renderTimeline() {
     }
 
     // Calculate timeline width
-    const timelineWidth = document.getElementById('timelineMonths').offsetWidth;
+    const timelineElement = document.getElementById('timelineMonths') || document.getElementById('timelineHeader');
+    const timelineWidth = timelineElement ? timelineElement.offsetWidth : 600;
+    
+    if (!timelineMonths || timelineMonths.length === 0) {
+        if (timelineRows) timelineRows.innerHTML = '<div style="color: #6B778C; padding: 24px; text-align: center;">Timeline not initialized</div>';
+        return;
+    }
+    
     const firstMonth = timelineMonths[0];
     const lastMonth = timelineMonths[timelineMonths.length - 1];
     const firstDate = new Date(firstMonth.date.getFullYear(), firstMonth.date.getMonth(), 1);
@@ -220,20 +311,29 @@ function renderTimeline() {
         const duration = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)));
         
         const left = (daysFromStart / totalDays) * timelineWidth;
-        const width = (duration / totalDays) * timelineWidth;
+        const barWidth = Math.max(100, (duration / totalDays) * timelineWidth);
         
         const taskId = task.taskId || `TASK-${task.id}`;
         const truncatedTitle = (task.title || 'Untitled').length > 30 
             ? (task.title || 'Untitled').substring(0, 30) + '...' 
             : (task.title || 'Untitled');
         
+        // Get status color
+        const statusColors = {
+            'todo': '#6B778C',
+            'progress': '#0052CC',
+            'review': '#FFAB00',
+            'done': '#36B37E'
+        };
+        const barColor = statusColors[task.status] || '#6B778C';
+        
         return `
-            <div class="timeline-row" style="min-height: 48px;">
+            <div class="timeline-row" style="position: relative; min-height: 40px; margin-bottom: 8px; padding: 8px 0;">
                 <div class="timeline-bar" 
-                     style="left: ${left}px; width: ${width}px;"
+                     style="position: absolute; left: ${left}px; width: ${barWidth}px; height: 24px; background: ${barColor}; color: white; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 5;"
                      onclick="selectTask(${task.id})"
-                     title="${task.title || 'Untitled'}">
-                    ${truncatedTitle}
+                     title="${escapeHtml(task.title || 'Untitled')}">
+                    ${escapeHtml(truncatedTitle)}
                 </div>
             </div>
         `;
