@@ -280,6 +280,12 @@ public class MiloDbContext : DbContext
         modelBuilder.Entity<IncidentAssignee>(entity =>
         {
             entity.ToTable("incident_assignees");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasColumnName("name");
+            entity.Property(e => e.Email).HasColumnName("email");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
             entity.HasIndex(e => e.Email);
             entity.HasIndex(e => e.IsActive);
         });
@@ -288,6 +294,12 @@ public class MiloDbContext : DbContext
         modelBuilder.Entity<IncidentRequester>(entity =>
         {
             entity.ToTable("incident_requesters");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasColumnName("name");
+            entity.Property(e => e.Email).HasColumnName("email");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
             entity.HasIndex(e => e.Email);
             entity.HasIndex(e => e.IsActive);
         });
@@ -296,6 +308,12 @@ public class MiloDbContext : DbContext
         modelBuilder.Entity<IncidentGroup>(entity =>
         {
             entity.ToTable("incident_groups");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasColumnName("name");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
             entity.HasIndex(e => e.Name);
             entity.HasIndex(e => e.IsActive);
         });
