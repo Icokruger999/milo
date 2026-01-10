@@ -167,13 +167,14 @@ public class ReportsController : ControllerBase
                 .ToListAsync();
 
             // Statistics
+            var incidentsList = incidents.ToList(); // Ensure it's a list
             var stats = new
             {
-                TotalCount = incidents.Count,
-                NewCount = incidents.Count(i => i.Status == "New"),
-                OpenCount = incidents.Count(i => i.Status == "Open"),
-                ResolvedCount = incidents.Count(i => i.Status == "Resolved"),
-                HighPriorityCount = incidents.Count(i => i.Priority == "High" || i.Priority == "Urgent"),
+                TotalCount = incidentsList.Count,
+                NewCount = incidentsList.Count(i => i.Status == "New"),
+                OpenCount = incidentsList.Count(i => i.Status == "Open"),
+                ResolvedCount = incidentsList.Count(i => i.Status == "Resolved"),
+                HighPriorityCount = incidentsList.Count(i => i.Priority == "High" || i.Priority == "Urgent"),
                 Date = today.ToString("yyyy-MM-dd")
             };
 
@@ -226,14 +227,15 @@ public class ReportsController : ControllerBase
                 .ToListAsync();
 
             // Prepare report data
+            var incidentsList2 = incidents.ToList(); // Ensure it's a list
             var reportData = new DailyReportData
             {
                 Date = today,
-                TotalCount = incidents.Count,
-                NewCount = incidents.Count(i => i.Status == "New"),
-                OpenCount = incidents.Count(i => i.Status == "Open"),
-                ResolvedCount = incidents.Count(i => i.Status == "Resolved"),
-                HighPriorityCount = incidents.Count(i => i.Priority == "High" || i.Priority == "Urgent"),
+                TotalCount = incidentsList2.Count,
+                NewCount = incidentsList2.Count(i => i.Status == "New"),
+                OpenCount = incidentsList2.Count(i => i.Status == "Open"),
+                ResolvedCount = incidentsList2.Count(i => i.Status == "Resolved"),
+                HighPriorityCount = incidentsList2.Count(i => i.Priority == "High" || i.Priority == "Urgent"),
                 Incidents = incidents.Select(i => new IncidentSummary
                 {
                     IncidentNumber = i.IncidentNumber,
