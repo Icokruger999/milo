@@ -952,8 +952,8 @@
                             console.log('Calling showCreateIncidentModal...');
                             window.showCreateIncidentModal();
                         } else {
-                            console.error('showCreateIncidentModal is not a function!', typeof window.showCreateIncidentModal);
-                            alert('Error: Create Incident function not loaded. Please refresh the page.');
+                            console.error('showCreateIncidentModal is not a function! Type:', typeof window.showCreateIncidentModal);
+                            console.error('Available on window:', Object.keys(window).filter(k => k.includes('Incident')));
                         }
                         return false;
                     });

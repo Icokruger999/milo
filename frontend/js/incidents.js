@@ -5,7 +5,7 @@ let currentIncident = null;
 let currentProject = null;
 let users = [];
 let teams = [];
-const apiClient = new ApiClient(window.config);
+// apiClient is already defined in api-client.js, don't redeclare
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', async function() {
@@ -220,7 +220,6 @@ function showCreateIncidentModal() {
         const modal = document.getElementById('createIncidentModal');
         if (!modal) {
             console.error('Modal element not found!');
-            alert('Error: Create Incident modal not found. Please refresh the page.');
             return;
         }
         
@@ -275,7 +274,6 @@ function showCreateIncidentModal() {
         }
     } catch (error) {
         console.error('Error in showCreateIncidentModal:', error);
-        alert('Error opening Create Incident modal: ' + error.message);
     }
 }
 
@@ -695,7 +693,7 @@ function initializeModal() {
                 } else if (typeof window.showCreateIncidentModal === 'function') {
                     window.showCreateIncidentModal();
                 } else {
-                    alert('Create Incident function not found. Please refresh the page.');
+                    console.error('Create Incident function not found. Function type:', typeof window.showCreateIncidentModal);
                 }
             });
             console.log('Event listener added to button:', button);
