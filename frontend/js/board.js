@@ -1125,9 +1125,30 @@ async function loadTasksFromAPI() {
                 }
                 
                 return Promise.resolve();
+            } else {
+                // Handle non-ok response
+                const errorText = await response.text().catch(() => 'Unknown error');
+                console.error(`API returned ${response.status}:`, errorText);
+                // Initialize empty tasks to show empty board
+                tasks = {
+                    todo: [],
+                    progress: [],
+                    review: [],
+                    done: []
+                };
+                renderBoard();
+                return Promise.resolve();
             }
         } catch (error) {
             console.error('Failed to load tasks:', error);
+            // Initialize empty tasks to show empty board on error
+            tasks = {
+                todo: [],
+                progress: [],
+                review: [],
+                done: []
+            };
+            renderBoard();
             return Promise.reject(error);
         }
     }
