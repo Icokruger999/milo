@@ -217,33 +217,42 @@ function filterIncidents() {
 function showCreateIncidentModal() {
     console.log('showCreateIncidentModal called');
     const modal = document.getElementById('createIncidentModal');
-    if (modal) {
-        console.log('Modal found, adding active class');
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden'; // Prevent body scroll when modal is open
-        
-        // Reset form
-        const form = document.getElementById('createIncidentForm');
-        if (form) {
-            form.reset();
-        }
-        
-        // Load users for requester dropdown
-        loadUsers().then(() => {
-            const requesterSelect = document.getElementById('incidentRequester');
-            if (requesterSelect && users.length > 0) {
-                requesterSelect.innerHTML = '<option value="">Select Requester</option>';
+    if (!modal) {
+        console.error('Modal element not found!');
+        alert('Error: Create Incident modal not found. Please refresh the page.');
+        return;
+    }
+    
+    console.log('Modal found, adding active class');
+    modal.classList.add('active');
+    modal.style.display = 'flex'; // Ensure it's visible
+    document.body.style.overflow = 'hidden'; // Prevent body scroll when modal is open
+    
+    // Reset form
+    const form = document.getElementById('createIncidentForm');
+    if (form) {
+        form.reset();
+    }
+    
+    // Load users for requester dropdown
+    loadUsers().then(() => {
+        const requesterSelect = document.getElementById('incidentRequester');
+        if (requesterSelect) {
+            requesterSelect.innerHTML = '<option value="">Select Requester</option>';
+            if (users && users.length > 0) {
                 users.forEach(user => {
                     const option = document.createElement('option');
                     option.value = user.id;
                     option.textContent = user.name || user.email;
                     requesterSelect.appendChild(option);
                 });
+            } else {
+                console.warn('No users loaded for requester dropdown');
             }
-        });
-    } else {
-        console.error('Modal element not found!');
-    }
+        }
+    }).catch(error => {
+        console.error('Error loading users:', error);
+    });
 }
 
 // Close create incident modal
@@ -251,6 +260,7 @@ function closeCreateIncidentModal() {
     const modal = document.getElementById('createIncidentModal');
     if (modal) {
         modal.classList.remove('active');
+        modal.style.display = 'none'; // Ensure it's hidden
         document.body.style.overflow = ''; // Restore body scroll
     }
 }
@@ -315,8 +325,14 @@ async function createIncident(event) {
 
         // Success - incident created
         console.log(`Incident ${newIncident.incidentNumber} created successfully!`);
+        
+        // Show success message (optional - can be removed if you don't want popups)
+        // You could add a toast notification here instead
     } catch (error) {
         console.error('Failed to create incident:', error);
+        // Show error to user (optional)
+        const errorMessage = error?.message || error?.error || 'Failed to create incident. Please try again.';
+        console.error('Error details:', errorMessage);
     }
 }
 
@@ -599,7 +615,25 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Export functions for global use
+// Export functions to global scope
 window.showCreateIncidentModal = showCreateIncidentModal;
+window.closeCreateIncidentModal = closeCreateIncidentModal;
+window.createIncident = createIncident;
+
+// Ensure modal is initialized on page load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Incidents page loaded, modal functions available');
+    
+    // Close modal when clicking outside
+    const modal = document.getElementById('createIncidentModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeCreateIncidentModal();
+            }
+        });
+    }
+});
 window.closeCreateIncidentModal = closeCreateIncidentModal;
 window.createIncident = createIncident;
 window.showIncidentDetails = showIncidentDetails;
