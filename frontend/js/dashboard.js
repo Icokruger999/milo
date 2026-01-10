@@ -389,6 +389,11 @@ function applyFilters() {
         clearTimeout(filterTimeout);
     }
     
+    // Show immediate feedback if there's no data yet
+    if (!dashboardData.tasks || dashboardData.tasks.length === 0) {
+        showLoadingState();
+    }
+    
     // Debounce filter application
     filterTimeout = setTimeout(() => {
         applyFiltersImmediate();
@@ -403,6 +408,13 @@ function applyFiltersImmediate() {
     
     if (!assigneeFilterEl || !statusFilterEl || !timeRangeFilterEl) {
         console.warn('Filter elements not found');
+        return;
+    }
+    
+    // Handle case where tasks haven't loaded yet
+    if (!dashboardData.tasks) {
+        console.log('No tasks data available yet');
+        showLoadingState();
         return;
     }
     
@@ -486,7 +498,7 @@ function applyFiltersImmediate() {
 
 // Update stats cards with null checks and status matching
 function updateStats() {
-    const tasks = dashboardData.filteredTasks || [];
+    const tasks = dashboardData.filteredTasks || dashboardData.tasks || [];
     
     const totalTasks = tasks.length;
     
@@ -503,11 +515,12 @@ function updateStats() {
     
     const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
     
-    console.log('Updating stats:', {
+    console.log('✓ Stats updated:', {
         total: totalTasks,
         inProgress: inProgressTasks,
         completed: completedTasks,
-        rate: completionRate + '%'
+        rate: completionRate + '%',
+        hasData: dashboardData.tasks && dashboardData.tasks.length > 0
     });
     
     // Update with null checks
@@ -518,16 +531,20 @@ function updateStats() {
     
     if (totalTasksEl) {
         totalTasksEl.textContent = totalTasks;
-        totalTasksEl.style.color = '';
+        totalTasksEl.style.color = ''; // Reset color from loading state
+        totalTasksEl.style.opacity = '1';
     }
     if (inProgressEl) {
         inProgressEl.textContent = inProgressTasks;
+        inProgressEl.style.opacity = '1';
     }
     if (completedEl) {
         completedEl.textContent = completedTasks;
+        completedEl.style.opacity = '1';
     }
     if (completionRateEl) {
         completionRateEl.textContent = completionRate + '%';
+        completionRateEl.style.opacity = '1';
     }
 }
 
@@ -536,14 +553,25 @@ function updateCharts() {
     try {
         // Check if Chart.js is loaded
         if (typeof Chart === 'undefined') {
-            console.error('Chart.js not loaded!');
+            console.error('Chart.js not loaded! Waiting for it...');
+            // Retry after a delay
+            setTimeout(() => {
+                if (typeof Chart !== 'undefined') {
+                    console.log('Chart.js loaded, retrying charts...');
+                    updateCharts();
+                } else {
+                    console.error('Chart.js failed to load after waiting');
+                }
+            }, 500);
             return;
         }
         
+        console.log('Updating all charts...');
         updateStatusChart();
         updateAssigneeChart();
         updatePriorityChart();
         updateTimelineChart();
+        console.log('✓ All charts updated');
     } catch (error) {
         console.error('Error updating charts:', error);
     }
@@ -551,7 +579,7 @@ function updateCharts() {
 
 // Update status chart with status variation handling
 function updateStatusChart() {
-    const tasks = dashboardData.filteredTasks || [];
+    const tasks = dashboardData.filteredTasks || dashboardData.tasks || [];
     const ctx = document.getElementById('statusChart');
     
     if (!ctx) {
@@ -579,8 +607,10 @@ function updateStatusChart() {
         }).length
     };
     
+    console.log('Status chart data:', statusCounts);
+    
     // Update existing chart if possible, otherwise create new one
-    if (charts.statusChart) {
+    if (charts.statusChart && charts.statusChart.data) {
         charts.statusChart.data.datasets[0].data = [
             statusCounts.todo,
             statusCounts.progress,
@@ -591,7 +621,11 @@ function updateStatusChart() {
     } else {
         // Destroy existing chart if it exists
         if (charts.statusChart) {
-            charts.statusChart.destroy();
+            try {
+                charts.statusChart.destroy();
+            } catch (e) {
+                console.warn('Error destroying old chart:', e);
+            }
         }
         
         charts.statusChart = new Chart(ctx, {

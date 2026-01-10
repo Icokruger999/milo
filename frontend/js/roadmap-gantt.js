@@ -34,16 +34,21 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (nameParts.length === 1) {
             initials = nameParts[0].substring(0, 2).toUpperCase();
         }
-        document.getElementById('globalUserAvatar').textContent = initials;
-        document.getElementById('sidebarUserAvatar').textContent = initials;
+        const globalUserAvatar = document.getElementById('globalUserAvatar');
+        const sidebarUserAvatar = document.getElementById('sidebarUserAvatar');
+        if (globalUserAvatar) globalUserAvatar.textContent = initials;
+        if (sidebarUserAvatar) sidebarUserAvatar.textContent = initials;
     }
 
     // Load project info
     const currentProject = projectSelector.getCurrentProject();
     if (currentProject) {
-        document.getElementById('projectName').textContent = currentProject.name;
-        document.getElementById('projectIcon').textContent = (currentProject.key || currentProject.name).substring(0, 1).toUpperCase();
-        document.getElementById('projectTitle').textContent = currentProject.name;
+        const projectName = document.getElementById('projectName');
+        const projectIcon = document.getElementById('projectIcon');
+        const projectTitle = document.getElementById('projectTitle');
+        if (projectName) projectName.textContent = currentProject.name;
+        if (projectIcon) projectIcon.textContent = (currentProject.key || currentProject.name).substring(0, 1).toUpperCase();
+        if (projectTitle) projectTitle.textContent = currentProject.name;
     } else {
         window.location.href = 'milo-select-project.html';
         return;
@@ -54,7 +59,10 @@ document.addEventListener('DOMContentLoaded', function() {
     timelineStartDate = new Date(now.getFullYear() - 1, 0, 1); // January 1st of last year
     timelineEndDate = new Date(now.getFullYear() + 2, 0, 1); // January 1st two years from now (3 years total)
     
-    // Load roadmap data
+    // Set default view mode to "Days"
+    currentViewMode = 'days';
+    
+    // Load roadmap data - this will call renderRoadmap() which calls scrollToToday()
     loadRoadmapData();
 
     // Enable mouse drag panning on the timeline
@@ -186,14 +194,10 @@ function renderTimeline() {
     renderTimelineBody();
     updateCurrentDateLine();
     
-    // Auto-scroll to Today on initial load (only if not already scrolled)
-    const timelineArea = document.getElementById('timelineArea');
-    if (timelineArea && timelineArea.scrollLeft === 0) {
-        // Small delay to ensure layout is complete
-        setTimeout(() => {
-            scrollToToday();
-        }, 100);
-    }
+    // Always auto-scroll to Today after rendering (with delay for layout)
+    setTimeout(() => {
+        scrollToToday();
+    }, 150);
 }
 
 // Get cell width based on view mode
@@ -207,6 +211,11 @@ function getCellWidth() {
 // Render timeline header
 function renderTimelineHeader() {
     const header = document.getElementById('timelineHeader');
+    if (!header) {
+        console.error('Timeline header element not found');
+        return;
+    }
+    
     const dates = generateTimelineDates();
     const cellWidth = getCellWidth();
     const timelineWidth = dates.length * cellWidth;
@@ -214,10 +223,11 @@ function renderTimelineHeader() {
     const cells = dates.map(date => {
         const isWeekend = date.getDay() === 0 || date.getDay() === 6;
         const label = formatDateLabel(date);
-        return `<div class="timeline-header-cell ${isWeekend ? 'weekend' : ''}" style="min-width: ${cellWidth}px; width: ${cellWidth}px;">${label}</div>`;
+        return `<div class="timeline-header-cell ${isWeekend ? 'weekend' : ''}" style="min-width: ${cellWidth}px; width: ${cellWidth}px; flex-shrink: 0;">${label}</div>`;
     }).join('');
     
-    header.innerHTML = `<div class="timeline-header-row" style="width: ${timelineWidth}px; display: flex;">${cells}</div>`;
+    // Force horizontal layout with explicit flex properties
+    header.innerHTML = `<div class="timeline-header-row" style="width: ${timelineWidth}px; min-width: ${timelineWidth}px; display: flex; flex-direction: row; flex-wrap: nowrap;">${cells}</div>`;
 }
 
 // Generate timeline dates based on view mode
@@ -270,11 +280,18 @@ function formatDateLabel(date) {
 function renderTimelineBody() {
     const body = document.getElementById('timelineBody');
     const rows = document.getElementById('timelineRows');
+    
+    if (!rows) {
+        console.error('Timeline rows element not found');
+        return;
+    }
+    
     const dates = generateTimelineDates();
-    const typeFilter = document.getElementById('typeFilter').value;
+    const typeFilterEl = document.getElementById('typeFilter');
+    const typeFilter = typeFilterEl ? typeFilterEl.value : '';
     
     // Filter tasks
-    let filteredTasks = roadmapData.tasks;
+    let filteredTasks = roadmapData.tasks || [];
     if (typeFilter) {
         filteredTasks = filteredTasks.filter(t => t.type === typeFilter);
     }
@@ -283,28 +300,35 @@ function renderTimelineBody() {
     const cellWidth = getCellWidth();
     const timelineWidth = dates.length * cellWidth;
     
-    // Set width on both rows container and body to ensure scrolling works
+    // Set width on both rows container and body to ensure scrolling works properly
     rows.style.width = timelineWidth + 'px';
     rows.style.minWidth = timelineWidth + 'px';
+    rows.style.position = 'relative';
+    
     if (body) {
         body.style.width = timelineWidth + 'px';
         body.style.minWidth = timelineWidth + 'px';
+        body.style.position = 'relative';
     }
     
     // Clear existing rows
     rows.innerHTML = '';
 
     // Render releases
-    roadmapData.releases.forEach(release => {
-        const row = createTimelineRow(release, 'release', dates, timelineWidth);
-        rows.appendChild(row);
-    });
+    if (roadmapData.releases && roadmapData.releases.length > 0) {
+        roadmapData.releases.forEach(release => {
+            const row = createTimelineRow(release, 'release', dates, timelineWidth);
+            rows.appendChild(row);
+        });
+    }
 
     // Render milestones
-    roadmapData.milestones.forEach(milestone => {
-        const row = createTimelineRow(milestone, 'milestone', dates, timelineWidth);
-        rows.appendChild(row);
-    });
+    if (roadmapData.milestones && roadmapData.milestones.length > 0) {
+        roadmapData.milestones.forEach(milestone => {
+            const row = createTimelineRow(milestone, 'milestone', dates, timelineWidth);
+            rows.appendChild(row);
+        });
+    }
 
     // Render tasks
     filteredTasks.forEach(task => {
@@ -634,11 +658,15 @@ function updateCurrentDateLine() {
     }
 }
 
-// Scroll to today
+// Scroll to today - center the view on today's date
 function scrollToToday() {
     const timelineArea = document.getElementById('timelineArea');
-    if (timelineArea) {
-        timelineArea.scrollLeft = currentDatePosition - 200;
+    if (timelineArea && currentDatePosition > 0) {
+        // Center today's date in the viewport
+        const viewportWidth = timelineArea.offsetWidth;
+        const scrollPosition = Math.max(0, currentDatePosition - (viewportWidth / 2));
+        timelineArea.scrollLeft = scrollPosition;
+        console.log('Scrolled to today:', scrollPosition);
     }
 }
 
