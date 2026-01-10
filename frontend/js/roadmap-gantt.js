@@ -727,4 +727,5 @@ window.setViewMode = setViewMode;
 window.applyFilters = applyFilters;
 window.scrollToToday = scrollToToday;
 window.showCreateTaskModal = showCreateTaskModal;
+window.loadRoadmapData = loadRoadmapData;
 

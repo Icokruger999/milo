@@ -74,16 +74,21 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (projectNameEl) projectNameEl.textContent = currentProject.name;
     if (projectIconEl) projectIconEl.textContent = (currentProject.key || currentProject.name).substring(0, 1).toUpperCase();
 
-    // Initialize timeline
-    initializeTimeline();
-    
-    // Load roadmap data immediately
-    await loadRoadmap();
-    
-    // Auto-refresh every 30 seconds
-    setInterval(async () => {
+    // NOTE: Timeline initialization is handled by roadmap-gantt.js
+    // Only initialize timeline if roadmap-gantt.js is NOT loaded
+    if (typeof window.loadRoadmapData === 'undefined') {
+        // Initialize simple timeline (fallback)
+        initializeTimeline();
+        
+        // Load roadmap data immediately
         await loadRoadmap();
-    }, 30000);
+        
+        // Auto-refresh every 30 seconds
+        setInterval(async () => {
+            await loadRoadmap();
+        }, 30000);
+    }
+    // If roadmap-gantt.js is loaded, it will handle everything
 });
 
 // Setup user menu with dropdown
@@ -142,12 +147,16 @@ function initializeTimeline() {
     
     timelineMonths = months;
     
-    // Render month headers - use timelineHeader if timelineMonths doesn't exist
+    // Render month headers with explicit horizontal layout
     const monthsContainer = document.getElementById('timelineMonths') || document.getElementById('timelineHeader');
     if (monthsContainer) {
-        monthsContainer.innerHTML = months.map(m => 
-            `<div class="timeline-month" style="flex: 1; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px; color: #42526E; border-right: 1px solid #DFE1E6; padding: 12px 0;">${m.label}</div>`
-        ).join('');
+        // Create a wrapper div with horizontal flex layout
+        const wrapperHTML = `<div style="display: flex; flex-direction: row; flex-wrap: nowrap; min-width: 100%; width: max-content;">${
+            months.map(m => 
+                `<div class="timeline-month" style="flex: 0 0 auto; min-width: 150px; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px; color: #42526E; border-right: 1px solid #DFE1E6; padding: 12px 0;">${m.label}</div>`
+            ).join('')
+        }</div>`;
+        monthsContainer.innerHTML = wrapperHTML;
     }
     
     // Calculate current date position
