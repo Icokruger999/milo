@@ -276,44 +276,26 @@ public class MiloDbContext : DbContext
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
-        // IncidentAssignee configuration - map to snake_case columns
+        // IncidentAssignee configuration - columns are PascalCase (Id, Name, Email, etc.)
         modelBuilder.Entity<IncidentAssignee>(entity =>
         {
             entity.ToTable("incident_assignees");
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Name).HasColumnName("name");
-            entity.Property(e => e.Email).HasColumnName("email");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
-            entity.Property(e => e.IsActive).HasColumnName("is_active");
             entity.HasIndex(e => e.Email);
             entity.HasIndex(e => e.IsActive);
         });
 
-        // IncidentRequester configuration - map to snake_case columns
+        // IncidentRequester configuration - columns are PascalCase (Id, Name, Email, etc.)
         modelBuilder.Entity<IncidentRequester>(entity =>
         {
             entity.ToTable("incident_requesters");
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Name).HasColumnName("name");
-            entity.Property(e => e.Email).HasColumnName("email");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
-            entity.Property(e => e.IsActive).HasColumnName("is_active");
             entity.HasIndex(e => e.Email);
             entity.HasIndex(e => e.IsActive);
         });
 
-        // IncidentGroup configuration - map to snake_case columns
+        // IncidentGroup configuration - columns are PascalCase (Id, Name, Description, etc.)
         modelBuilder.Entity<IncidentGroup>(entity =>
         {
             entity.ToTable("incident_groups");
-            entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.Name).HasColumnName("name");
-            entity.Property(e => e.Description).HasColumnName("description");
-            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
-            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
-            entity.Property(e => e.IsActive).HasColumnName("is_active");
             entity.HasIndex(e => e.Name);
             entity.HasIndex(e => e.IsActive);
         });
