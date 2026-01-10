@@ -13,14 +13,14 @@ namespace Milo.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly MiloDbContext _context;
-    private readonly EmailService _emailService;
+    private readonly IEmailService _emailService;
     private readonly ILogger<AuthController> _logger;
 
     // Temporary hardcoded user for development
     private const string ValidEmail = "info@streamyo.net";
     private const string ValidPassword = "Stacey@1122";
 
-    public AuthController(MiloDbContext context, EmailService emailService, ILogger<AuthController> logger)
+    public AuthController(MiloDbContext context, IEmailService emailService, ILogger<AuthController> logger)
     {
         _context = context;
         _emailService = emailService;

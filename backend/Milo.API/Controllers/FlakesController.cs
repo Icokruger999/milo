@@ -201,7 +201,7 @@ public class FlakesController : ControllerBase
             }
 
             // Use EmailService to send the flake
-            var emailService = HttpContext.RequestServices.GetRequiredService<Milo.API.Services.EmailService>();
+            var emailService = HttpContext.RequestServices.GetRequiredService<IEmailService>();
             var configuration = HttpContext.RequestServices.GetRequiredService<IConfiguration>();
             
             var flakeUrl = $"{request.BaseUrl ?? "https://www.codingeverest.com"}/milo-flake-view.html?id={flake.Id}&readonly=true";
@@ -384,7 +384,7 @@ This flake was shared from Milo";
                 {
                     try
                     {
-                        var emailService = HttpContext.RequestServices.GetRequiredService<Milo.API.Services.EmailService>();
+                        var emailService = HttpContext.RequestServices.GetRequiredService<IEmailService>();
                         var configuration = HttpContext.RequestServices.GetRequiredService<IConfiguration>();
                         
                         var taskUrl = $"{baseUrl}/milo-board.html";

@@ -13,10 +13,10 @@ namespace Milo.API.Controllers;
 public class InvitationsController : ControllerBase
 {
     private readonly MiloDbContext _context;
-    private readonly EmailService _emailService;
+    private readonly IEmailService _emailService;
     private readonly ILogger<InvitationsController> _logger;
 
-    public InvitationsController(MiloDbContext context, EmailService emailService, ILogger<InvitationsController> logger)
+    public InvitationsController(MiloDbContext context, IEmailService emailService, ILogger<InvitationsController> logger)
     {
         _context = context;
         _emailService = emailService;

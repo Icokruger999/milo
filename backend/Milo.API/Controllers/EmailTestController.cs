@@ -7,10 +7,10 @@ namespace Milo.API.Controllers;
 [Route("api/[controller]")]
 public class EmailTestController : ControllerBase
 {
-    private readonly EmailService _emailService;
+    private readonly IEmailService _emailService;
     private readonly ILogger<EmailTestController> _logger;
 
-    public EmailTestController(EmailService emailService, ILogger<EmailTestController> logger)
+    public EmailTestController(IEmailService emailService, ILogger<EmailTestController> logger)
     {
         _emailService = emailService;
         _logger = logger;

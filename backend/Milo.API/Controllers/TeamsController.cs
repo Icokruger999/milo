@@ -12,9 +12,9 @@ public class TeamsController : ControllerBase
 {
     private readonly MiloDbContext _context;
     private readonly ILogger<TeamsController> _logger;
-    private readonly EmailService _emailService;
+    private readonly IEmailService _emailService;
 
-    public TeamsController(MiloDbContext context, ILogger<TeamsController> logger, EmailService emailService)
+    public TeamsController(MiloDbContext context, ILogger<TeamsController> logger, IEmailService emailService)
     {
         _context = context;
         _logger = logger;
