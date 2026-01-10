@@ -230,6 +230,36 @@ body {
     box-shadow: 0 4px 12px rgba(9, 30, 66, 0.15);
 }
 
+/* WhatsApp Button - Real WhatsApp Green */
+.btn-whatsapp {
+    background: #25D366 !important;
+    color: white !important;
+    border: none !important;
+    padding: 10px 20px !important;
+    border-radius: 24px !important;
+    font-weight: 500 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3) !important;
+}
+
+.btn-whatsapp:hover {
+    background: #20BA5A !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.4) !important;
+}
+
+.btn-whatsapp:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 2px 6px rgba(37, 211, 102, 0.3) !important;
+}
+
+.btn-whatsapp svg {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
 .btn-large {
     padding: 12px 24px;
     font-size: 16px;
