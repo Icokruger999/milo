@@ -668,4 +668,5 @@ public class IncidentSummary
     public string Priority { get; set; } = string.Empty;
     public string RequesterName { get; set; } = string.Empty;
     public string AgentName { get; set; } = string.Empty;
+    public TimeSpan? ResolutionTime { get; set; }
 }

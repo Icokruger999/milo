@@ -243,7 +243,10 @@ public class ReportsController : ControllerBase
                     Status = i.Status,
                     Priority = i.Priority,
                     RequesterName = i.Requester?.Name ?? "Unknown",
-                    AgentName = i.Assignee?.Name ?? "Unassigned"
+                    AgentName = i.Assignee?.Name ?? "Unassigned",
+                    ResolutionTime = i.ResolvedAt.HasValue && i.CreatedAt != default 
+                        ? i.ResolvedAt.Value - i.CreatedAt 
+                        : null
                 }).ToList()
             };
 

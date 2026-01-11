@@ -586,6 +586,12 @@ function editIncident() {
         return;
     }
     
+    // Close detail panel first to avoid confusion
+    const detailPanel = document.getElementById('detailPanel');
+    if (detailPanel) {
+        detailPanel.classList.remove('active');
+    }
+    
     showEditIncidentModal(currentIncident);
 }
 
@@ -616,7 +622,7 @@ function showEditIncidentModal(incident) {
             form.onsubmit = updateIncident;
         }
         
-        // Show modal
+        // Show modal (already centered via CSS)
         modal.style.setProperty('display', 'flex', 'important');
         modal.style.setProperty('visibility', 'visible', 'important');
         modal.style.setProperty('opacity', '1', 'important');
