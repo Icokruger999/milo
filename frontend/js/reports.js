@@ -339,11 +339,29 @@ function renderReportPreview() {
 // Send daily report
 async function sendDailyReport() {
     if (recipients.filter(r => r.isActive).length === 0) {
-        showError('Please add at least one active recipient');
+        alert('Please add at least one active recipient');
         return;
     }
 
     try {
+        // Get currentProject from projectSelector
+        let currentProject = null;
+        if (typeof projectSelector !== 'undefined' && projectSelector.getCurrentProject) {
+            currentProject = projectSelector.getCurrentProject();
+        } else if (typeof projectSelector !== 'undefined' && projectSelector.currentProject) {
+            currentProject = projectSelector.currentProject;
+        } else {
+            // Fallback to localStorage
+            const projectData = localStorage.getItem('currentProject');
+            if (projectData) {
+                try {
+                    currentProject = JSON.parse(projectData);
+                } catch (e) {
+                    console.error('Failed to parse project data', e);
+                }
+            }
+        }
+        
         const projectId = currentProject?.id;
         const endpoint = projectId ? `/reports/incidents/send-daily?projectId=${projectId}` : '/reports/incidents/send-daily';
         const response = await apiClient.post(endpoint);
