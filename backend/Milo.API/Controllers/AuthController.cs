@@ -30,66 +30,85 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        if (request == null || string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+        try
         {
-            return BadRequest(new { message = "Email and password are required" });
-        }
-
-        // Check hardcoded user first
-        if (request.Email.Equals(ValidEmail, StringComparison.OrdinalIgnoreCase) && 
-            request.Password == ValidPassword)
-        {
-            var token = Guid.NewGuid().ToString();
-            
-            return Ok(new
+            if (request == null || string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
             {
-                success = true,
-                token = token,
-                user = new
+                return BadRequest(new { message = "Email and password are required" });
+            }
+
+            // Check hardcoded user first
+            if (request.Email.Equals(ValidEmail, StringComparison.OrdinalIgnoreCase) && 
+                request.Password == ValidPassword)
+            {
+                var token = Guid.NewGuid().ToString();
+                
+                return Ok(new
                 {
-                    email = request.Email,
-                    name = "StreamYo User"
-                },
-                message = "Login successful"
-            });
-        }
+                    success = true,
+                    token = token,
+                    user = new
+                    {
+                        email = request.Email,
+                        name = "StreamYo User"
+                    },
+                    message = "Login successful"
+                });
+            }
 
-        // Check database users
-        var user = await _context.Users
-            .FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower() && u.IsActive);
+            // Check database users
+            var user = await _context.Users
+                .AsNoTracking() // Performance: Read-only query
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower() && u.IsActive);
 
-        if (user != null)
-        {
-            // Simple password comparison (in production, use hashed passwords)
-            if (user.PasswordHash == request.Password || 
-                (user.RequiresPasswordChange && user.PasswordHash == request.Password))
+            if (user != null)
             {
-                // Check if user needs to change password
-                if (user.RequiresPasswordChange)
+                // Simple password comparison (in production, use hashed passwords)
+                if (user.PasswordHash == request.Password || 
+                    (user.RequiresPasswordChange && user.PasswordHash == request.Password))
                 {
                     var token = Guid.NewGuid().ToString();
                     
-                    // Get user's projects even if password change required
-                    var userProjects = await _context.Projects
-                        .Where(p => p.OwnerId == user.Id || 
-                                   p.Members.Any(m => m.UserId == user.Id))
-                        .Where(p => p.Status != "archived")
+                    // Get user's projects (owned or member of) - simplified query
+                    var ownedProjects = await _context.Projects
+                        .AsNoTracking()
+                        .Where(p => p.OwnerId == user.Id && p.Status != "archived")
                         .Select(p => new
                         {
                             id = p.Id,
                             name = p.Name,
                             key = p.Key,
                             description = p.Description,
-                            role = p.OwnerId == user.Id ? "owner" : 
-                                   p.Members.FirstOrDefault(m => m.UserId == user.Id).Role
+                            role = "owner"
                         })
                         .ToListAsync();
+                    
+                    var memberProjects = await _context.ProjectMembers
+                        .AsNoTracking()
+                        .Where(pm => pm.UserId == user.Id)
+                        .Join(_context.Projects.Where(p => p.Status != "archived"),
+                            pm => pm.ProjectId,
+                            p => p.Id,
+                            (pm, p) => new
+                            {
+                                id = p.Id,
+                                name = p.Name,
+                                key = p.Key,
+                                description = p.Description,
+                                role = pm.Role
+                            })
+                        .ToListAsync();
+                    
+                    // Combine and deduplicate (user might be both owner and member)
+                    var userProjects = ownedProjects
+                        .Concat(memberProjects.Where(mp => !ownedProjects.Any(op => op.id == mp.id)))
+                        .ToList();
                     
                     return Ok(new
                     {
                         success = true,
                         token = token,
-                        requiresPasswordChange = true,
+                        requiresPasswordChange = user.RequiresPasswordChange,
                         user = new
                         {
                             id = user.Id,
@@ -97,46 +116,18 @@ public class AuthController : ControllerBase
                             name = user.Name
                         },
                         projects = userProjects,
-                        message = "Please change your password to continue"
+                        message = user.RequiresPasswordChange ? "Please change your password to continue" : "Login successful"
                     });
                 }
-
-                var loginToken = Guid.NewGuid().ToString();
-                
-                // Get user's projects (owned or member of)
-                var userProjectsList = await _context.Projects
-                    .Where(p => p.OwnerId == user.Id || 
-                               p.Members.Any(m => m.UserId == user.Id))
-                    .Where(p => p.Status != "archived")
-                    .Select(p => new
-                    {
-                        id = p.Id,
-                        name = p.Name,
-                        key = p.Key,
-                        description = p.Description,
-                        role = p.OwnerId == user.Id ? "owner" : 
-                               p.Members.FirstOrDefault(m => m.UserId == user.Id).Role
-                    })
-                    .ToListAsync();
-                
-                return Ok(new
-                {
-                    success = true,
-                    token = loginToken,
-                    requiresPasswordChange = false,
-                    user = new
-                    {
-                        id = user.Id,
-                        email = user.Email,
-                        name = user.Name
-                    },
-                    projects = userProjectsList,
-                    message = "Login successful"
-                });
             }
-        }
 
-        return Unauthorized(new { message = "Invalid email or password" });
+            return Unauthorized(new { message = "Invalid email or password" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during login: {Error}", ex.Message);
+            return StatusCode(500, new { message = "An error occurred during login. Please try again.", error = ex.Message });
+        }
     }
 
     [HttpPost("signup")]
