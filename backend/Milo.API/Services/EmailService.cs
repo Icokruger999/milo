@@ -465,6 +465,93 @@ public class EmailService : IEmailService
             return false;
         }
     }
+
+    public async Task<bool> SendIncidentAssignmentEmailAsync(string email, string assigneeName, string incidentNumber, string subject, string priority, string status, string? incidentLink = null)
+    {
+        try
+        {
+            var emailSubject = $"New Incident Assigned: {incidentNumber} - {subject}";
+            var link = incidentLink ?? "https://www.codingeverest.com/milo-incidents.html";
+            var priorityColor = priority.ToLower() switch
+            {
+                "high" or "urgent" => "#DE350B",
+                "medium" => "#FF991F",
+                _ => "#6B778C"
+            };
+            var statusColor = status.ToLower() switch
+            {
+                "new" => "#6554C0",
+                "open" => "#0052CC",
+                "resolved" => "#36B37E",
+                "closed" => "#36B37E",
+                _ => "#6B778C"
+            };
+            
+            var htmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <style>
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 20px; }}
+        .container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; }}
+        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 32px 24px; text-align: center; }}
+        .content {{ padding: 32px 24px; }}
+        .incident-box {{ background: #F4F5F7; border-left: 4px solid #0052CC; padding: 20px; margin: 24px 0; border-radius: 4px; }}
+        .incident-number {{ font-size: 18px; font-weight: 600; color: #0052CC; margin-bottom: 8px; }}
+        .incident-subject {{ font-size: 20px; font-weight: 700; color: #172B4D; margin-bottom: 16px; }}
+        .incident-details {{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }}
+        .detail-item {{ }}
+        .detail-label {{ font-size: 12px; color: #6B778C; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }}
+        .detail-value {{ font-size: 14px; font-weight: 600; }}
+        .priority-badge {{ display: inline-block; padding: 4px 12px; border-radius: 4px; background: {priorityColor}15; color: {priorityColor}; font-weight: 600; }}
+        .status-badge {{ display: inline-block; padding: 4px 12px; border-radius: 4px; background: {statusColor}15; color: {statusColor}; font-weight: 600; }}
+        .cta-button {{ display: inline-block; background: #0052CC; color: #FFFFFF; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 24px 0; }}
+        .footer {{ background: #F4F5F7; padding: 24px; text-align: center; font-size: 12px; color: #6B778C; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>New Incident Assigned</h1>
+        </div>
+        <div class='content'>
+            <p>Hello {assigneeName},</p>
+            <p>A new incident has been assigned to you:</p>
+            <div class='incident-box'>
+                <div class='incident-number'>{incidentNumber}</div>
+                <div class='incident-subject'>{subject}</div>
+                <div class='incident-details'>
+                    <div class='detail-item'>
+                        <div class='detail-label'>Priority</div>
+                        <div class='detail-value'><span class='priority-badge'>{priority}</span></div>
+                    </div>
+                    <div class='detail-item'>
+                        <div class='detail-label'>Status</div>
+                        <div class='detail-value'><span class='status-badge'>{status}</span></div>
+                    </div>
+                </div>
+            </div>
+            <p style='text-align: center;'>
+                <a href='{link}' class='cta-button'>View Incident</a>
+            </p>
+        </div>
+        <div class='footer'>
+            <p>This is an automated notification from Milo Incident Management</p>
+            <p>Please review and respond to this incident as soon as possible.</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+            return await SendEmailAsync(email, emailSubject, htmlBody);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending incident assignment email to {Email}", email);
+            return false;
+        }
+    }
 }
 
 public class DailyReportData
