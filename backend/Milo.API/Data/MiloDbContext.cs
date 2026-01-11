@@ -276,44 +276,44 @@ public class MiloDbContext : DbContext
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
-        // IncidentAssignee configuration - columns are PascalCase (quoted in PostgreSQL)
+        // IncidentAssignee configuration - map to snake_case columns
         modelBuilder.Entity<IncidentAssignee>(entity =>
         {
             entity.ToTable("incident_assignees");
-            entity.Property(e => e.Id).HasColumnName("\"Id\"");
-            entity.Property(e => e.Name).HasColumnName("\"Name\"");
-            entity.Property(e => e.Email).HasColumnName("\"Email\"");
-            entity.Property(e => e.CreatedAt).HasColumnName("\"CreatedAt\"");
-            entity.Property(e => e.UpdatedAt).HasColumnName("\"UpdatedAt\"");
-            entity.Property(e => e.IsActive).HasColumnName("\"IsActive\"");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasColumnName("name");
+            entity.Property(e => e.Email).HasColumnName("email");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
             entity.HasIndex(e => e.Email);
             entity.HasIndex(e => e.IsActive);
         });
 
-        // IncidentRequester configuration - columns are PascalCase (quoted in PostgreSQL)
+        // IncidentRequester configuration - map to snake_case columns
         modelBuilder.Entity<IncidentRequester>(entity =>
         {
             entity.ToTable("incident_requesters");
-            entity.Property(e => e.Id).HasColumnName("\"Id\"");
-            entity.Property(e => e.Name).HasColumnName("\"Name\"");
-            entity.Property(e => e.Email).HasColumnName("\"Email\"");
-            entity.Property(e => e.CreatedAt).HasColumnName("\"CreatedAt\"");
-            entity.Property(e => e.UpdatedAt).HasColumnName("\"UpdatedAt\"");
-            entity.Property(e => e.IsActive).HasColumnName("\"IsActive\"");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasColumnName("name");
+            entity.Property(e => e.Email).HasColumnName("email");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
             entity.HasIndex(e => e.Email);
             entity.HasIndex(e => e.IsActive);
         });
 
-        // IncidentGroup configuration - columns are PascalCase (quoted in PostgreSQL)
+        // IncidentGroup configuration - map to snake_case columns
         modelBuilder.Entity<IncidentGroup>(entity =>
         {
             entity.ToTable("incident_groups");
-            entity.Property(e => e.Id).HasColumnName("\"Id\"");
-            entity.Property(e => e.Name).HasColumnName("\"Name\"");
-            entity.Property(e => e.Description).HasColumnName("\"Description\"");
-            entity.Property(e => e.CreatedAt).HasColumnName("\"CreatedAt\"");
-            entity.Property(e => e.UpdatedAt).HasColumnName("\"UpdatedAt\"");
-            entity.Property(e => e.IsActive).HasColumnName("\"IsActive\"");
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasColumnName("name");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
             entity.HasIndex(e => e.Name);
             entity.HasIndex(e => e.IsActive);
         });
