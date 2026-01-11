@@ -171,13 +171,11 @@ async function addRecipient() {
 
         if (!name || !email) {
             console.error('Please fill in all fields');
-            alert('Please fill in all fields');
             return;
         }
 
         if (!isValidEmail(email)) {
             console.error('Please enter a valid email address');
-            alert('Please enter a valid email address');
             return;
         }
 
@@ -213,14 +211,12 @@ async function addRecipient() {
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ message: 'Failed to add recipient' }));
             console.error('Failed to add recipient:', response.status, errorData);
-            alert(errorData.message || 'Failed to add recipient');
             return;
         }
         
         const newRecipient = await response.json();
         console.log('Recipient added successfully:', newRecipient);
         
-        alert('Recipient added successfully');
         await loadRecipients();
         hideAddRecipientForm();
         
@@ -231,7 +227,6 @@ async function addRecipient() {
         if (emailInput) emailInput.value = '';
     } catch (error) {
         console.error('Error adding recipient:', error);
-        alert('Failed to add recipient: ' + (error.message || 'Unknown error'));
     }
 }
 
@@ -339,7 +334,7 @@ function renderReportPreview() {
 // Send daily report
 async function sendDailyReport() {
     if (recipients.filter(r => r.isActive).length === 0) {
-        alert('Please add at least one active recipient');
+        console.error('Please add at least one active recipient');
         return;
     }
 
