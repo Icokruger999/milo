@@ -57,6 +57,24 @@ function closeReportManagement() {
 // Load recipients
 async function loadRecipients() {
     try {
+        // Get currentProject from projectSelector
+        let currentProject = null;
+        if (typeof projectSelector !== 'undefined' && projectSelector.getCurrentProject) {
+            currentProject = projectSelector.getCurrentProject();
+        } else if (typeof projectSelector !== 'undefined' && projectSelector.currentProject) {
+            currentProject = projectSelector.currentProject;
+        } else {
+            // Fallback to localStorage
+            const projectData = localStorage.getItem('currentProject');
+            if (projectData) {
+                try {
+                    currentProject = JSON.parse(projectData);
+                } catch (e) {
+                    console.error('Failed to parse project data', e);
+                }
+            }
+        }
+        
         const projectId = currentProject?.id;
         const endpoint = projectId ? `/reports/recipients?projectId=${projectId}` : '/reports/recipients';
         const response = await apiClient.get(endpoint);
@@ -246,6 +264,24 @@ async function toggleRecipientActive(id, isActive) {
 // Load report preview
 async function loadReportPreview() {
     try {
+        // Get currentProject from projectSelector
+        let currentProject = null;
+        if (typeof projectSelector !== 'undefined' && projectSelector.getCurrentProject) {
+            currentProject = projectSelector.getCurrentProject();
+        } else if (typeof projectSelector !== 'undefined' && projectSelector.currentProject) {
+            currentProject = projectSelector.currentProject;
+        } else {
+            // Fallback to localStorage
+            const projectData = localStorage.getItem('currentProject');
+            if (projectData) {
+                try {
+                    currentProject = JSON.parse(projectData);
+                } catch (e) {
+                    console.error('Failed to parse project data', e);
+                }
+            }
+        }
+        
         const projectId = currentProject?.id;
         const endpoint = projectId ? `/reports/incidents/daily?projectId=${projectId}` : '/reports/incidents/daily';
         const response = await apiClient.get(endpoint);
