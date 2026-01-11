@@ -299,7 +299,7 @@ public class MiloDbContext : DbContext
         // ReportRecipient configuration
         modelBuilder.Entity<ReportRecipient>(entity =>
         {
-            entity.ToTable("report_recipients"); // Map to lowercase table name
+            entity.ToTable("ReportRecipients"); // Map to PascalCase table name
             entity.HasIndex(e => e.Email);
             entity.HasIndex(e => e.ProjectId);
             entity.HasIndex(e => e.IsActive);
