@@ -278,6 +278,7 @@ async function createIncident(event) {
         const groupId = document.getElementById('incidentGroup')?.value ? parseInt(document.getElementById('incidentGroup').value) : null;
         const category = document.getElementById('incidentCategory')?.value?.trim();
         const description = document.getElementById('incidentDescription')?.value?.trim();
+        const resolution = document.getElementById('incidentResolution')?.value?.trim();
 
         if (!subject) {
             console.error('Subject is required');
@@ -311,6 +312,7 @@ async function createIncident(event) {
             groupId: groupId,
             category: category || null,
             description: description || null,
+            resolution: resolution || null,
             projectId: currentProject?.id || null
         };
 
