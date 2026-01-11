@@ -28,7 +28,9 @@ public class ReportsController : ControllerBase
     {
         try
         {
-            var query = _context.ReportRecipients.AsQueryable();
+            var query = _context.ReportRecipients
+                .AsNoTracking() // Performance: Read-only query
+                .AsQueryable();
 
             if (projectId.HasValue)
             {
