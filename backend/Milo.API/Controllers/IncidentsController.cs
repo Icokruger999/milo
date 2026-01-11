@@ -34,10 +34,6 @@ public class IncidentsController : ControllerBase
 
             var query = _context.Incidents
                 .AsNoTracking() // Performance: Read-only query
-                .Include(i => i.Requester)
-                .Include(i => i.Assignee)
-                .Include(i => i.Group)
-                .Include(i => i.Project)
                 .AsQueryable();
 
             if (projectId.HasValue)
