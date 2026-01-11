@@ -334,10 +334,8 @@
                     document.execCommand('insertOrderedList', false, null);
                     break;
                 case 'link':
-                    const url = prompt('Enter URL:', 'https://');
-                    if (url) {
-                        document.execCommand('createLink', false, url);
-                    }
+                    // Prompt removed - URL linking disabled
+                    console.log('URL linking disabled');
                     break;
                 case 'code':
                     document.execCommand('formatBlock', false, '<pre>');
@@ -423,11 +421,10 @@
                 } else {
                     const error = await response.json();
                     console.error(error.message || 'Failed to update flake');
-                    alert(error.message || 'Failed to update flake');
+                    console.error('Failed to update flake:', error.message || 'Unknown error');
                 }
             } catch (error) {
                 console.error('Error updating flake:', error);
-                alert('Error updating flake. Please try again.');
             }
         }
 

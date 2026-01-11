@@ -210,22 +210,18 @@
         async function deleteFlake() {
             if (!currentFlakeId) return;
 
-            if (!confirm('Are you sure you want to delete this flake? This action cannot be undone.')) {
-                return;
-            }
+            // Confirmation removed - direct delete
 
             try {
                 const response = await apiClient.delete(`/flakes/${currentFlakeId}`);
                 if (response.ok) {
-                    alert('Flake deleted successfully');
                     window.location.href = 'milo-flakes.html';
                 } else {
                     const error = await response.json();
-                    alert(error.message || 'Failed to delete flake');
+                    console.error('Failed to delete flake:', error.message || 'Unknown error');
                 }
             } catch (error) {
                 console.error('Error deleting flake:', error);
-                alert('Failed to delete flake. Please try again.');
             }
         }
 

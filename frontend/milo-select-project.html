@@ -294,11 +294,8 @@
         if (typeof window.showCreateProjectModal !== 'function') {
             window.showCreateProjectModal = function() {
                 // Fallback if script not loaded
-                const name = prompt('Enter project name:');
-                if (!name || name.trim() === '') return;
-                const description = prompt('Enter project description (optional):') || '';
-                const key = prompt('Enter project key (optional, e.g., MILO):') || '';
-                createProject(name.trim(), description.trim(), key.trim());
+                // Prompt removed - use modal instead
+                console.log('Create project - use modal form');
             };
         }
 
@@ -317,7 +314,7 @@
                     
                     // Ensure project has all required fields
                     if (!project.id) {
-                        alert('Invalid project response from server');
+                        console.error('Invalid project response from server');
                         return;
                     }
                     

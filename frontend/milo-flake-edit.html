@@ -158,7 +158,7 @@
             const id = urlParams.get('id');
             
             if (!id) {
-                alert('Flake ID not found');
+                console.error('Flake ID not found');
                 window.location.href = 'milo-flakes.html';
                 return;
             }
@@ -172,12 +172,11 @@
                     document.getElementById('flakeTitle').value = flake.title || '';
                     document.getElementById('flakeContent').value = flake.content || '';
                 } else {
-                    alert('Flake not found');
+                    console.error('Flake not found');
                     window.location.href = 'milo-flakes.html';
                 }
             } catch (error) {
                 console.error('Error loading flake:', error);
-                alert('Error loading flake');
             }
         }
 
@@ -190,7 +189,7 @@
             const content = document.getElementById('flakeContent').value.trim();
 
             if (!title) {
-                alert('Title is required');
+                console.error('Title is required');
                 return;
             }
 
@@ -205,11 +204,10 @@
                     window.location.href = `milo-flake-view.html?id=${currentFlakeId}`;
                 } else {
                     const error = await response.json();
-                    alert(error.message || 'Failed to update flake');
+                    console.error('Failed to update flake:', error.message || 'Unknown error');
                 }
             } catch (error) {
                 console.error('Error updating flake:', error);
-                alert('Failed to update flake. Please try again.');
             }
         }
 
