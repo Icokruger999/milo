@@ -1,0 +1,33 @@
+[Unit]
+Description=Milo API Backend Service
+After=network.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=notify
+User=ec2-user
+Group=ec2-user
+WorkingDirectory=/home/ec2-user/milo-backend-publish
+ExecStart=/usr/bin/dotnet /home/ec2-user/milo-backend-publish/Milo.API.dll --urls http://localhost:5001
+Restart=always
+RestartSec=10
+KillSignal=SIGINT
+TimeoutStopSec=30
+StandardOutput=append:/home/ec2-user/milo-backend.log
+StandardError=append:/home/ec2-user/milo-backend-error.log
+
+# Resource limits to prevent one app from affecting others
+MemoryLimit=512M
+CPUQuota=50%
+
+# Environment variables
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=DOTNET_CLI_HOME=/home/ec2-user
+Environment=HOME=/home/ec2-user
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
