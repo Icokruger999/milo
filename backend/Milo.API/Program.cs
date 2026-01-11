@@ -47,7 +47,7 @@ if (!string.IsNullOrEmpty(connectionString))
         
         // Ensure SSL is enabled for Supabase (required)
         connBuilder.SslMode = SslMode.Require;
-        connBuilder.TrustServerCertificate = true;
+        // Note: TrustServerCertificate is obsolete in newer Npgsql versions, but setting SslMode.Require is sufficient
         
         connectionString = connBuilder.ConnectionString;
     }
