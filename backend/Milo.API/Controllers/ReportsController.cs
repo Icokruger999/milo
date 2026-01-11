@@ -56,9 +56,24 @@ public class ReportsController : ControllerBase
     {
         try
         {
+            if (request == null)
+            {
+                return BadRequest(new { message = "Request body is required" });
+            }
+
             if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Name))
             {
                 return BadRequest(new { message = "Email and Name are required" });
+            }
+
+            // Check if recipient already exists with same email and project
+            var existingRecipient = await _context.ReportRecipients
+                .FirstOrDefaultAsync(r => r.Email.ToLower() == request.Email.Trim().ToLower() && 
+                                         r.ProjectId == request.ProjectId);
+            
+            if (existingRecipient != null)
+            {
+                return BadRequest(new { message = "A recipient with this email already exists for this project" });
             }
 
             var recipient = new ReportRecipient
@@ -74,12 +89,28 @@ public class ReportsController : ControllerBase
             _context.ReportRecipients.Add(recipient);
             await _context.SaveChangesAsync();
 
-            return Ok(recipient);
+            // Return the created recipient with proper serialization
+            return Ok(new
+            {
+                id = recipient.Id,
+                email = recipient.Email,
+                name = recipient.Name,
+                reportType = recipient.ReportType,
+                isActive = recipient.IsActive,
+                projectId = recipient.ProjectId,
+                createdAt = recipient.CreatedAt
+            });
+        }
+        catch (DbUpdateException dbEx)
+        {
+            _logger.LogError(dbEx, "Database error adding recipient: {Error}", dbEx.Message);
+            return StatusCode(500, new { message = "Database error adding recipient", error = dbEx.InnerException?.Message ?? dbEx.Message });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error adding recipient: {Error}", ex.Message);
-            return StatusCode(500, new { message = "Error adding recipient", error = ex.Message });
+            _logger.LogError(ex, "Stack trace: {StackTrace}", ex.StackTrace);
+            return StatusCode(500, new { message = "Error adding recipient", error = ex.Message, stackTrace = ex.StackTrace });
         }
     }
 
