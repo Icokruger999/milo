@@ -56,10 +56,15 @@ public class ReportsController : ControllerBase
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Name))
+            {
+                return BadRequest(new { message = "Email and Name are required" });
+            }
+
             var recipient = new ReportRecipient
             {
-                Email = request.Email,
-                Name = request.Name,
+                Email = request.Email.Trim(),
+                Name = request.Name.Trim(),
                 ReportType = request.ReportType ?? "DailyIncidents",
                 IsActive = request.IsActive ?? true,
                 ProjectId = request.ProjectId,
@@ -69,11 +74,11 @@ public class ReportsController : ControllerBase
             _context.ReportRecipients.Add(recipient);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetRecipients), new { }, recipient);
+            return Ok(recipient);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error adding recipient");
+            _logger.LogError(ex, "Error adding recipient: {Error}", ex.Message);
             return StatusCode(500, new { message = "Error adding recipient", error = ex.Message });
         }
     }
