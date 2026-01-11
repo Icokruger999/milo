@@ -14,6 +14,7 @@ public interface IEmailService
     Task<bool> SendTeamProjectAssignmentEmailAsync(string email, string memberName, string teamName, string projectName, string projectKey);
     Task<bool> SendCustomEmailAsync(string to, string subject, string htmlBody, string? textBody = null);
     Task<bool> SendProjectInvitationEmailAsync(string email, string name, string projectName, string projectKey, string invitationToken);
+    Task<bool> SendIncidentAssignmentEmailAsync(string email, string assigneeName, string incidentNumber, string subject, string priority, string status, string? incidentLink = null);
 }
 
 public class EmailService : IEmailService
@@ -49,8 +50,8 @@ public class EmailService : IEmailService
         {
             var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
             var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
-            var smtpUsername = _configuration["Email:Username"] ?? "";
-            var smtpPassword = _configuration["Email:Password"] ?? "";
+            var smtpUsername = _configuration["Email:SmtpUser"] ?? _configuration["Email:Username"] ?? "";
+            var smtpPassword = _configuration["Email:SmtpPassword"] ?? _configuration["Email:Password"] ?? "";
             var fromEmail = _configuration["Email:FromEmail"] ?? smtpUsername;
             var fromName = _configuration["Email:FromName"] ?? "Milo - Incident Management";
 

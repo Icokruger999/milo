@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Milo.API.Data;
 using Milo.API.Models;
+using Milo.API.Services;
 
 namespace Milo.API.Controllers;
 
@@ -11,11 +12,13 @@ public class IncidentsController : ControllerBase
 {
     private readonly MiloDbContext _context;
     private readonly ILogger<IncidentsController> _logger;
+    private readonly IEmailService _emailService;
 
-    public IncidentsController(MiloDbContext context, ILogger<IncidentsController> logger)
+    public IncidentsController(MiloDbContext context, ILogger<IncidentsController> logger, IEmailService emailService)
     {
         _context = context;
         _logger = logger;
+        _emailService = emailService;
     }
 
     // GET: api/incidents
@@ -246,6 +249,32 @@ public class IncidentsController : ControllerBase
                 .Include(i => i.Group)
                 .Include(i => i.Project)
                 .FirstOrDefaultAsync(i => i.Id == incident.Id);
+
+            // Send email notification to assignee if assigned
+            if (createdIncident?.Assignee != null && !string.IsNullOrEmpty(createdIncident.Assignee.Email))
+            {
+                try
+                {
+                    var incidentLink = $"https://www.codingeverest.com/milo-incidents.html";
+                    await _emailService.SendIncidentAssignmentEmailAsync(
+                        createdIncident.Assignee.Email,
+                        createdIncident.Assignee.Name,
+                        createdIncident.IncidentNumber,
+                        createdIncident.Subject,
+                        createdIncident.Priority ?? "Low",
+                        createdIncident.Status ?? "New",
+                        incidentLink
+                    );
+                    _logger.LogInformation("Incident assignment email sent to {Email} for incident {IncidentNumber}", 
+                        createdIncident.Assignee.Email, createdIncident.IncidentNumber);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to send incident assignment email to {Email} for incident {IncidentNumber}", 
+                        createdIncident.Assignee.Email, createdIncident.IncidentNumber);
+                    // Don't fail the request if email fails - incident is still created
+                }
+            }
 
             return CreatedAtAction(nameof(GetIncident), new { id = incident.Id }, createdIncident);
         }
