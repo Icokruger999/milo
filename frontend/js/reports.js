@@ -26,8 +26,12 @@ async function loadRecipients() {
     try {
         const projectId = currentProject?.id;
         const endpoint = projectId ? `/reports/recipients?projectId=${projectId}` : '/reports/recipients';
-        const data = await apiClient.get(endpoint);
-        recipients = data;
+        const response = await apiClient.get(endpoint);
+        if (response.ok) {
+            recipients = await response.json() || [];
+        } else {
+            recipients = [];
+        }
         renderRecipients();
     } catch (error) {
         console.error('Error loading recipients:', error);
@@ -132,7 +136,10 @@ async function addRecipient() {
             projectId: currentProject?.id || null
         };
 
-        await apiClient.post('/reports/recipients', data);
+        const response = await apiClient.post('/reports/recipients', data);
+        if (!response.ok) {
+            throw new Error('Failed to add recipient');
+        }
         showSuccess('Recipient added successfully');
         await loadRecipients();
         hideAddRecipientForm();
@@ -176,8 +183,16 @@ async function loadReportPreview() {
     try {
         const projectId = currentProject?.id;
         const endpoint = projectId ? `/reports/incidents/daily?projectId=${projectId}` : '/reports/incidents/daily';
-        reportData = await apiClient.get(endpoint);
-        renderReportPreview();
+        const response = await apiClient.get(endpoint);
+        if (response.ok) {
+            reportData = await response.json();
+            renderReportPreview();
+        } else {
+            const container = document.getElementById('reportStats');
+            if (container) {
+                container.innerHTML = '<div style="color: #DE350B; font-size: 14px;">Failed to load report preview</div>';
+            }
+        }
     } catch (error) {
         console.error('Error loading report preview:', error);
         const container = document.getElementById('reportStats');
@@ -230,8 +245,13 @@ async function sendDailyReport() {
     try {
         const projectId = currentProject?.id;
         const endpoint = projectId ? `/reports/incidents/send-daily?projectId=${projectId}` : '/reports/incidents/send-daily';
-        const result = await apiClient.post(endpoint);
+        const response = await apiClient.post(endpoint);
         
+        if (!response.ok) {
+            throw new Error('Failed to send report');
+        }
+        
+        const result = await response.json();
         showSuccess(`Report sent to ${result.sent} recipient(s)`);
         await loadRecipients(); // Refresh to show updated lastSentAt
         await loadReportPreview();

@@ -241,10 +241,24 @@ public class MiloDbContext : DbContext
         {
             entity.ToTable("Incidents"); // Map to PascalCase table name
             entity.HasIndex(e => e.IncidentNumber).IsUnique();
+            
+            // Single column indexes for common filters
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.Priority);
             entity.HasIndex(e => e.CreatedAt);
             entity.HasIndex(e => e.ProjectId);
+            entity.HasIndex(e => e.RequesterId); // Foreign key index for performance
+            entity.HasIndex(e => e.AgentId); // Foreign key index for performance
+            entity.HasIndex(e => e.GroupId); // Foreign key index for performance
+            
+            // Composite indexes for common query patterns
+            entity.HasIndex(e => new { e.ProjectId, e.Status }); // Most common filter: project + status
+            entity.HasIndex(e => new { e.ProjectId, e.CreatedAt }); // Sorted lists by project
+            entity.HasIndex(e => new { e.Status, e.Priority }); // Priority filtering by status
+            entity.HasIndex(e => new { e.RequesterId, e.CreatedAt }); // Requester history queries
+            entity.HasIndex(e => new { e.AgentId, e.Status }); // Agent workload queries
+            entity.HasIndex(e => new { e.ProjectId, e.Status, e.CreatedAt }); // Complex filtering with sorting
+            
             entity.HasOne(e => e.Requester)
                 .WithMany()
                 .HasForeignKey(e => e.RequesterId)
