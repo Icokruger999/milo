@@ -27,17 +27,13 @@ public class TasksController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetTasks([FromQuery] string? status, [FromQuery] int? productId, [FromQuery] int? projectId, [FromQuery] int? assigneeId, [FromQuery] int? parentTaskId)
+    public async Task<IActionResult> GetTasks([FromQuery] string? status, [FromQuery] int? productId, [FromQuery] int? projectId, [FromQuery] int? assigneeId, [FromQuery] int? parentTaskId, [FromQuery] int page = 1, [FromQuery] int pageSize = 100)
     {
         try
         {
             var query = _context.Tasks
                 .AsNoTracking() // Performance: Read-only query
                 .Where(t => !t.IsDeleted)
-                .Include(t => t.Assignee)
-                .Include(t => t.Creator)
-                .Include(t => t.Product)
-                .Include(t => t.Project)
                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(status))
@@ -65,10 +61,42 @@ public class TasksController : ControllerBase
                 query = query.Where(t => t.ParentTaskId == parentTaskId);
             }
 
-            var tasks = await query.OrderByDescending(t => t.CreatedAt).ToListAsync();
+            // Get total count for pagination
+            var totalCount = await query.CountAsync();
 
-            return Ok(tasks.Select(t => {
-                // Parse checklist JSON if present
+            // Apply pagination and ordering
+            var tasks = await query
+                .OrderByDescending(t => t.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(t => new
+                {
+                    t.Id,
+                    t.Title,
+                    t.Description,
+                    t.Status,
+                    t.Label,
+                    t.TaskId,
+                    t.TaskType,
+                    AssigneeId = t.AssigneeId,
+                    Assignee = t.Assignee != null ? new { t.Assignee.Id, t.Assignee.Name, t.Assignee.Email } : null,
+                    CreatorId = t.CreatorId,
+                    Creator = t.Creator != null ? new { t.Creator.Id, t.Creator.Name } : null,
+                    t.ProductId,
+                    Product = t.Product != null ? new { t.Product.Id, t.Product.Name } : null,
+                    t.ProjectId,
+                    Project = t.Project != null ? new { t.Project.Id, t.Project.Name, t.Project.Key } : null,
+                    t.Priority,
+                    t.DueDate,
+                    t.StartDate,
+                    t.ParentTaskId,
+                    t.Checklist,
+                    t.CreatedAt
+                })
+                .ToListAsync();
+
+            // Parse checklist JSON in memory (only for paginated results)
+            var result = tasks.Select(t => {
                 object? checklist = null;
                 if (!string.IsNullOrEmpty(t.Checklist))
                 {
@@ -91,13 +119,13 @@ public class TasksController : ControllerBase
                     label = t.Label,
                     taskId = t.TaskId,
                     taskType = t.TaskType,
-                    assignee = t.Assignee != null ? new { id = t.Assignee.Id, name = t.Assignee.Name, email = t.Assignee.Email } : null,
+                    assignee = t.Assignee,
                     assigneeId = t.AssigneeId,
-                    creator = t.Creator != null ? new { id = t.Creator.Id, name = t.Creator.Name } : null,
+                    creator = t.Creator,
                     productId = t.ProductId,
-                    product = t.Product != null ? new { id = t.Product.Id, name = t.Product.Name } : null,
+                    product = t.Product,
                     projectId = t.ProjectId,
-                    project = t.Project != null ? new { id = t.Project.Id, name = t.Project.Name, key = t.Project.Key } : null,
+                    project = t.Project,
                     priority = t.Priority,
                     dueDate = t.DueDate,
                     startDate = t.StartDate,
@@ -105,7 +133,19 @@ public class TasksController : ControllerBase
                     checklist = checklist,
                     createdAt = t.CreatedAt
                 };
-            }));
+            }).ToList();
+
+            return Ok(new
+            {
+                tasks = result,
+                pagination = new
+                {
+                    page,
+                    pageSize,
+                    totalCount,
+                    totalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                }
+            });
         }
         catch (Exception ex)
         {

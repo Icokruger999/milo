@@ -1048,10 +1048,12 @@ async function loadTasksFromAPI() {
             queryUrl += `&assigneeId=${assigneeFilter}`;
         }
         
-        // Load tasks filtered by project and assignee
-        const response = await apiClient.get(queryUrl);
+        // Load tasks filtered by project and assignee (with pagination for large datasets)
+        const response = await apiClient.get(queryUrl + '&page=1&pageSize=500');
         if (response.ok) {
-            const apiTasks = await response.json();
+            const data = await response.json();
+            // Handle both paginated and non-paginated responses for backwards compatibility
+            const apiTasks = data.tasks || data;
             
             // Convert API tasks to board format
             tasks = {
