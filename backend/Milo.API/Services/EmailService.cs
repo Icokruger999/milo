@@ -186,6 +186,9 @@ public class EmailService : IEmailService
             {
                 var statusClass = incident.Status.ToLower().Replace(" ", "-");
                 var priorityClass = incident.Priority.ToLower();
+                var resolutionTimeText = incident.ResolutionTime.HasValue 
+                    ? FormatDuration(incident.ResolutionTime.Value)
+                    : "-";
                 
                 html.Append($@"
                     <tr>
@@ -193,6 +196,7 @@ public class EmailService : IEmailService
                         <td>{incident.Subject}</td>
                         <td><span class='status-badge status-{statusClass}'>{incident.Status}</span></td>
                         <td class='priority-{priorityClass}'>{incident.Priority}</td>
+                        <td>{resolutionTimeText}</td>
                     </tr>");
             }
 
