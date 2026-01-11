@@ -251,6 +251,7 @@ public class IncidentsController : ControllerBase
                 AssociatedAssets = request.AssociatedAssets,
                 ProjectId = request.ProjectId,
                 Attachments = request.Attachments,
+                Resolution = request.Resolution,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -471,6 +472,7 @@ public class CreateIncidentRequest
     public string? AssociatedAssets { get; set; }
     public int? ProjectId { get; set; }
     public string? Attachments { get; set; }
+    public string? Resolution { get; set; }
 }
 
 public class UpdateIncidentRequest

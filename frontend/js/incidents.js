@@ -717,6 +717,12 @@ function populateIncidentForm(incident) {
     if (descriptionTextarea) {
         descriptionTextarea.value = incident.description || '';
     }
+    
+    // Resolution
+    const resolutionTextarea = document.getElementById('incidentResolution');
+    if (resolutionTextarea) {
+        resolutionTextarea.value = incident.resolution || '';
+    }
 }
 
 // Update incident
@@ -740,6 +746,7 @@ async function updateIncident(event) {
         const groupId = document.getElementById('incidentGroup')?.value ? parseInt(document.getElementById('incidentGroup').value) : null;
         const category = document.getElementById('incidentCategory')?.value?.trim();
         const description = document.getElementById('incidentDescription')?.value?.trim();
+        const resolution = document.getElementById('incidentResolution')?.value?.trim();
 
         if (!subject) {
             console.error('Subject is required');
@@ -757,7 +764,8 @@ async function updateIncident(event) {
             agentId: agentId,
             groupId: groupId,
             category: category || null,
-            description: description || null
+            description: description || null,
+            resolution: resolution || null
         };
 
         console.log('Updating incident:', currentIncident.id, updateData);
