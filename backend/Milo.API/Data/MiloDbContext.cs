@@ -111,6 +111,7 @@ public class MiloDbContext : DbContext
         {
             entity.HasIndex(e => e.Name);
             entity.HasIndex(e => e.Key);
+            entity.HasIndex(e => e.OwnerId); // Foreign key index for performance
             entity.HasOne(e => e.Owner)
                 .WithMany()
                 .HasForeignKey(e => e.OwnerId)
@@ -226,6 +227,7 @@ public class MiloDbContext : DbContext
         {
             entity.HasIndex(e => e.Name);
             entity.HasIndex(e => e.ProjectId);
+            entity.HasIndex(e => e.CreatedById); // Foreign key index for performance
             entity.HasOne(e => e.Project)
                 .WithMany(p => p.Teams)
                 .HasForeignKey(e => e.ProjectId)
