@@ -158,6 +158,7 @@ public class TasksController : ControllerBase
     public async Task<IActionResult> GetTask(int id)
     {
         var task = await _context.Tasks
+            .AsNoTracking() // Performance: Read-only query
             .Include(t => t.Assignee)
             .Include(t => t.Creator)
             .Include(t => t.Product)
