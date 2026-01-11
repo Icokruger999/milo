@@ -109,9 +109,18 @@ public class MiloDbContext : DbContext
         // Project configuration
         modelBuilder.Entity<Project>(entity =>
         {
+            // Single column indexes
             entity.HasIndex(e => e.Name);
             entity.HasIndex(e => e.Key);
             entity.HasIndex(e => e.OwnerId); // Foreign key index for performance
+            entity.HasIndex(e => e.Status); // For filtering by status
+            entity.HasIndex(e => e.CreatedAt); // For sorting
+            
+            // Composite indexes for common query patterns
+            entity.HasIndex(e => new { e.Status, e.CreatedAt }); // Common filter: active projects sorted by date
+            entity.HasIndex(e => new { e.OwnerId, e.Status }); // Projects by owner and status
+            entity.HasIndex(e => new { e.Status, e.Name }); // Active projects sorted by name
+            
             entity.HasOne(e => e.Owner)
                 .WithMany()
                 .HasForeignKey(e => e.OwnerId)
