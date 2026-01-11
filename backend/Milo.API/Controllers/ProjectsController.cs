@@ -22,6 +22,7 @@ public class ProjectsController : ControllerBase
     public async Task<IActionResult> GetProjects([FromQuery] int? userId)
     {
         var query = _context.Projects
+            .AsNoTracking() // Performance: Read-only query
             .Include(p => p.Owner)
             .Include(p => p.Members)
             .ThenInclude(m => m.User)

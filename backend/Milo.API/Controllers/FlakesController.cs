@@ -25,6 +25,7 @@ public class FlakesController : ControllerBase
         try
         {
             var query = _context.Flakes
+                .AsNoTracking() // Performance: Read-only query
                 .Where(f => !f.IsDeleted)
                 .Include(f => f.Author)
                 .Include(f => f.Project)

@@ -23,11 +23,17 @@ public class IncidentsController : ControllerBase
 
     // GET: api/incidents
     [HttpGet]
-    public async Task<IActionResult> GetIncidents([FromQuery] int? projectId, [FromQuery] string? status)
+    public async Task<IActionResult> GetIncidents([FromQuery] int? projectId, [FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
     {
         try
         {
+            // Limit page size to prevent excessive data loading
+            if (pageSize > 100) pageSize = 100;
+            if (pageSize < 1) pageSize = 50;
+            if (page < 1) page = 1;
+
             var query = _context.Incidents
+                .AsNoTracking() // Performance: Read-only query
                 .Include(i => i.Requester)
                 .Include(i => i.Assignee)
                 .Include(i => i.Group)
@@ -44,8 +50,14 @@ public class IncidentsController : ControllerBase
                 query = query.Where(i => i.Status.ToLower() == status.ToLower());
             }
 
+            // Get total count for pagination
+            var totalCount = await query.CountAsync();
+
+            // Apply pagination
             var incidents = await query
                 .OrderByDescending(i => i.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(i => new
                 {
                     i.Id,
@@ -94,7 +106,17 @@ public class IncidentsController : ControllerBase
                 })
                 .ToListAsync();
 
-            return Ok(incidents);
+            return Ok(new
+            {
+                incidents,
+                pagination = new
+                {
+                    page,
+                    pageSize,
+                    totalCount,
+                    totalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                }
+            });
         }
         catch (Exception ex)
         {
@@ -255,7 +277,7 @@ public class IncidentsController : ControllerBase
             {
                 try
                 {
-                    var incidentLink = $"https://www.codingeverest.com/milo-incidents.html";
+                    var incidentLink = $"https://www.codingeverest.com/milo-incidents.html?incident={createdIncident.IncidentNumber}";
                     await _emailService.SendIncidentAssignmentEmailAsync(
                         createdIncident.Assignee.Email,
                         createdIncident.Assignee.Name,
@@ -263,7 +285,13 @@ public class IncidentsController : ControllerBase
                         createdIncident.Subject,
                         createdIncident.Priority ?? "Low",
                         createdIncident.Status ?? "New",
-                        incidentLink
+                        incidentLink,
+                        createdIncident.Description,
+                        createdIncident.Requester?.Name,
+                        createdIncident.Requester?.Email,
+                        createdIncident.CreatedAt,
+                        createdIncident.Category,
+                        createdIncident.Source
                     );
                     _logger.LogInformation("Incident assignment email sent to {Email} for incident {IncidentNumber}", 
                         createdIncident.Assignee.Email, createdIncident.IncidentNumber);

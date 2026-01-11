@@ -14,7 +14,7 @@ public interface IEmailService
     Task<bool> SendTeamProjectAssignmentEmailAsync(string email, string memberName, string teamName, string projectName, string projectKey);
     Task<bool> SendCustomEmailAsync(string to, string subject, string htmlBody, string? textBody = null);
     Task<bool> SendProjectInvitationEmailAsync(string email, string name, string projectName, string projectKey, string invitationToken);
-    Task<bool> SendIncidentAssignmentEmailAsync(string email, string assigneeName, string incidentNumber, string subject, string priority, string status, string? incidentLink = null);
+    Task<bool> SendIncidentAssignmentEmailAsync(string email, string assigneeName, string incidentNumber, string subject, string priority, string status, string? incidentLink = null, string? description = null, string? requesterName = null, string? requesterEmail = null, DateTime? createdAt = null, string? category = null, string? source = null);
 }
 
 public class EmailService : IEmailService
@@ -485,7 +485,7 @@ public class EmailService : IEmailService
         }
     }
 
-    public async Task<bool> SendIncidentAssignmentEmailAsync(string email, string assigneeName, string incidentNumber, string subject, string priority, string status, string? incidentLink = null)
+    public async Task<bool> SendIncidentAssignmentEmailAsync(string email, string assigneeName, string incidentNumber, string subject, string priority, string status, string? incidentLink = null, string? description = null, string? requesterName = null, string? requesterEmail = null, DateTime? createdAt = null, string? category = null, string? source = null)
     {
         try
         {
@@ -505,6 +505,68 @@ public class EmailService : IEmailService
                 "closed" => "#36B37E",
                 _ => "#6B778C"
             };
+            
+            // Build details section dynamically
+            var detailsHtml = new StringBuilder();
+            detailsHtml.AppendLine($@"
+                        <div class='detail-item'>
+                            <div class='detail-label'>Priority</div>
+                            <div class='detail-value'><span class='priority-badge'>{priority}</span></div>
+                        </div>
+                        <div class='detail-item'>
+                            <div class='detail-label'>Status</div>
+                            <div class='detail-value'><span class='status-badge'>{status}</span></div>
+                        </div>");
+            
+            if (!string.IsNullOrWhiteSpace(requesterName))
+            {
+                var requesterText = requesterName;
+                if (!string.IsNullOrWhiteSpace(requesterEmail))
+                    requesterText += $" ({requesterEmail})";
+                detailsHtml.AppendLine($@"
+                        <div class='detail-item'>
+                            <div class='detail-label'>Requester</div>
+                            <div class='detail-value'>{requesterText}</div>
+                        </div>");
+            }
+            
+            if (createdAt.HasValue)
+            {
+                detailsHtml.AppendLine($@"
+                        <div class='detail-item'>
+                            <div class='detail-label'>Created</div>
+                            <div class='detail-value'>{createdAt.Value:MMM dd, yyyy HH:mm} UTC</div>
+                        </div>");
+            }
+            
+            if (!string.IsNullOrWhiteSpace(category))
+            {
+                detailsHtml.AppendLine($@"
+                        <div class='detail-item'>
+                            <div class='detail-label'>Category</div>
+                            <div class='detail-value'>{category}</div>
+                        </div>");
+            }
+            
+            if (!string.IsNullOrWhiteSpace(source))
+            {
+                detailsHtml.AppendLine($@"
+                        <div class='detail-item'>
+                            <div class='detail-label'>Source</div>
+                            <div class='detail-value'>{source}</div>
+                        </div>");
+            }
+            
+            var descriptionHtml = "";
+            if (!string.IsNullOrWhiteSpace(description))
+            {
+                var escapedDescription = description.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+                descriptionHtml = $@"
+                    <div style='margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(223, 225, 230, 0.6);'>
+                        <div class='detail-label'>Description</div>
+                        <div style='font-size: 14px; color: #42526E; line-height: 1.6; margin-top: 8px; white-space: pre-wrap;'>{escapedDescription}</div>
+                    </div>";
+            }
             
             var htmlBody = $@"
 <!DOCTYPE html>
@@ -529,7 +591,7 @@ public class EmailService : IEmailService
         .incident-details {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(223, 225, 230, 0.6); }}
         .detail-item {{ }}
         .detail-label {{ font-size: 11px; color: #6B778C; text-transform: uppercase; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.5px; }}
-        .detail-value {{ font-size: 15px; font-weight: 600; }}
+        .detail-value {{ font-size: 15px; font-weight: 600; color: #172B4D; }}
         .priority-badge, .status-badge {{ display: inline-block; padding: 6px 14px; border-radius: 6px; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
         .priority-badge {{ background: {priorityColor}20; color: {priorityColor}; border: 1px solid {priorityColor}40; }}
         .status-badge {{ background: {statusColor}20; color: {statusColor}; border: 1px solid {statusColor}40; }}
@@ -560,15 +622,9 @@ public class EmailService : IEmailService
                     <div class='incident-number'>{incidentNumber}</div>
                     <div class='incident-subject'>{subject}</div>
                     <div class='incident-details'>
-                        <div class='detail-item'>
-                            <div class='detail-label'>Priority</div>
-                            <div class='detail-value'><span class='priority-badge'>{priority}</span></div>
-                        </div>
-                        <div class='detail-item'>
-                            <div class='detail-label'>Status</div>
-                            <div class='detail-value'><span class='status-badge'>{status}</span></div>
-                        </div>
+{detailsHtml.ToString().Trim()}
                     </div>
+{descriptionHtml}
                 </div>
                 <div class='cta-container'>
                     <a href='{link}' class='cta-button'>View Incident Details</a>

@@ -32,6 +32,7 @@ public class TasksController : ControllerBase
         try
         {
             var query = _context.Tasks
+                .AsNoTracking() // Performance: Read-only query
                 .Where(t => !t.IsDeleted)
                 .Include(t => t.Assignee)
                 .Include(t => t.Creator)

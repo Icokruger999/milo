@@ -17,7 +17,12 @@ if (string.IsNullOrEmpty(connectionString))
 }
 
 builder.Services.AddDbContext<MiloDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(connectionString, npgsqlOptions =>
+    {
+        npgsqlOptions.UseSnakeCaseNamingConvention();
+        npgsqlOptions.CommandTimeout(30); // 30 second timeout
+    })
+    .EnableSensitiveDataLogging(false)); // Disable for performance in production
 
 // Add email service
 builder.Services.AddScoped<Milo.API.Services.IEmailService, Milo.API.Services.EmailService>();

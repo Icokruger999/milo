@@ -85,11 +85,20 @@ async function loadIncidents() {
         console.log('Loading incidents...');
         
         const projectId = currentProject?.id;
-        const url = projectId ? `/incidents?projectId=${projectId}` : '/incidents';
+        const url = projectId ? `/incidents?projectId=${projectId}&page=1&pageSize=50` : '/incidents?page=1&pageSize=50';
         
         const response = await apiClient.get(url);
         if (response.ok) {
-            allIncidents = await response.json() || [];
+            const data = await response.json() || {};
+            // Handle pagination response (new format) or direct array (old format)
+            if (data.incidents && Array.isArray(data.incidents)) {
+                allIncidents = data.incidents;
+            } else if (Array.isArray(data)) {
+                // Backward compatibility with old format
+                allIncidents = data;
+            } else {
+                allIncidents = [];
+            }
             incidents = [...allIncidents];
             
             console.log(`Loaded ${incidents.length} incidents`);
@@ -187,6 +196,9 @@ function showCreateIncidentModal() {
             return;
         }
         
+        // Reset modal to create mode
+        resetModalForCreate();
+        
         console.log('Modal found, showing it');
         // Force display with inline styles that override everything
         modal.style.setProperty('display', 'flex', 'important');
@@ -208,12 +220,6 @@ function showCreateIncidentModal() {
                 modal.style.visibility = 'visible';
             }
         }, 100);
-    
-    // Reset form
-    const form = document.getElementById('createIncidentForm');
-    if (form) {
-        form.reset();
-    }
     
         // Load entities for dropdowns
         if (typeof loadRequesters === 'function') {
@@ -241,6 +247,8 @@ function closeCreateIncidentModal() {
             modal.style.opacity = '0';
             document.body.style.overflow = ''; // Restore body scroll
         }
+        // Reset modal state for create mode
+        resetModalForCreate();
     } catch (error) {
         console.error('Error closing modal:', error);
     }
@@ -396,8 +404,13 @@ function renderIncidentDetails(incident) {
             <div class="detail-field">
                 <div class="detail-field-label">Status</div>
                 <div class="detail-field-value">
-                    <span class="status-badge status-${incident.status.toLowerCase()}">${incident.status}</span>
-                    <button class="btn-secondary" style="margin-left: 8px; padding: 4px 8px; font-size: 12px;" onclick="updateIncidentStatus()">Change Status</button>
+                    <select class="form-select" id="incidentStatusChange" style="display: inline-block; width: auto; margin-left: 8px; padding: 4px 24px 4px 8px; font-size: 13px; vertical-align: middle;" onchange="updateIncidentStatus(this.value)">
+                        <option value="New" ${incident.status === 'New' ? 'selected' : ''}>New</option>
+                        <option value="Open" ${incident.status === 'Open' ? 'selected' : ''}>Open</option>
+                        <option value="Pending" ${incident.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                        <option value="Resolved" ${incident.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
+                        <option value="Closed" ${incident.status === 'Closed' ? 'selected' : ''}>Closed</option>
+                    </select>
                 </div>
             </div>
             <div class="detail-field">
@@ -525,12 +538,9 @@ function closeDetailPanel() {
     currentIncident = null;
 }
 
-// Update incident status (simple prompt-based for now)
-async function updateIncidentStatus() {
-    if (!currentIncident) return;
-    
-    const newStatus = prompt('Enter new status (New, Open, Pending, Resolved, Closed):', currentIncident.status);
-    if (!newStatus) return;
+// Update incident status
+async function updateIncidentStatus(newStatus) {
+    if (!currentIncident || !newStatus) return;
     
     const validStatuses = ['New', 'Open', 'Pending', 'Resolved', 'Closed'];
     if (!validStatuses.includes(newStatus)) {
@@ -539,7 +549,17 @@ async function updateIncidentStatus() {
     }
     
     try {
-        await apiClient.put(`/incidents/${currentIncident.id}`, { status: newStatus });
+        const response = await apiClient.put(`/incidents/${currentIncident.id}`, { status: newStatus });
+        if (!response.ok) {
+            console.error('Failed to update status:', response.status);
+            // Revert dropdown selection on error
+            const select = document.getElementById('incidentStatusChange');
+            if (select) {
+                select.value = currentIncident.status;
+            }
+            return;
+        }
+        
         console.log('Status updated successfully');
         
         // Reload incident details
@@ -549,13 +569,261 @@ async function updateIncidentStatus() {
         await loadIncidents();
     } catch (error) {
         console.error('Failed to update status:', error);
+        // Revert dropdown selection on error
+        const select = document.getElementById('incidentStatusChange');
+        if (select) {
+            select.value = currentIncident.status;
+        }
     }
 }
 
-// Edit incident (placeholder)
+// Edit incident
 function editIncident() {
-    console.log('Edit functionality coming soon!');
+    if (!currentIncident) {
+        console.error('No incident selected for editing');
+        return;
+    }
+    
+    showEditIncidentModal(currentIncident);
 }
+
+// Show edit incident modal
+function showEditIncidentModal(incident) {
+    try {
+        const modal = document.getElementById('createIncidentModal');
+        if (!modal) {
+            console.error('Modal element not found!');
+            return;
+        }
+        
+        // Change modal title
+        const modalTitle = modal.querySelector('.modal-title');
+        if (modalTitle) {
+            modalTitle.textContent = 'Edit Incident';
+        }
+        
+        // Change submit button text
+        const submitButton = modal.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.textContent = 'Update';
+        }
+        
+        // Change form onsubmit handler
+        const form = document.getElementById('createIncidentForm');
+        if (form) {
+            form.onsubmit = updateIncident;
+        }
+        
+        // Show modal
+        modal.style.setProperty('display', 'flex', 'important');
+        modal.style.setProperty('visibility', 'visible', 'important');
+        modal.style.setProperty('opacity', '1', 'important');
+        modal.style.setProperty('z-index', '9999', 'important');
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        
+        // Populate form fields
+        populateIncidentForm(incident);
+        
+        // Load entities for dropdowns
+        if (typeof loadRequesters === 'function') {
+            loadRequesters();
+        }
+        if (typeof loadAssignees === 'function') {
+            loadAssignees();
+        }
+        if (typeof loadGroups === 'function') {
+            loadGroups();
+        }
+    } catch (error) {
+        console.error('Error in showEditIncidentModal:', error);
+    }
+}
+
+// Populate incident form with data
+function populateIncidentForm(incident) {
+    if (!incident) return;
+    
+    // Subject
+    const subjectInput = document.getElementById('incidentSubject');
+    if (subjectInput) {
+        subjectInput.value = incident.subject || '';
+    }
+    
+    // Requester (read-only in edit mode, but we can show it)
+    const requesterSelect = document.getElementById('incidentRequester');
+    if (requesterSelect && incident.requester) {
+        // Requester cannot be changed during edit, so we'll disable it
+        requesterSelect.value = incident.requester.id || '';
+        requesterSelect.disabled = true;
+    }
+    
+    // Status
+    const statusSelect = document.getElementById('incidentStatus');
+    if (statusSelect) {
+        statusSelect.value = incident.status || 'New';
+    }
+    
+    // Priority
+    const prioritySelect = document.getElementById('incidentPriority');
+    if (prioritySelect) {
+        prioritySelect.value = incident.priority || 'Low';
+    }
+    
+    // Urgency
+    const urgencySelect = document.getElementById('incidentUrgency');
+    if (urgencySelect) {
+        urgencySelect.value = incident.urgency || 'Low';
+    }
+    
+    // Impact
+    const impactSelect = document.getElementById('incidentImpact');
+    if (impactSelect) {
+        impactSelect.value = incident.impact || 'Low';
+    }
+    
+    // Source
+    const sourceSelect = document.getElementById('incidentSource');
+    if (sourceSelect) {
+        sourceSelect.value = incident.source || '';
+    }
+    
+    // Department
+    const departmentSelect = document.getElementById('incidentDepartment');
+    if (departmentSelect) {
+        departmentSelect.value = incident.department || '';
+    }
+    
+    // Agent (set before loading - updateAssigneeDropdown preserves the value)
+    const agentSelect = document.getElementById('incidentAgent');
+    if (agentSelect && incident.agent) {
+        agentSelect.value = incident.agent.id || '';
+    }
+    
+    // Group (set before loading - updateGroupDropdown preserves the value)
+    const groupSelect = document.getElementById('incidentGroup');
+    if (groupSelect && incident.group) {
+        groupSelect.value = incident.group.id || '';
+    }
+    
+    // Category
+    const categoryInput = document.getElementById('incidentCategory');
+    if (categoryInput) {
+        categoryInput.value = incident.category || '';
+    }
+    
+    // Description
+    const descriptionTextarea = document.getElementById('incidentDescription');
+    if (descriptionTextarea) {
+        descriptionTextarea.value = incident.description || '';
+    }
+}
+
+// Update incident
+async function updateIncident(event) {
+    event.preventDefault();
+    
+    if (!currentIncident) {
+        console.error('No incident selected for updating');
+        return;
+    }
+    
+    try {
+        const subject = document.getElementById('incidentSubject')?.value?.trim();
+        const status = document.getElementById('incidentStatus')?.value || 'New';
+        const priority = document.getElementById('incidentPriority')?.value || 'Low';
+        const urgency = document.getElementById('incidentUrgency')?.value;
+        const impact = document.getElementById('incidentImpact')?.value;
+        const source = document.getElementById('incidentSource')?.value;
+        const department = document.getElementById('incidentDepartment')?.value;
+        const agentId = document.getElementById('incidentAgent')?.value ? parseInt(document.getElementById('incidentAgent').value) : null;
+        const groupId = document.getElementById('incidentGroup')?.value ? parseInt(document.getElementById('incidentGroup').value) : null;
+        const category = document.getElementById('incidentCategory')?.value?.trim();
+        const description = document.getElementById('incidentDescription')?.value?.trim();
+
+        if (!subject) {
+            console.error('Subject is required');
+            return;
+        }
+
+        const updateData = {
+            subject,
+            status,
+            priority,
+            urgency: urgency || null,
+            impact: impact || null,
+            source: source || null,
+            department: department || null,
+            agentId: agentId,
+            groupId: groupId,
+            category: category || null,
+            description: description || null
+        };
+
+        console.log('Updating incident:', currentIncident.id, updateData);
+
+        const response = await apiClient.put(`/incidents/${currentIncident.id}`, updateData);
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Failed to update incident' }));
+            console.error('Failed to update incident:', response.status, errorData);
+            throw new Error(errorData.message || 'Failed to update incident');
+        }
+        
+        const updatedIncident = await response.json();
+        console.log('Incident updated:', updatedIncident);
+
+        // Close modal
+        closeCreateIncidentModal();
+        resetModalForCreate();
+
+        // Reload incident details
+        await showIncidentDetails(currentIncident.id);
+
+        // Reload incidents list
+        await loadIncidents();
+
+        console.log(`Incident ${updatedIncident.incidentNumber || currentIncident.incidentNumber} updated successfully!`);
+    } catch (error) {
+        console.error('Failed to update incident:', error);
+    }
+}
+
+// Reset modal for create mode
+function resetModalForCreate() {
+    const modal = document.getElementById('createIncidentModal');
+    if (!modal) return;
+    
+    // Reset modal title
+    const modalTitle = modal.querySelector('.modal-title');
+    if (modalTitle) {
+        modalTitle.textContent = 'Create Incident';
+    }
+    
+    // Reset submit button text
+    const submitButton = modal.querySelector('button[type="submit"]');
+    if (submitButton) {
+        submitButton.textContent = 'Create';
+    }
+    
+    // Reset form onsubmit handler
+    const form = document.getElementById('createIncidentForm');
+    if (form) {
+        form.onsubmit = createIncident;
+    }
+    
+    // Reset form fields
+    if (form) {
+        form.reset();
+    }
+    
+    // Re-enable requester field
+    const requesterSelect = document.getElementById('incidentRequester');
+    if (requesterSelect) {
+        requesterSelect.disabled = false;
+    }
+}
+
 
 // Export incidents (placeholder)
 function exportIncidents() {

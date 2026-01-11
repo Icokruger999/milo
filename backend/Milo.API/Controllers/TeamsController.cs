@@ -28,6 +28,7 @@ public class TeamsController : ControllerBase
         try
         {
             var query = _context.Teams
+                .AsNoTracking() // Performance: Read-only query
                 .Include(t => t.Project)
                 .Include(t => t.CreatedBy)
                 .Include(t => t.Members)
