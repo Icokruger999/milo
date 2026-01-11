@@ -303,8 +303,15 @@ async function createIncident(event) {
 
         console.log('Creating incident:', incidentData);
 
-        const newIncident = await apiClient.post('/incidents', incidentData);
+        const response = await apiClient.post('/incidents', incidentData);
         
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Failed to create incident' }));
+            console.error('Failed to create incident:', response.status, errorData);
+            throw new Error(errorData.message || 'Failed to create incident');
+        }
+        
+        const newIncident = await response.json();
         console.log('Incident created:', newIncident);
 
         // Close modal
@@ -331,7 +338,13 @@ async function showIncidentDetails(incidentId) {
     try {
         console.log('Loading incident details for:', incidentId);
         
-        const incident = await apiClient.get(`/incidents/${incidentId}`);
+        const response = await apiClient.get(`/incidents/${incidentId}`);
+        if (!response.ok) {
+            console.error('Failed to load incident details:', response.status);
+            return;
+        }
+        
+        const incident = await response.json();
         currentIncident = incident;
         
         console.log('Incident details loaded:', incident);
