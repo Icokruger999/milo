@@ -291,38 +291,57 @@ public class EmailService : IEmailService
 <html>
 <head>
     <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <style>
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 20px; }}
-        .container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; }}
-        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 32px 24px; text-align: center; }}
-        .content {{ padding: 32px 24px; }}
-        .task-box {{ background: #F4F5F7; border-left: 4px solid #0052CC; padding: 20px; margin: 24px 0; border-radius: 4px; }}
-        .task-id {{ font-size: 16px; font-weight: 600; color: #0052CC; margin-bottom: 8px; }}
-        .task-title {{ font-size: 18px; font-weight: 700; color: #172B4D; }}
-        .project {{ font-size: 14px; color: #6B778C; margin-top: 8px; }}
-        .cta-button {{ display: inline-block; background: #0052CC; color: #FFFFFF; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 24px 0; }}
-        .footer {{ background: #F4F5F7; padding: 24px; text-align: center; font-size: 12px; color: #6B778C; }}
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #172B4D; background: linear-gradient(135deg, #F4F5F7 0%, #EBECF0 100%); margin: 0; padding: 20px; -webkit-font-smoothing: antialiased; }}
+        .email-wrapper {{ max-width: 600px; margin: 0 auto; }}
+        .container {{ background-color: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(9, 30, 66, 0.15), 0 0 1px rgba(9, 30, 66, 0.1); }}
+        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 40px 32px; text-align: center; position: relative; }}
+        .header::after {{ content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%); }}
+        .header h1 {{ font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }}
+        .content {{ padding: 40px 32px; }}
+        .greeting {{ font-size: 16px; color: #172B4D; margin-bottom: 16px; }}
+        .intro-text {{ font-size: 15px; color: #42526E; margin-bottom: 24px; line-height: 1.6; }}
+        .task-box {{ background: linear-gradient(to bottom, #F8F9FA 0%, #F4F5F7 100%); border-left: 5px solid #0052CC; padding: 24px; margin: 24px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(9, 30, 66, 0.08); }}
+        .task-id {{ font-size: 16px; font-weight: 700; color: #0052CC; margin-bottom: 12px; letter-spacing: 0.5px; }}
+        .task-title {{ font-size: 22px; font-weight: 700; color: #172B4D; margin-bottom: 16px; line-height: 1.4; }}
+        .project {{ font-size: 15px; color: #6B778C; margin-top: 12px; padding-top: 16px; border-top: 1px solid rgba(223, 225, 230, 0.6); }}
+        .project-label {{ font-weight: 600; color: #42526E; }}
+        .cta-container {{ text-align: center; margin: 32px 0; }}
+        .cta-button {{ display: inline-block; background: linear-gradient(135deg, #0052CC 0%, #0065FF 100%); color: #FFFFFF; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(0, 82, 204, 0.3); transition: all 0.2s ease; border: none; }}
+        .cta-button:hover {{ box-shadow: 0 6px 16px rgba(0, 82, 204, 0.4); transform: translateY(-1px); }}
+        .footer {{ background: #F4F5F7; padding: 32px; text-align: center; border-top: 1px solid #DFE1E6; }}
+        .footer p {{ font-size: 13px; color: #6B778C; margin: 8px 0; line-height: 1.5; }}
+        .footer p:first-child {{ font-weight: 600; color: #42526E; }}
+        @media only screen and (max-width: 600px) {{
+            .content {{ padding: 32px 24px; }}
+            .header {{ padding: 32px 24px; }}
+            .header h1 {{ font-size: 24px; }}
+        }}
     </style>
 </head>
 <body>
-    <div class='container'>
-        <div class='header'>
-            <h1>New Task Assigned</h1>
-        </div>
-        <div class='content'>
-            <p>Hello {assigneeName},</p>
-            <p>A new task has been assigned to you:</p>
-            <div class='task-box'>
-                <div class='task-id'>{taskId}</div>
-                <div class='task-title'>{taskTitle}</div>
-                <div class='project'>Project: {projectName}</div>
+    <div class='email-wrapper'>
+        <div class='container'>
+            <div class='header'>
+                <h1>New Task Assigned</h1>
             </div>
-            <p style='text-align: center;'>
-                <a href='{link}' class='cta-button'>View Task</a>
-            </p>
-        </div>
-        <div class='footer'>
-            <p>This is an automated notification from Milo</p>
+            <div class='content'>
+                <p class='greeting'>Hello {assigneeName},</p>
+                <p class='intro-text'>A new task has been assigned to you:</p>
+                <div class='task-box'>
+                    <div class='task-id'>{taskId}</div>
+                    <div class='task-title'>{taskTitle}</div>
+                    <div class='project'><span class='project-label'>Project:</span> {projectName}</div>
+                </div>
+                <div class='cta-container'>
+                    <a href='{link}' class='cta-button'>View Task Details</a>
+                </div>
+            </div>
+            <div class='footer'>
+                <p>This is an automated notification from Milo</p>
+            </div>
         </div>
     </div>
 </body>
@@ -492,53 +511,73 @@ public class EmailService : IEmailService
 <html>
 <head>
     <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <style>
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 20px; }}
-        .container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; }}
-        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 32px 24px; text-align: center; }}
-        .content {{ padding: 32px 24px; }}
-        .incident-box {{ background: #F4F5F7; border-left: 4px solid #0052CC; padding: 20px; margin: 24px 0; border-radius: 4px; }}
-        .incident-number {{ font-size: 18px; font-weight: 600; color: #0052CC; margin-bottom: 8px; }}
-        .incident-subject {{ font-size: 20px; font-weight: 700; color: #172B4D; margin-bottom: 16px; }}
-        .incident-details {{ display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }}
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #172B4D; background: linear-gradient(135deg, #F4F5F7 0%, #EBECF0 100%); margin: 0; padding: 20px; -webkit-font-smoothing: antialiased; }}
+        .email-wrapper {{ max-width: 600px; margin: 0 auto; }}
+        .container {{ background-color: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(9, 30, 66, 0.15), 0 0 1px rgba(9, 30, 66, 0.1); }}
+        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 40px 32px; text-align: center; position: relative; }}
+        .header::after {{ content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%); }}
+        .header h1 {{ font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }}
+        .content {{ padding: 40px 32px; }}
+        .greeting {{ font-size: 16px; color: #172B4D; margin-bottom: 16px; }}
+        .intro-text {{ font-size: 15px; color: #42526E; margin-bottom: 24px; line-height: 1.6; }}
+        .incident-box {{ background: linear-gradient(to bottom, #F8F9FA 0%, #F4F5F7 100%); border-left: 5px solid #0052CC; padding: 24px; margin: 24px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(9, 30, 66, 0.08); }}
+        .incident-number {{ font-size: 16px; font-weight: 700; color: #0052CC; margin-bottom: 12px; letter-spacing: 0.5px; text-transform: uppercase; }}
+        .incident-subject {{ font-size: 22px; font-weight: 700; color: #172B4D; margin-bottom: 20px; line-height: 1.4; }}
+        .incident-details {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(223, 225, 230, 0.6); }}
         .detail-item {{ }}
-        .detail-label {{ font-size: 12px; color: #6B778C; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }}
-        .detail-value {{ font-size: 14px; font-weight: 600; }}
-        .priority-badge {{ display: inline-block; padding: 4px 12px; border-radius: 4px; background: {priorityColor}15; color: {priorityColor}; font-weight: 600; }}
-        .status-badge {{ display: inline-block; padding: 4px 12px; border-radius: 4px; background: {statusColor}15; color: {statusColor}; font-weight: 600; }}
-        .cta-button {{ display: inline-block; background: #0052CC; color: #FFFFFF; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 24px 0; }}
-        .footer {{ background: #F4F5F7; padding: 24px; text-align: center; font-size: 12px; color: #6B778C; }}
+        .detail-label {{ font-size: 11px; color: #6B778C; text-transform: uppercase; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.5px; }}
+        .detail-value {{ font-size: 15px; font-weight: 600; }}
+        .priority-badge, .status-badge {{ display: inline-block; padding: 6px 14px; border-radius: 6px; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
+        .priority-badge {{ background: {priorityColor}20; color: {priorityColor}; border: 1px solid {priorityColor}40; }}
+        .status-badge {{ background: {statusColor}20; color: {statusColor}; border: 1px solid {statusColor}40; }}
+        .cta-container {{ text-align: center; margin: 32px 0; }}
+        .cta-button {{ display: inline-block; background: linear-gradient(135deg, #0052CC 0%, #0065FF 100%); color: #FFFFFF; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(0, 82, 204, 0.3); transition: all 0.2s ease; border: none; }}
+        .cta-button:hover {{ box-shadow: 0 6px 16px rgba(0, 82, 204, 0.4); transform: translateY(-1px); }}
+        .footer {{ background: #F4F5F7; padding: 32px; text-align: center; border-top: 1px solid #DFE1E6; }}
+        .footer p {{ font-size: 13px; color: #6B778C; margin: 8px 0; line-height: 1.5; }}
+        .footer p:first-child {{ font-weight: 600; color: #42526E; }}
+        @media only screen and (max-width: 600px) {{
+            .content {{ padding: 32px 24px; }}
+            .incident-details {{ grid-template-columns: 1fr; gap: 16px; }}
+            .header {{ padding: 32px 24px; }}
+            .header h1 {{ font-size: 24px; }}
+        }}
     </style>
 </head>
 <body>
-    <div class='container'>
-        <div class='header'>
-            <h1>New Incident Assigned</h1>
-        </div>
-        <div class='content'>
-            <p>Hello {assigneeName},</p>
-            <p>A new incident has been assigned to you:</p>
-            <div class='incident-box'>
-                <div class='incident-number'>{incidentNumber}</div>
-                <div class='incident-subject'>{subject}</div>
-                <div class='incident-details'>
-                    <div class='detail-item'>
-                        <div class='detail-label'>Priority</div>
-                        <div class='detail-value'><span class='priority-badge'>{priority}</span></div>
-                    </div>
-                    <div class='detail-item'>
-                        <div class='detail-label'>Status</div>
-                        <div class='detail-value'><span class='status-badge'>{status}</span></div>
+    <div class='email-wrapper'>
+        <div class='container'>
+            <div class='header'>
+                <h1>Incident Assigned to You</h1>
+            </div>
+            <div class='content'>
+                <p class='greeting'>Hello {assigneeName},</p>
+                <p class='intro-text'>A new incident has been assigned to you and requires your attention:</p>
+                <div class='incident-box'>
+                    <div class='incident-number'>{incidentNumber}</div>
+                    <div class='incident-subject'>{subject}</div>
+                    <div class='incident-details'>
+                        <div class='detail-item'>
+                            <div class='detail-label'>Priority</div>
+                            <div class='detail-value'><span class='priority-badge'>{priority}</span></div>
+                        </div>
+                        <div class='detail-item'>
+                            <div class='detail-label'>Status</div>
+                            <div class='detail-value'><span class='status-badge'>{status}</span></div>
+                        </div>
                     </div>
                 </div>
+                <div class='cta-container'>
+                    <a href='{link}' class='cta-button'>View Incident Details</a>
+                </div>
             </div>
-            <p style='text-align: center;'>
-                <a href='{link}' class='cta-button'>View Incident</a>
-            </p>
-        </div>
-        <div class='footer'>
-            <p>This is an automated notification from Milo Incident Management</p>
-            <p>Please review and respond to this incident as soon as possible.</p>
+            <div class='footer'>
+                <p>This is an automated notification from Milo Incident Management</p>
+                <p>Please review and respond to this incident as soon as possible.</p>
+            </div>
         </div>
     </div>
 </body>

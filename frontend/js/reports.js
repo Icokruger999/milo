@@ -4,11 +4,40 @@ let reportData = null;
 
 // Show report management modal
 function showReportManagement() {
-    const modal = document.getElementById('reportManagementModal');
-    if (modal) {
-        modal.classList.add('show');
+    try {
+        console.log('showReportManagement called');
+        const modal = document.getElementById('reportManagementModal');
+        if (!modal) {
+            console.error('reportManagementModal element not found!');
+            return;
+        }
+        
+        console.log('Modal found, showing it');
+        // Force display with inline styles that override everything (matching create incident modal pattern)
+        modal.style.setProperty('display', 'flex', 'important');
+        modal.style.setProperty('visibility', 'visible', 'important');
+        modal.style.setProperty('opacity', '1', 'important');
+        modal.style.setProperty('z-index', '9999', 'important');
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden'; // Prevent body scroll when modal is open
+        
+        // Double check it's visible
+        setTimeout(() => {
+            const computedStyle = window.getComputedStyle(modal);
+            console.log('Modal display after show:', computedStyle.display);
+            console.log('Modal visibility:', computedStyle.visibility);
+            console.log('Modal z-index:', computedStyle.zIndex);
+            if (computedStyle.display === 'none') {
+                console.error('Modal still not visible! Forcing again...');
+                modal.style.display = 'flex';
+                modal.style.visibility = 'visible';
+            }
+        }, 100);
+        
         loadRecipients();
         loadReportPreview();
+    } catch (error) {
+        console.error('Error in showReportManagement:', error);
     }
 }
 
@@ -16,7 +45,11 @@ function showReportManagement() {
 function closeReportManagement() {
     const modal = document.getElementById('reportManagementModal');
     if (modal) {
-        modal.classList.remove('show');
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+        modal.style.visibility = 'hidden';
+        modal.style.opacity = '0';
+        document.body.style.overflow = '';
         hideAddRecipientForm();
     }
 }
@@ -151,10 +184,7 @@ async function addRecipient() {
 
 // Delete recipient
 async function deleteRecipient(id) {
-    if (!confirm('Are you sure you want to remove this recipient?')) {
-        return;
-    }
-
+    // Direct delete without confirmation popup
     try {
         await apiClient.delete(`/reports/recipients/${id}`);
         showSuccess('Recipient removed successfully');
