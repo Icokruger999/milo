@@ -17,6 +17,46 @@ if (string.IsNullOrEmpty(connectionString))
     connectionString = "Host=localhost;Database=MiloDB;Username=postgres;Password=postgres";
 }
 
+// Handle Supabase connection string - decode if base64 encoded or convert URI format
+if (!string.IsNullOrEmpty(connectionString))
+{
+    try
+    {
+        string processedConnectionString = connectionString;
+        
+        // Try to decode as base64 first (for encrypted/encoded Supabase strings)
+        if (connectionString.EndsWith("==") || connectionString.EndsWith("="))
+        {
+            try
+            {
+                var decoded = System.Text.Encoding.UTF8.GetString(System.Convert.FromBase64String(connectionString));
+                if (decoded.Contains("postgresql://") || decoded.Contains("postgres://") || 
+                    decoded.Contains("Host=") || decoded.Contains("host="))
+                {
+                    processedConnectionString = decoded;
+                }
+            }
+            catch
+            {
+                // Not base64, use as-is
+            }
+        }
+        
+        // Parse and configure connection string
+        var connBuilder = new NpgsqlConnectionStringBuilder(processedConnectionString);
+        
+        // Ensure SSL is enabled for Supabase (required)
+        connBuilder.SslMode = SslMode.Require;
+        connBuilder.TrustServerCertificate = true;
+        
+        connectionString = connBuilder.ConnectionString;
+    }
+    catch
+    {
+        // If parsing fails, use as-is - Npgsql will try to handle it
+    }
+}
+
 builder.Services.AddDbContext<MiloDbContext>(options =>
     options.UseNpgsql(connectionString, npgsqlOptions =>
     {
