@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Milo.API.Data;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
