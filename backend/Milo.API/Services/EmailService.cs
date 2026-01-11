@@ -177,6 +177,7 @@ public class EmailService : IEmailService
                         <th>Subject</th>
                         <th>Status</th>
                         <th>Priority</th>
+                        <th>Resolution Time</th>
                     </tr>
                 </thead>
                 <tbody>");
@@ -224,6 +225,27 @@ public class EmailService : IEmailService
 </html>");
 
         return html.ToString();
+    }
+
+    private string FormatDuration(TimeSpan duration)
+    {
+        if (duration.TotalDays >= 1)
+        {
+            var days = (int)duration.TotalDays;
+            var hours = duration.Hours;
+            return $"{days}d {hours}h";
+        }
+        else if (duration.TotalHours >= 1)
+        {
+            var hours = (int)duration.TotalHours;
+            var minutes = duration.Minutes;
+            return $"{hours}h {minutes}m";
+        }
+        else
+        {
+            var minutes = (int)duration.TotalMinutes;
+            return $"{minutes}m";
+        }
     }
 
     public async Task<bool> SendTemporaryPasswordEmailAsync(string email, string name, string temporaryPassword)

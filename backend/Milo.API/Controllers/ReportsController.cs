@@ -161,6 +161,7 @@ public class ReportsController : ControllerBase
                     i.Status,
                     i.Priority,
                     i.CreatedAt,
+                    i.ResolvedAt,
                     RequesterName = i.Requester != null ? i.Requester.Name : "Unknown",
                     AgentName = i.Assignee != null ? i.Assignee.Name : "Unassigned"
                 })

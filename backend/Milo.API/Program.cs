@@ -79,6 +79,15 @@ app.UseExceptionHandler("/api/error");
 // CORS must be early in the pipeline, before UseAuthorization
 app.UseCors("AllowFrontend");
 
+// Add cache control headers to prevent caching for API responses
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Append("Cache-Control", "no-cache, no-store, must-revalidate");
+    context.Response.Headers.Append("Pragma", "no-cache");
+    context.Response.Headers.Append("Expires", "0");
+    await next();
+});
+
 app.UseAuthorization();
 
 app.MapControllers().RequireCors("AllowFrontend");
