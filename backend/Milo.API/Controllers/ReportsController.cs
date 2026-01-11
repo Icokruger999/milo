@@ -297,8 +297,8 @@ public class ReportsController : ControllerBase
 // Request DTOs
 public class AddRecipientRequest
 {
-    public required string Email { get; set; }
-    public required string Name { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
     public string? ReportType { get; set; }
     public bool? IsActive { get; set; }
     public int? ProjectId { get; set; }
