@@ -92,7 +92,7 @@ public class IncidentsController : ControllerBase
                         i.Requester.Name,
                         i.Requester.Email
                     },
-                    Agent = i.Assignee == null ? null : new
+                    Assignee = i.Assignee == null ? null : new
                     {
                         i.Assignee.Id,
                         i.Assignee.Name,
@@ -172,7 +172,7 @@ public class IncidentsController : ControllerBase
                         i.Requester.Name,
                         i.Requester.Email
                     },
-                    Agent = i.Assignee == null ? null : new
+                    Assignee = i.Assignee == null ? null : new
                     {
                         i.Assignee.Id,
                         i.Assignee.Name,

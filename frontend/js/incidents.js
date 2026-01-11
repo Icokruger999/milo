@@ -135,7 +135,7 @@ function renderIncidents() {
     tbody.innerHTML = incidents.map(incident => {
         const createdDate = new Date(incident.createdAt).toLocaleDateString();
         const requesterName = incident.requester?.name || 'Unknown';
-        const agentName = incident.agent?.name || 'Unassigned';
+        const assigneeName = incident.assignee?.name || 'Unassigned';
         
         return `
             <tr onclick="showIncidentDetails(${incident.id})">
@@ -144,7 +144,7 @@ function renderIncidents() {
                 <td><span class="status-badge status-${incident.status.toLowerCase()}">${incident.status}</span></td>
                 <td><span class="priority-badge priority-${incident.priority.toLowerCase()}">${incident.priority}</span></td>
                 <td>${escapeHtml(requesterName)}</td>
-                <td>${escapeHtml(agentName)}</td>
+                <td>${escapeHtml(assigneeName)}</td>
                 <td>${createdDate}</td>
             </tr>
         `;
@@ -175,7 +175,7 @@ function filterIncidents() {
             incident.incidentNumber.toLowerCase().includes(searchTerm) ||
             incident.subject.toLowerCase().includes(searchTerm) ||
             incident.requester?.name.toLowerCase().includes(searchTerm) ||
-            incident.agent?.name.toLowerCase().includes(searchTerm);
+            incident.assignee?.name.toLowerCase().includes(searchTerm);
         
         const matchesStatus = !statusFilter || incident.status === statusFilter;
         const matchesPriority = !priorityFilter || incident.priority === priorityFilter;
@@ -443,7 +443,7 @@ function renderIncidentDetails(incident) {
             </div>
             <div class="detail-field">
                 <div class="detail-field-label">Assignee</div>
-                <div class="detail-field-value">${incident.agent ? escapeHtml(incident.agent.name) : 'Unassigned'}</div>
+                <div class="detail-field-value">${incident.assignee ? escapeHtml(incident.assignee.name) : 'Unassigned'}</div>
             </div>
             ${incident.group ? `
             <div class="detail-field">
@@ -702,10 +702,10 @@ function populateIncidentForm(incident) {
         departmentSelect.value = incident.department || '';
     }
     
-    // Agent (set before loading - updateAssigneeDropdown preserves the value)
+    // Assignee (set before loading - updateAssigneeDropdown preserves the value)
     const agentSelect = document.getElementById('incidentAgent');
-    if (agentSelect && incident.agent) {
-        agentSelect.value = incident.agent.id || '';
+    if (agentSelect && incident.assignee) {
+        agentSelect.value = incident.assignee.id || '';
     }
     
     // Group (set before loading - updateGroupDropdown preserves the value)
