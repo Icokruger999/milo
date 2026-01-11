@@ -148,17 +148,37 @@ function hideAddRecipientForm() {
 // Add recipient
 async function addRecipient() {
     try {
-        const name = document.getElementById('recipientName').value.trim();
-        const email = document.getElementById('recipientEmail').value.trim();
+        const name = document.getElementById('recipientName')?.value?.trim();
+        const email = document.getElementById('recipientEmail')?.value?.trim();
 
         if (!name || !email) {
-            showError('Please fill in all fields');
+            console.error('Please fill in all fields');
+            alert('Please fill in all fields');
             return;
         }
 
         if (!isValidEmail(email)) {
-            showError('Please enter a valid email address');
+            console.error('Please enter a valid email address');
+            alert('Please enter a valid email address');
             return;
+        }
+
+        // Get currentProject from projectSelector (same way incidents.js does it)
+        let currentProject = null;
+        if (typeof projectSelector !== 'undefined' && projectSelector.getCurrentProject) {
+            currentProject = projectSelector.getCurrentProject();
+        } else if (typeof projectSelector !== 'undefined' && projectSelector.currentProject) {
+            currentProject = projectSelector.currentProject;
+        } else {
+            // Fallback to localStorage
+            const projectData = localStorage.getItem('currentProject');
+            if (projectData) {
+                try {
+                    currentProject = JSON.parse(projectData);
+                } catch (e) {
+                    console.error('Failed to parse project data', e);
+                }
+            }
         }
 
         const data = {
@@ -169,16 +189,31 @@ async function addRecipient() {
             projectId: currentProject?.id || null
         };
 
+        console.log('Adding recipient:', data);
         const response = await apiClient.post('/reports/recipients', data);
+        
         if (!response.ok) {
-            throw new Error('Failed to add recipient');
+            const errorData = await response.json().catch(() => ({ message: 'Failed to add recipient' }));
+            console.error('Failed to add recipient:', response.status, errorData);
+            alert(errorData.message || 'Failed to add recipient');
+            return;
         }
-        showSuccess('Recipient added successfully');
+        
+        const newRecipient = await response.json();
+        console.log('Recipient added successfully:', newRecipient);
+        
+        alert('Recipient added successfully');
         await loadRecipients();
         hideAddRecipientForm();
+        
+        // Clear form fields
+        const nameInput = document.getElementById('recipientName');
+        const emailInput = document.getElementById('recipientEmail');
+        if (nameInput) nameInput.value = '';
+        if (emailInput) emailInput.value = '';
     } catch (error) {
         console.error('Error adding recipient:', error);
-        showError('Failed to add recipient');
+        alert('Failed to add recipient: ' + (error.message || 'Unknown error'));
     }
 }
 
