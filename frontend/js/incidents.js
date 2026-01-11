@@ -88,11 +88,16 @@ async function loadIncidents() {
         const url = projectId ? `/incidents?projectId=${projectId}` : '/incidents';
         
         const response = await apiClient.get(url);
-        allIncidents = response || [];
-        incidents = [...allIncidents];
-        
-        console.log(`Loaded ${incidents.length} incidents`);
-        renderIncidents();
+        if (response.ok) {
+            allIncidents = await response.json() || [];
+            incidents = [...allIncidents];
+            
+            console.log(`Loaded ${incidents.length} incidents`);
+            renderIncidents();
+        } else {
+            console.error('Failed to load incidents:', response.status);
+            showEmptyState();
+        }
     } catch (error) {
         console.error('Failed to load incidents:', error);
         showEmptyState();
