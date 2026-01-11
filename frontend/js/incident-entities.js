@@ -9,7 +9,11 @@ let requesters = [];
 async function loadAssignees() {
     try {
         const response = await apiClient.get('/incidents/assignees');
-        assignees = response || [];
+        if (response.ok) {
+            assignees = await response.json() || [];
+        } else {
+            assignees = [];
+        }
         renderAssignees();
         updateAssigneeDropdown();
     } catch (error) {
@@ -98,7 +102,16 @@ async function addAssignee() {
     }
 
     try {
-        const newAssignee = await apiClient.post('/incidents/assignees', { name, email });
+        const response = await apiClient.post('/incidents/assignees', { name, email });
+        
+        if (!response.ok) {
+            console.error('Failed to create assignee:', response.status);
+            await loadAssignees();
+            hideAddAssigneeForm();
+            return;
+        }
+        
+        const newAssignee = await response.json();
         
         // Validate response has required properties
         if (!newAssignee || !newAssignee.id || !newAssignee.name || !newAssignee.email) {
@@ -143,7 +156,11 @@ async function deleteAssignee(id) {
 async function loadGroups() {
     try {
         const response = await apiClient.get('/incidents/groups');
-        groups = response || [];
+        if (response.ok) {
+            groups = await response.json() || [];
+        } else {
+            groups = [];
+        }
         renderGroups();
         updateGroupDropdown();
     } catch (error) {
@@ -232,7 +249,16 @@ async function addGroup() {
     }
 
     try {
-        const newGroup = await apiClient.post('/incidents/groups', { name, description: description || null });
+        const response = await apiClient.post('/incidents/groups', { name, description: description || null });
+        
+        if (!response.ok) {
+            console.error('Failed to create group:', response.status);
+            await loadGroups();
+            hideAddGroupForm();
+            return;
+        }
+        
+        const newGroup = await response.json();
         
         // Validate response has required properties
         if (!newGroup || !newGroup.id || !newGroup.name) {
@@ -277,7 +303,11 @@ async function deleteGroup(id) {
 async function loadRequesters() {
     try {
         const response = await apiClient.get('/incidents/requesters');
-        requesters = response || [];
+        if (response.ok) {
+            requesters = await response.json() || [];
+        } else {
+            requesters = [];
+        }
         renderRequesters();
         updateRequesterDropdown();
     } catch (error) {
@@ -366,7 +396,16 @@ async function addRequester() {
     }
 
     try {
-        const newRequester = await apiClient.post('/incidents/requesters', { name, email });
+        const response = await apiClient.post('/incidents/requesters', { name, email });
+        
+        if (!response.ok) {
+            console.error('Failed to create requester:', response.status);
+            await loadRequesters();
+            hideAddRequesterForm();
+            return;
+        }
+        
+        const newRequester = await response.json();
         
         // Validate response has required properties
         if (!newRequester || !newRequester.id || !newRequester.name || !newRequester.email) {

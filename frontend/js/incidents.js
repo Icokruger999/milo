@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Update project name in breadcrumb
     const projectNameEl = document.getElementById('projectName');
-    if (projectNameEl) {
+    if (projectNameEl && currentProject) {
         projectNameEl.textContent = currentProject.name || 'Project';
     }
 
