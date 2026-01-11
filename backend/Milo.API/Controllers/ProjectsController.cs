@@ -23,19 +23,16 @@ public class ProjectsController : ControllerBase
     {
         var query = _context.Projects
             .AsNoTracking() // Performance: Read-only query
+            .Include(p => p.Owner) // Need Owner for response
             .Where(p => p.Status != "archived")
             .AsQueryable();
 
         // If userId provided, filter to projects user is member of, owns, or has access through team
         if (userId.HasValue)
         {
+            // Simplified filter for performance - just check owner and direct members
             query = query.Where(p => p.OwnerId == userId.Value || 
-                                     p.Members.Any(m => m.UserId == userId.Value) ||
-                                     _context.Teams.Any(t => 
-                                         t.ProjectId == p.Id && 
-                                         !t.IsDeleted &&
-                                         t.Members.Any(tm => tm.UserId == userId.Value && tm.IsActive)
-                                     ));
+                                     _context.ProjectMembers.Any(pm => pm.ProjectId == p.Id && pm.UserId == userId.Value));
         }
 
         var projects = await query.OrderBy(p => p.Name).ToListAsync();
@@ -52,22 +49,17 @@ public class ProjectsController : ControllerBase
                 }
                 else
                 {
-                    var member = p.Members.FirstOrDefault(m => m.UserId == userId.Value);
-                    if (member != null)
+                    // Check project members (simplified - just check if user is member, skip team access for performance)
+                    var isMember = _context.ProjectMembers
+                        .Any(pm => pm.ProjectId == p.Id && pm.UserId == userId.Value);
+                    
+                    if (isMember)
                     {
-                        userRole = member.Role;
-                    }
-                    else
-                    {
-                        // Check if user has access through a team
-                        var hasTeamAccess = _context.Teams
-                            .Any(t => t.ProjectId == p.Id && 
-                                     !t.IsDeleted &&
-                                     t.Members.Any(tm => tm.UserId == userId.Value && tm.IsActive));
-                        
-                        if (hasTeamAccess)
+                        var member = _context.ProjectMembers
+                            .FirstOrDefault(pm => pm.ProjectId == p.Id && pm.UserId == userId.Value);
+                        if (member != null)
                         {
-                            userRole = "team member";
+                            userRole = member.Role;
                         }
                     }
                 }
@@ -83,7 +75,7 @@ public class ProjectsController : ControllerBase
                 owner = new { id = p.Owner.Id, name = p.Owner.Name, email = p.Owner.Email },
                 ownerId = p.OwnerId,
                 role = userRole,
-                memberCount = p.Members.Count + 1, // +1 for owner
+                memberCount = _context.ProjectMembers.Count(pm => pm.ProjectId == p.Id) + 1, // +1 for owner
                 createdAt = p.CreatedAt
             };
         }));
