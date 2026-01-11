@@ -23,9 +23,6 @@ public class ProjectsController : ControllerBase
     {
         var query = _context.Projects
             .AsNoTracking() // Performance: Read-only query
-            .Include(p => p.Owner)
-            .Include(p => p.Members)
-            .ThenInclude(m => m.User)
             .Where(p => p.Status != "archived")
             .AsQueryable();
 
