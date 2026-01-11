@@ -48,6 +48,22 @@ public class MiloDbContext : DbContext
         {
             entity.HasIndex(e => e.TaskId);
             entity.HasIndex(e => e.Status);
+            
+            // Foreign key indexes for performance (critical for board queries)
+            entity.HasIndex(e => e.AssigneeId);
+            entity.HasIndex(e => e.CreatorId);
+            entity.HasIndex(e => e.ProductId);
+            entity.HasIndex(e => e.ProjectId);
+            entity.HasIndex(e => e.ParentTaskId);
+            entity.HasIndex(e => e.CreatedAt); // For sorting
+            
+            // Composite indexes for common query patterns
+            entity.HasIndex(e => new { e.ProjectId, e.Status }); // Most common: filter by project + status
+            entity.HasIndex(e => new { e.ProjectId, e.CreatedAt }); // Sorted lists by project
+            entity.HasIndex(e => new { e.Status, e.ProjectId, e.CreatedAt }); // Board view queries
+            entity.HasIndex(e => new { e.AssigneeId, e.Status }); // Assignee workload
+            entity.HasIndex(e => new { e.ProjectId, e.AssigneeId, e.Status }); // Project + assignee filtering
+            
             entity.HasOne(e => e.Assignee)
                 .WithMany(u => u.AssignedTasks)
                 .HasForeignKey(e => e.AssigneeId)
