@@ -124,6 +124,7 @@ public class MiloDbContext : DbContext
             entity.HasIndex(e => e.Email);
             entity.HasIndex(e => e.Token).IsUnique();
             entity.HasIndex(e => e.ProjectId);
+            entity.HasIndex(e => e.InvitedById); // Foreign key index for performance
             entity.HasOne(e => e.Project)
                 .WithMany(p => p.Invitations)
                 .HasForeignKey(e => e.ProjectId)
