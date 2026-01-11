@@ -693,6 +693,6 @@ public class IncidentSummary
     public string Status { get; set; } = string.Empty;
     public string Priority { get; set; } = string.Empty;
     public string RequesterName { get; set; } = string.Empty;
-    public string AgentName { get; set; } = string.Empty;
+    public string AssigneeName { get; set; } = string.Empty;
     public TimeSpan? ResolutionTime { get; set; }
 }

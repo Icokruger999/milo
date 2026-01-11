@@ -442,7 +442,7 @@ function renderIncidentDetails(incident) {
                 <div class="detail-field-value">${incident.requester ? escapeHtml(incident.requester.name) + ' (' + escapeHtml(incident.requester.email) + ')' : 'Unknown'}</div>
             </div>
             <div class="detail-field">
-                <div class="detail-field-label">Agent</div>
+                <div class="detail-field-label">Assignee</div>
                 <div class="detail-field-value">${incident.agent ? escapeHtml(incident.agent.name) : 'Unassigned'}</div>
             </div>
             ${incident.group ? `

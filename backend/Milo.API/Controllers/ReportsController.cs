@@ -163,7 +163,7 @@ public class ReportsController : ControllerBase
                     i.CreatedAt,
                     i.ResolvedAt,
                     RequesterName = i.Requester != null ? i.Requester.Name : "Unknown",
-                    AgentName = i.Assignee != null ? i.Assignee.Name : "Unassigned"
+                    AssigneeName = i.Assignee != null ? i.Assignee.Name : "Unassigned"
                 })
                 .ToListAsync();
 
