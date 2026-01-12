@@ -47,42 +47,29 @@ if (!string.IsNullOrEmpty(connectionString))
         // Parse and configure connection string
         var connBuilder = new NpgsqlConnectionStringBuilder(processedConnectionString);
         
-        // Resolve hostname to IPv4 address to avoid IPv6 DNS resolution issues
-        // Skip resolution for pooler hostnames (they should already be IPv4 compatible)
-        if (!string.IsNullOrEmpty(connBuilder.Host) && !IPAddress.TryParse(connBuilder.Host, out _) && !connBuilder.Host.Contains("pooler"))
+        // For Supabase direct connections, try to get IPv4 address
+        // If only IPv6 is returned, we'll configure Npgsql to prefer IPv4
+        if (!string.IsNullOrEmpty(connBuilder.Host) && !IPAddress.TryParse(connBuilder.Host, out _) && connBuilder.Host.Contains("supabase.co") && !connBuilder.Host.Contains("pooler"))
         {
             try
             {
-                var addresses = Dns.GetHostAddresses(connBuilder.Host);
-                var ipv4Address = addresses.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
-                
-                if (ipv4Address != null)
+                // Try to resolve with IPv4 preference
+                var addresses = Dns.GetHostAddresses(connBuilder.Host, AddressFamily.InterNetwork);
+                if (addresses.Length > 0)
                 {
-                    // Use IPv4 address instead of hostname to force IPv4 connection
-                    connBuilder.Host = ipv4Address.ToString();
+                    // Found IPv4 address, use it directly
+                    connBuilder.Host = addresses[0].ToString();
                 }
                 else
                 {
-                    // If only IPv6 is available, try using Supabase connection pooler instead
-                    // The pooler typically has IPv4 support
-                    if (connBuilder.Host.Contains("supabase.co") && !connBuilder.Host.Contains("pooler"))
+                    // No IPv4 found, try all addresses and look for IPv4
+                    var allAddresses = Dns.GetHostAddresses(connBuilder.Host);
+                    var ipv4Address = allAddresses.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
+                    if (ipv4Address != null)
                     {
-                        // Extract project ref from hostname (e.g., db.ffrtlelsqhnxjfwwnazf.supabase.co -> ffrrtlelsqhnxjfwwnazf)
-                        var parts = connBuilder.Host.Split('.');
-                        if (parts.Length >= 2)
-                        {
-                            var projectRef = parts[1]; // ffrrtlelsqhnxjfwwnazf
-                            // Use transaction pooler on port 5432 (IPv4 supported)
-                            connBuilder.Host = $"{projectRef}.pooler.supabase.com";
-                            // Update username to pooler format: postgres.[project-ref]
-                            if (connBuilder.Username == "postgres" || string.IsNullOrEmpty(connBuilder.Username))
-                            {
-                                connBuilder.Username = $"postgres.{projectRef}";
-                            }
-                            // Keep original port (5432) for session mode
-                            // Note: Pooler supports both session (5432) and transaction (6543) modes
-                        }
+                        connBuilder.Host = ipv4Address.ToString();
                     }
+                    // If still no IPv4, Npgsql will handle it - but we'll configure it to prefer IPv4
                 }
             }
             catch
