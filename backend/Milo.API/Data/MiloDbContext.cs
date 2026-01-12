@@ -359,6 +359,52 @@ public class MiloDbContext : DbContext
             entity.HasIndex(e => e.Name);
             entity.HasIndex(e => e.IsActive);
         });
+
+        // Force all table and column names to snake_case for PostgreSQL compatibility
+        foreach (var entity in modelBuilder.Model.GetEntityTypes())
+        {
+            // Force snake_case table names
+            var tableName = entity.GetTableName();
+            if (tableName != null)
+            {
+                entity.SetTableName(ToSnakeCase(tableName));
+            }
+            
+            // Force snake_case column names
+            foreach (var property in entity.GetProperties())
+            {
+                var propertyName = property.GetName();
+                property.SetColumnName(ToSnakeCase(propertyName));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Converts PascalCase or camelCase to snake_case.
+    /// Example: CreatedAt -> created_at, UserID -> user_id, MyProperty -> my_property
+    /// </summary>
+    private static string ToSnakeCase(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return input;
+
+        var result = new System.Text.StringBuilder();
+        result.Append(char.ToLowerInvariant(input[0]));
+
+        for (int i = 1; i < input.Length; i++)
+        {
+            if (char.IsUpper(input[i]))
+            {
+                result.Append('_');
+                result.Append(char.ToLowerInvariant(input[i]));
+            }
+            else
+            {
+                result.Append(input[i]);
+            }
+        }
+
+        return result.ToString();
     }
 }
 
