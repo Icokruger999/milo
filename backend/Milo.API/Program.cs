@@ -61,6 +61,24 @@ if (!string.IsNullOrEmpty(connectionString))
                     // Use IPv4 address instead of hostname to force IPv4 connection
                     connBuilder.Host = ipv4Address.ToString();
                 }
+                else
+                {
+                    // If only IPv6 is available, try using Supabase connection pooler instead
+                    // The pooler typically has IPv4 support
+                    if (connBuilder.Host.Contains("supabase.co") && !connBuilder.Host.Contains("pooler"))
+                    {
+                        // Extract project ref from hostname (e.g., db.ffrtlelsqhnxjfwwnazf.supabase.co -> ffrrtlelsqhnxjfwwnazf)
+                        var parts = connBuilder.Host.Split('.');
+                        if (parts.Length >= 2)
+                        {
+                            var projectRef = parts[1]; // ffrrtlelsqhnxjfwwnazf
+                            // Use transaction pooler on port 5432 (IPv4 supported)
+                            connBuilder.Host = $"{projectRef}.pooler.supabase.com";
+                            // Keep original port or use pooler port
+                            // Note: Pooler uses same port but different connection mode
+                        }
+                    }
+                }
             }
             catch
             {
