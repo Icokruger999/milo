@@ -48,8 +48,8 @@ if (!string.IsNullOrEmpty(connectionString))
         var connBuilder = new NpgsqlConnectionStringBuilder(processedConnectionString);
         
         // Resolve hostname to IPv4 address to avoid IPv6 DNS resolution issues
-        // This helps when DNS resolves to IPv6 but the connection fails
-        if (!string.IsNullOrEmpty(connBuilder.Host) && !IPAddress.TryParse(connBuilder.Host, out _))
+        // Skip resolution for pooler hostnames (they should already be IPv4 compatible)
+        if (!string.IsNullOrEmpty(connBuilder.Host) && !IPAddress.TryParse(connBuilder.Host, out _) && !connBuilder.Host.Contains("pooler"))
         {
             try
             {
