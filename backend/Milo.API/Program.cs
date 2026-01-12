@@ -47,46 +47,11 @@ if (!string.IsNullOrEmpty(connectionString))
         // Parse and configure connection string
         var connBuilder = new NpgsqlConnectionStringBuilder(processedConnectionString);
         
-        // For Supabase direct connections, try to get IPv4 address
-        // EC2's DNS might only return IPv6, so we need to work around this
-        if (!string.IsNullOrEmpty(connBuilder.Host) && !IPAddress.TryParse(connBuilder.Host, out _) && connBuilder.Host.Contains("supabase.co") && !connBuilder.Host.Contains("pooler"))
-        {
-            try
-            {
-                // Try to get all addresses
-                var allAddresses = Dns.GetHostAddresses(connBuilder.Host);
-                var ipv4Address = allAddresses.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
-                
-                if (ipv4Address != null)
-                {
-                    // Found IPv4 address, use it directly
-                    connBuilder.Host = ipv4Address.ToString();
-                }
-                else if (allAddresses.Length > 0 && allAddresses[0].AddressFamily == AddressFamily.InterNetworkV6)
-                {
-                    // Only IPv6 available from local DNS
-                    // Try using Google DNS (8.8.8.8) to get IPv4 - but this requires external tool
-                    // For now, we'll configure Npgsql connection string to handle this
-                    // Add a parameter to prefer IPv4 if possible
-                    // Note: This is a known issue with Supabase and EC2 IPv6-only DNS
-                    // The connection will fail, but we've tried our best
-                    // Alternative: Use Supabase connection pooler with correct hostname format
-                }
-            }
-            catch (System.Net.Sockets.SocketException ex) when (ex.SocketErrorCode == System.Net.Sockets.SocketError.HostNotFound)
-            {
-                // Host not found - keep original hostname
-            }
-            catch
-            {
-                // Any other error - keep original hostname, let Npgsql try
-            }
-        }
-        
         // Ensure SSL is enabled for Supabase (required)
         connBuilder.SslMode = SslMode.Require;
-        // Note: When using IP address, SSL certificate validation might check the hostname
-        // Supabase should handle this, but if issues occur, we may need to adjust validation
+        
+        // Note: Use Supabase connection pooler (aws-X-region.pooler.supabase.com) in appsettings.json
+        // The pooler has IPv4 support and will work with EC2 instances that don't have IPv6
         
         connectionString = connBuilder.ConnectionString;
     }
