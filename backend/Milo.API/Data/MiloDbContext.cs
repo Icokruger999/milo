@@ -373,7 +373,7 @@ public class MiloDbContext : DbContext
             // Force snake_case column names
             foreach (var property in entity.GetProperties())
             {
-                var propertyName = property.GetName();
+                var propertyName = property.Name;
                 property.SetColumnName(ToSnakeCase(propertyName));
             }
         }
