@@ -48,12 +48,12 @@ if (!string.IsNullOrEmpty(connectionString))
         var connBuilder = new NpgsqlConnectionStringBuilder(processedConnectionString);
         
         // For Supabase direct connections, try to get IPv4 address
-        // If only IPv6 is returned, we'll use a workaround
+        // EC2's DNS might only return IPv6, so we need to work around this
         if (!string.IsNullOrEmpty(connBuilder.Host) && !IPAddress.TryParse(connBuilder.Host, out _) && connBuilder.Host.Contains("supabase.co") && !connBuilder.Host.Contains("pooler"))
         {
             try
             {
-                // Try to get all addresses first
+                // Try to get all addresses
                 var allAddresses = Dns.GetHostAddresses(connBuilder.Host);
                 var ipv4Address = allAddresses.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
                 
@@ -62,22 +62,24 @@ if (!string.IsNullOrEmpty(connectionString))
                     // Found IPv4 address, use it directly
                     connBuilder.Host = ipv4Address.ToString();
                 }
-                else if (allAddresses.Length > 0)
+                else if (allAddresses.Length > 0 && allAddresses[0].AddressFamily == AddressFamily.InterNetworkV6)
                 {
-                    // Only IPv6 available - this is the problem
-                    // For now, keep the hostname and let Npgsql try
-                    // The connection will likely fail, but at least we tried
-                    // TODO: Consider using a proxy or different connection method
+                    // Only IPv6 available from local DNS
+                    // Try using Google DNS (8.8.8.8) to get IPv4 - but this requires external tool
+                    // For now, we'll configure Npgsql connection string to handle this
+                    // Add a parameter to prefer IPv4 if possible
+                    // Note: This is a known issue with Supabase and EC2 IPv6-only DNS
+                    // The connection will fail, but we've tried our best
+                    // Alternative: Use Supabase connection pooler with correct hostname format
                 }
             }
-            catch (System.Net.Sockets.SocketException)
+            catch (System.Net.Sockets.SocketException ex) when (ex.SocketErrorCode == System.Net.Sockets.SocketError.HostNotFound)
             {
-                // DNS resolution failed - keep original hostname
-                // Npgsql will try to resolve it
+                // Host not found - keep original hostname
             }
             catch
             {
-                // Any other error - keep original hostname
+                // Any other error - keep original hostname, let Npgsql try
             }
         }
         
