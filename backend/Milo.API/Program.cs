@@ -74,8 +74,13 @@ if (!string.IsNullOrEmpty(connectionString))
                             var projectRef = parts[1]; // ffrrtlelsqhnxjfwwnazf
                             // Use transaction pooler on port 5432 (IPv4 supported)
                             connBuilder.Host = $"{projectRef}.pooler.supabase.com";
-                            // Keep original port or use pooler port
-                            // Note: Pooler uses same port but different connection mode
+                            // Update username to pooler format: postgres.[project-ref]
+                            if (connBuilder.Username == "postgres" || string.IsNullOrEmpty(connBuilder.Username))
+                            {
+                                connBuilder.Username = $"postgres.{projectRef}";
+                            }
+                            // Keep original port (5432) for session mode
+                            // Note: Pooler supports both session (5432) and transaction (6543) modes
                         }
                     }
                 }
