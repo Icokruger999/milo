@@ -1,1 +1,0 @@
-{"commands":["cd ~/milo 2>/dev/null || cd /home/ec2-user/milo 2>/dev/null || pwd","git pull origin main","cd backend/Milo.API","dotnet ef migrations add AddFlakesAndTaskType --output-dir Data/Migrations 2>&1 || echo Migration may already exist","sudo systemctl restart milo-api.service","sleep 3","sudo systemctl status milo-api.service --no-pager | head -10"]}

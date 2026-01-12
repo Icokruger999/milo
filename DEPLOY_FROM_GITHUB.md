@@ -1,88 +1,108 @@
-# Deploy from GitHub to EC2 - No Local .NET Needed!
+# Deploy from GitHub (Recommended Approach)
 
-This is the easiest way - deploy directly from GitHub to EC2.
+You're absolutely right! If your code is in GitHub, we should deploy from there. This is the **recommended approach**.
+
+## Why Deploy from GitHub?
+
+✅ **Version Control** - Always deploy from a known commit/branch  
+✅ **Standard Practice** - Industry standard CI/CD approach  
+✅ **Easy Updates** - Just push to GitHub and redeploy  
+✅ **No Local Build** - Build happens on the server  
+✅ **Trackable** - Know exactly what version is deployed  
+
+## Quick Deploy Command
+
+```powershell
+.\deploy-from-github-ssm.ps1
+```
+
+The script will:
+1. Ask for your GitHub repository (or pass it as parameter)
+2. Use SSM to connect to EC2
+3. Clone/pull from GitHub
+4. Build the application on EC2
+5. Deploy and start the service
+6. Connect to Supabase automatically (using appsettings.json from GitHub)
+
+## Usage
+
+### Option 1: Interactive (Recommended)
+```powershell
+.\deploy-from-github-ssm.ps1
+```
+It will ask for your GitHub repository URL.
+
+### Option 2: With Parameters
+```powershell
+.\deploy-from-github-ssm.ps1 -GitHubRepo "username/Milo" -Branch "main"
+```
+
+Or with full URL:
+```powershell
+.\deploy-from-github-ssm.ps1 -GitHubRepo "https://github.com/username/Milo.git"
+```
 
 ## How It Works
 
-1. **Code is on GitHub** ✅ (already done)
-2. **EC2 clones from GitHub**
-3. **EC2 builds the application**
-4. **EC2 runs the service**
+1. **SSM connects to EC2** - No SSH needed
+2. **Clones from GitHub** - Gets latest code from your branch
+3. **Builds on EC2** - Uses .NET SDK on the server
+4. **Deploys** - Copies built files to `/var/www/milo-api`
+5. **Starts service** - systemd service starts the API
+6. **Connects to Supabase** - Uses connection string from appsettings.json in your repo
 
-No .NET needed on Windows, no SSH key issues!
+## Workflow
 
-## Step 1: Copy Script to EC2
+**To update your application:**
+1. Make changes to your code
+2. Commit and push to GitHub:
+   ```powershell
+   git add .
+   git commit -m "Your changes"
+   git push origin main
+   ```
+3. Deploy:
+   ```powershell
+   .\deploy-from-github-ssm.ps1
+   ```
 
-From Windows PowerShell, copy the deployment script:
+That's it! The script pulls from GitHub and deploys.
 
-```powershell
-scp -i "$env:USERPROFILE\.ssh\streamyo-backend-key-new.pem" deploy-from-github.sh ec2-user@34.246.3.141:~/deploy.sh
-```
+## Requirements
 
-Or create it directly on EC2:
+- ✅ GitHub repository (public or private - if private, EC2 needs SSH key or token)
+- ✅ EC2 instance with SSM agent
+- ✅ EC2 instance can access GitHub (internet access)
+- ✅ .NET SDK will be installed on EC2 if not present
 
-```bash
-# On EC2 - create the script
-nano ~/deploy.sh
-# Paste the contents of deploy-from-github.sh
-# Save and exit (Ctrl+X, Y, Enter)
-chmod +x ~/deploy.sh
-```
+## Private Repositories
 
-## Step 2: Run Deployment Script on EC2
+If your repository is private, you have two options:
 
-```bash
-# On EC2
-~/deploy.sh
-```
+1. **Use SSH Key** (recommended):
+   - Add SSH key to EC2 instance
+   - Use SSH URL: `git@github.com:username/Milo.git`
 
-Or run commands directly:
+2. **Use Personal Access Token**:
+   - Create GitHub Personal Access Token
+   - Use HTTPS URL: `https://YOUR_TOKEN@github.com/username/Milo.git`
+   - Store token securely (not in script!)
 
-```bash
-# Install .NET SDK
-sudo rpm -Uvh https://packages.microsoft.com/config/centos/7/packages-microsoft-prod.rpm
-sudo yum install -y dotnet-sdk-8.0
+## Comparison
 
-# Install git (if not installed)
-sudo yum install -y git
+| Approach | Pros | Cons |
+|----------|------|------|
+| **GitHub (Recommended)** | Version controlled, standard, easy updates | Requires GitHub access from EC2 |
+| **S3 (Current)** | No GitHub needed, works offline | Manual, not version controlled, builds locally |
 
-# Clone repository
-cd ~
-git clone https://github.com/Icokruger999/milo.git
-cd milo/backend/Milo.API
+## Next Steps
 
-# Build
-dotnet restore
-dotnet publish -c Release -o /var/www/milo-api
+1. Make sure your code is in GitHub
+2. Run: `.\deploy-from-github-ssm.ps1`
+3. Enter your GitHub repository when prompted
+4. Wait for deployment to complete
+5. Visit `https://www.codingeverest.com`
 
-# Set permissions
-sudo chown -R ec2-user:ec2-user /var/www/milo-api
+---
 
-# Create and start service (use commands from EC2_DEPLOY_COMMANDS.md)
-```
-
-## Step 3: Future Updates
-
-Whenever you push to GitHub, just run on EC2:
-
-```bash
-cd ~/milo-repo
-git pull origin main
-cd backend/Milo.API
-dotnet publish -c Release -o /var/www/milo-api
-sudo systemctl restart milo-api
-```
-
-Or run the script again:
-```bash
-~/deploy.sh
-```
-
-## Benefits
-
-✅ No .NET needed on Windows
-✅ No SSH key permission issues
-✅ Code always in sync with GitHub
-✅ Easy to update - just push and run script
-✅ Can automate with GitHub Actions later
-
+**This is the right approach!** 🎯 GitHub-based deployment is the standard way to deploy applications.

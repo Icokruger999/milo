@@ -1,9 +1,0 @@
-{
-    "Parameters": {
-        "commands": [
-            "PGPASSWORD='Stacey1122' psql -h codingeverest-new.cl4qcomc6fj0.eu-west-1.rds.amazonaws.com -U postgres -d MiloDB << 'EOF'",
-            "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'Incidents' ORDER BY ordinal_position;",
-            "EOF"
-        ]
-    }
-}

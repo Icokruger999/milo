@@ -144,6 +144,7 @@ After=network.target
 
 [Service]
 Type=notify
+WorkingDirectory=/var/www/milo-api
 ExecStart=/usr/bin/dotnet /var/www/milo-api/Milo.API.dll
 Restart=always
 RestartSec=10
@@ -171,9 +172,11 @@ echo "Deployment complete!"
 sudo systemctl status milo-api --no-pager
 "@
 
-# Save script to temp file
+# Save script to temp file (Unix line endings)
 $scriptFile = [System.IO.Path]::GetTempFileName()
-$deployScript | Out-File -FilePath $scriptFile -Encoding UTF8
+$deployScriptUnix = $deployScript -replace "`r`n", "`n" -replace "`r", "`n"
+$utf8NoBom = New-Object System.Text.UTF8Encoding $false
+[System.IO.File]::WriteAllText($scriptFile, $deployScriptUnix, $utf8NoBom)
 
 # Upload script to S3
 $scriptKey = "deploy-script.sh"

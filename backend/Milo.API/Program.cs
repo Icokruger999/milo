@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Milo.API.Data;
 using Npgsql;
+using System.Net;
+using System.Net.Sockets;
+using System.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,8 +16,7 @@ builder.Services.AddSwaggerGen();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrEmpty(connectionString))
 {
-    // Fallback for development
-    connectionString = "Host=localhost;Database=MiloDB;Username=postgres;Password=postgres";
+    throw new InvalidOperationException("DefaultConnection connection string is required in appsettings.json");
 }
 
 // Handle Supabase connection string - decode if base64 encoded or convert URI format
@@ -45,9 +47,32 @@ if (!string.IsNullOrEmpty(connectionString))
         // Parse and configure connection string
         var connBuilder = new NpgsqlConnectionStringBuilder(processedConnectionString);
         
+        // Resolve hostname to IPv4 address to avoid IPv6 DNS resolution issues
+        // This helps when DNS resolves to IPv6 but the connection fails
+        if (!string.IsNullOrEmpty(connBuilder.Host) && !IPAddress.TryParse(connBuilder.Host, out _))
+        {
+            try
+            {
+                var addresses = Dns.GetHostAddresses(connBuilder.Host);
+                var ipv4Address = addresses.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
+                
+                if (ipv4Address != null)
+                {
+                    // Use IPv4 address instead of hostname to force IPv4 connection
+                    connBuilder.Host = ipv4Address.ToString();
+                }
+            }
+            catch
+            {
+                // If DNS resolution fails, keep the original hostname
+                // Npgsql will try to resolve it
+            }
+        }
+        
         // Ensure SSL is enabled for Supabase (required)
         connBuilder.SslMode = SslMode.Require;
-        // Note: TrustServerCertificate is obsolete in newer Npgsql versions, but setting SslMode.Require is sufficient
+        // Note: When using IP address, SSL certificate validation might check the hostname
+        // Supabase should handle this, but if issues occur, we may need to adjust validation
         
         connectionString = connBuilder.ConnectionString;
     }

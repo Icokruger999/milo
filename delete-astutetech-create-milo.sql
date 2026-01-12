@@ -17,6 +17,8 @@ WHERE pg_stat_activity.datname = 'milo'
 DROP DATABASE IF EXISTS milo;
 
 -- Create new milo database
+-- IMPORTANT: This command must be run while connected to the 'postgres' database (not 'astutetech')
+-- In Supabase SQL Editor, make sure you're connected to the default 'postgres' database
 CREATE DATABASE milo
     WITH 
     OWNER = postgres

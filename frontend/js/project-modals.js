@@ -213,6 +213,7 @@ async function handleInviteUser(event) {
 }
 
 function showProjectSettings() {
-    alert('Project settings coming soon!');
+    // Project settings functionality - to be implemented
+    console.log('Project settings coming soon!');
 }
 
