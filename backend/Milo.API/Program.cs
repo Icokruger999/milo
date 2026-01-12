@@ -48,34 +48,36 @@ if (!string.IsNullOrEmpty(connectionString))
         var connBuilder = new NpgsqlConnectionStringBuilder(processedConnectionString);
         
         // For Supabase direct connections, try to get IPv4 address
-        // If only IPv6 is returned, we'll configure Npgsql to prefer IPv4
+        // If only IPv6 is returned, we'll use a workaround
         if (!string.IsNullOrEmpty(connBuilder.Host) && !IPAddress.TryParse(connBuilder.Host, out _) && connBuilder.Host.Contains("supabase.co") && !connBuilder.Host.Contains("pooler"))
         {
             try
             {
-                // Try to resolve with IPv4 preference
-                var addresses = Dns.GetHostAddresses(connBuilder.Host, AddressFamily.InterNetwork);
-                if (addresses.Length > 0)
+                // Try to get all addresses first
+                var allAddresses = Dns.GetHostAddresses(connBuilder.Host);
+                var ipv4Address = allAddresses.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
+                
+                if (ipv4Address != null)
                 {
                     // Found IPv4 address, use it directly
-                    connBuilder.Host = addresses[0].ToString();
+                    connBuilder.Host = ipv4Address.ToString();
                 }
-                else
+                else if (allAddresses.Length > 0)
                 {
-                    // No IPv4 found, try all addresses and look for IPv4
-                    var allAddresses = Dns.GetHostAddresses(connBuilder.Host);
-                    var ipv4Address = allAddresses.FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork);
-                    if (ipv4Address != null)
-                    {
-                        connBuilder.Host = ipv4Address.ToString();
-                    }
-                    // If still no IPv4, Npgsql will handle it - but we'll configure it to prefer IPv4
+                    // Only IPv6 available - this is the problem
+                    // For now, keep the hostname and let Npgsql try
+                    // The connection will likely fail, but at least we tried
+                    // TODO: Consider using a proxy or different connection method
                 }
+            }
+            catch (System.Net.Sockets.SocketException)
+            {
+                // DNS resolution failed - keep original hostname
+                // Npgsql will try to resolve it
             }
             catch
             {
-                // If DNS resolution fails, keep the original hostname
-                // Npgsql will try to resolve it
+                // Any other error - keep original hostname
             }
         }
         
