@@ -38,9 +38,17 @@ public class MiloDbContext : DbContext
         // User configuration
         modelBuilder.Entity<User>(entity =>
         {
+            entity.ToTable("users"); // Lowercase table name
             entity.HasIndex(e => e.Email).IsUnique();
             entity.Property(e => e.Email).IsRequired();
             entity.Property(e => e.Name).IsRequired();
+            // Explicitly map PascalCase columns that exist in database
+            entity.Property(e => e.IsActive).HasColumnName("IsActive");
+            entity.Property(e => e.RequiresPasswordChange).HasColumnName("RequiresPasswordChange");
+            entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt");
+            entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt");
+            // These are already lowercase in DB: id, name, email, password_hash
+            // So they don't need explicit mapping
         });
 
         // Task configuration
@@ -267,7 +275,7 @@ public class MiloDbContext : DbContext
         // Incident configuration
         modelBuilder.Entity<Incident>(entity =>
         {
-            // Table name will be converted to snake_case by the loop at the end
+            entity.ToTable("Incidents"); // Map to PascalCase table name
             entity.HasIndex(e => e.IncidentNumber).IsUnique();
             
             // Single column indexes for common filters
@@ -308,7 +316,7 @@ public class MiloDbContext : DbContext
         // ReportRecipient configuration
         modelBuilder.Entity<ReportRecipient>(entity =>
         {
-            // Table name will be converted to snake_case by the loop at the end
+            entity.ToTable("ReportRecipients"); // Map to PascalCase table name
             entity.HasIndex(e => e.Email);
             entity.HasIndex(e => e.ProjectId);
             entity.HasIndex(e => e.IsActive);
@@ -361,6 +369,8 @@ public class MiloDbContext : DbContext
         });
 
         // Force all table and column names to snake_case for PostgreSQL compatibility
+        // COMMENTED OUT: Using explicit column mappings instead for mixed case database
+        /*
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
         {
             // Force snake_case table names
@@ -370,19 +380,14 @@ public class MiloDbContext : DbContext
                 entity.SetTableName(ToSnakeCase(tableName));
             }
             
-            // Force snake_case column names (skip if already explicitly mapped)
+            // Force snake_case column names
             foreach (var property in entity.GetProperties())
             {
-                // Only set column name if it hasn't been explicitly mapped
-                // (incident tables already have explicit HasColumnName mappings)
-                var existingColumnName = property.GetColumnName();
-                if (string.IsNullOrEmpty(existingColumnName) || existingColumnName == property.Name)
-                {
-                    var propertyName = property.Name;
-                    property.SetColumnName(ToSnakeCase(propertyName));
-                }
+                var propertyName = property.Name;
+                property.SetColumnName(ToSnakeCase(propertyName));
             }
         }
+        */
     }
 
     /// <summary>
