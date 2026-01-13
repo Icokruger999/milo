@@ -330,8 +330,11 @@
                             }
                         }
                         
-                        if (projects.length === 0) {
-                            // No projects yet - go to project selector where they can create or join
+                        // Always go to project selector first if no projects or if invitation was just accepted
+                        // This prevents flashing the board page
+                        if (projects.length === 0 || invitationAccepted) {
+                            // No projects yet OR invitation just accepted - go to project selector
+                            // This ensures the newly accepted project is visible
                             window.location.href = 'milo-select-project.html';
                         } else if (projects.length === 1) {
                             // Single project - set it and go to board
