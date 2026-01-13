@@ -747,7 +747,7 @@ function updateStatusChart() {
 
 // Update assignee chart with optimization
 function updateAssigneeChart() {
-    const tasks = dashboardData.filteredTasks || [];
+    const tasks = dashboardData.filteredTasks || dashboardData.tasks || [];
     const ctx = document.getElementById('assigneeChart');
     
     if (!ctx) {
@@ -755,12 +755,25 @@ function updateAssigneeChart() {
         return;
     }
     
+    console.log('Updating assignee chart with', tasks.length, 'tasks');
+    console.log('Sample task assignee:', tasks[0]?.assignee);
+    
     // Group tasks by assignee
     const assigneeMap = {};
     tasks.forEach(task => {
-        const assigneeName = task.assignee ? (task.assignee.name || 'Unassigned') : 'Unassigned';
+        // Handle different assignee data structures
+        let assigneeName = 'Unassigned';
+        if (task.assignee) {
+            // API returns assignee as { Id, Name, Email }
+            assigneeName = task.assignee.Name || task.assignee.name || task.assignee.Email || task.assignee.email || 'Unassigned';
+        } else if (task.assigneeName) {
+            // Fallback to assigneeName if available
+            assigneeName = task.assigneeName;
+        }
         assigneeMap[assigneeName] = (assigneeMap[assigneeName] || 0) + 1;
     });
+    
+    console.log('Assignee map:', assigneeMap);
     
     // Sort by count and take top 10
     const sortedAssignees = Object.entries(assigneeMap)
@@ -770,8 +783,12 @@ function updateAssigneeChart() {
     const labels = sortedAssignees.map(a => a[0]);
     const data = sortedAssignees.map(a => a[1]);
     
+    console.log('Assignee chart data:', { labels, data });
+    
     // If no data, create a chart with placeholder
-    if (labels.length === 0) {
+    if (labels.length === 0 || (labels.length === 1 && labels[0] === 'Unassigned' && data[0] === 0)) {
+        labels.length = 0;
+        data.length = 0;
         labels.push('No Data');
         data.push(0);
     }
@@ -833,7 +850,7 @@ function updateAssigneeChart() {
 
 // Update priority chart with optimization
 function updatePriorityChart() {
-    const tasks = dashboardData.filteredTasks || [];
+    const tasks = dashboardData.filteredTasks || dashboardData.tasks || [];
     const ctx = document.getElementById('priorityChart');
     
     if (!ctx) {
@@ -841,16 +858,24 @@ function updatePriorityChart() {
         return;
     }
     
+    console.log('Updating priority chart with', tasks.length, 'tasks');
+    console.log('Sample task priority:', tasks[0]?.priority);
+    
     const priorityCounts = {
         'low': tasks.filter(t => (t.priority || 0) === 0).length,
         'medium': tasks.filter(t => (t.priority || 0) === 1).length,
         'high': tasks.filter(t => (t.priority || 0) === 2).length
     };
     
+    console.log('Priority counts:', priorityCounts);
+    
     // Check if all counts are zero
     const totalCount = priorityCounts.low + priorityCounts.medium + priorityCounts.high;
     if (totalCount === 0) {
-        priorityCounts.low = 1; // Show at least something
+        // Don't show fake data, show empty state
+        priorityCounts.low = 0;
+        priorityCounts.medium = 0;
+        priorityCounts.high = 0;
     }
     
     // Update existing chart if possible
@@ -912,6 +937,9 @@ function updateTimelineChart() {
         return;
     }
     
+    console.log('Updating timeline chart with', tasks.length, 'tasks');
+    console.log('Sample task dates:', tasks[0] ? { createdAt: tasks[0].createdAt, updatedAt: tasks[0].updatedAt } : 'no tasks');
+    
     // Get last 7 days
     const days = [];
     const completedCounts = [];
@@ -927,12 +955,16 @@ function updateTimelineChart() {
         
         // Count tasks completed on this day (handle status variations)
         const completedOnDay = tasks.filter(t => {
-            if (!t.updatedAt) return false;
+            // Check if task is done
             const status = (t.status || '').toLowerCase();
             if (status !== 'done' && status !== 'completed' && status !== 'complete') return false;
             
+            // Use updatedAt if available, otherwise createdAt
+            const dateField = t.updatedAt || t.createdAt;
+            if (!dateField) return false;
+            
             try {
-                const taskDate = new Date(t.updatedAt);
+                const taskDate = new Date(dateField);
                 if (isNaN(taskDate.getTime())) return false;
                 taskDate.setHours(0, 0, 0, 0);
                 return taskDate.getTime() === date.getTime();
@@ -957,6 +989,8 @@ function updateTimelineChart() {
         completedCounts.push(completedOnDay);
         createdCounts.push(createdOnDay);
     }
+    
+    console.log('Timeline chart data:', { days, completedCounts, createdCounts });
     
     // Update existing chart if possible
     if (charts.timelineChart) {
