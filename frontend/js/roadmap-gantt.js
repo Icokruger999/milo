@@ -56,9 +56,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Initialize timeline (show from beginning of last year to end of next year for scrollable view)
+    // This ensures we have enough range to scroll, but we'll default to showing today
     const now = new Date();
     timelineStartDate = new Date(now.getFullYear() - 1, 0, 1); // January 1st of last year
     timelineEndDate = new Date(now.getFullYear() + 2, 0, 1); // January 1st two years from now (3 years total)
+    
+    console.log('Timeline initialized:', {
+        start: timelineStartDate.toISOString(),
+        end: timelineEndDate.toISOString(),
+        today: now.toISOString()
+    });
     
     // Set default view mode to "Days"
     currentViewMode = 'days';
@@ -81,19 +88,44 @@ async function loadRoadmapData() {
             const tasks = await response.json();
             
             // Organize tasks by type
-            roadmapData.tasks = tasks.map(task => ({
-                id: task.id,
-                taskId: task.taskId || `TASK-${task.id}`,
-                title: task.title,
-                type: task.taskType || 'Task',
-                status: task.status,
-                startDate: task.startDate ? new Date(task.startDate) : (task.createdAt ? new Date(task.createdAt) : new Date()),
-                endDate: task.dueDate ? new Date(task.dueDate) : null,
-                assigneeId: task.assigneeId,
-                assignee: task.assignee,
-                parentTaskId: task.parentTaskId,
-                priority: task.priority
-            }));
+            // Default to today for tasks without startDate so they're visible on the roadmap
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Set to start of today
+            
+            roadmapData.tasks = tasks.map(task => {
+                // If no startDate, default to today (not createdAt) so tasks are visible
+                let startDate = null;
+                if (task.startDate) {
+                    startDate = new Date(task.startDate);
+                } else {
+                    // Default to today for visibility
+                    startDate = new Date(today);
+                }
+                
+                // If no dueDate, default to 7 days from startDate
+                let endDate = null;
+                if (task.dueDate) {
+                    endDate = new Date(task.dueDate);
+                } else if (startDate) {
+                    // Default to 7 days from start date
+                    endDate = new Date(startDate);
+                    endDate.setDate(endDate.getDate() + 7);
+                }
+                
+                return {
+                    id: task.id,
+                    taskId: task.taskId || `TASK-${task.id}`,
+                    title: task.title,
+                    type: task.taskType || 'Task',
+                    status: task.status,
+                    startDate: startDate,
+                    endDate: endDate,
+                    assigneeId: task.assigneeId,
+                    assignee: task.assignee,
+                    parentTaskId: task.parentTaskId,
+                    priority: task.priority
+                };
+            });
 
             // Create releases and milestones from parent tasks
             roadmapData.releases = roadmapData.tasks.filter(t => t.type === 'Epic' && !t.parentTaskId);
@@ -196,9 +228,16 @@ function renderTimeline() {
     updateCurrentDateLine();
     
     // Always auto-scroll to Today after rendering (with delay for layout)
+    // Use multiple attempts to ensure timeline is fully rendered
     setTimeout(() => {
         scrollToToday();
-    }, 150);
+    }, 100);
+    setTimeout(() => {
+        scrollToToday();
+    }, 300);
+    setTimeout(() => {
+        scrollToToday();
+    }, 600);
 }
 
 // Get cell width based on view mode
@@ -679,12 +718,20 @@ function updateCurrentDateLine() {
 // Scroll to today - center the view on today's date
 function scrollToToday() {
     const timelineArea = document.getElementById('timelineArea');
-    if (timelineArea && currentDatePosition > 0) {
+    if (!timelineArea) return;
+    
+    // Recalculate current date position in case timeline was just rendered
+    updateCurrentDateLine();
+    
+    if (currentDatePosition > 0) {
         // Center today's date in the viewport
         const viewportWidth = timelineArea.offsetWidth;
         const scrollPosition = Math.max(0, currentDatePosition - (viewportWidth / 2));
         timelineArea.scrollLeft = scrollPosition;
-        console.log('Scrolled to today:', scrollPosition);
+        console.log('Scrolled to today:', scrollPosition, 'currentDatePosition:', currentDatePosition);
+    } else {
+        // If position not calculated yet, try again after a short delay
+        console.log('Timeline not ready yet, currentDatePosition:', currentDatePosition);
     }
 }
 
