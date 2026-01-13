@@ -896,13 +896,13 @@ If you didn't request this, please ignore this email.";
 </body>
 </html>";
 
-                return await SendEmailAsync(adminEmail, subject, htmlBody);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error sending new user notification email");
-                return false;
-            }
+            return await SendEmailAsync(adminEmail, subject, htmlBody);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending new user notification email");
+            return false;
+        }
     }
 
     public async Task<bool> SendDailyUsersReportEmailAsync(string recipientEmail, List<UserReportData> users)
