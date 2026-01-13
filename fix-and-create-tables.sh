@@ -64,7 +64,8 @@ grep -A 1 "DefaultConnection" /home/ec2-user/milo-backend-publish/appsettings.js
 echo ""
 
 echo "5. Creating database tables manually..."
-docker exec milo_postgres psql -U postgres -d milo << 'SQL'
+echo "Executing SQL script..."
+docker exec milo_postgres psql -U postgres -d milo -v ON_ERROR_STOP=1 << 'SQL'
 -- Create users table
 CREATE TABLE IF NOT EXISTS users (
     "Id" SERIAL PRIMARY KEY,
@@ -442,8 +443,19 @@ echo "Tables created successfully!"
 echo ""
 
 echo "6. Verifying tables were created..."
-TABLE_COUNT=$(docker exec milo_postgres psql -U postgres -d milo -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name NOT LIKE '__%';" | tr -d ' ')
-echo "Total tables created: $TABLE_COUNT"
+echo "Checking for any SQL errors..."
+docker exec milo_postgres psql -U postgres -d milo -c "SELECT 'SQL connection successful';" || echo "ERROR: Cannot connect to database"
+echo ""
+TABLE_COUNT=$(docker exec milo_postgres psql -U postgres -d milo -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public' AND table_name NOT LIKE '__%';" 2>&1 | tr -d ' ' | head -1)
+echo "Total tables found: $TABLE_COUNT"
+if [ "$TABLE_COUNT" = "0" ] || [ -z "$TABLE_COUNT" ]; then
+    echo "WARNING: No tables found! Checking for errors..."
+    docker exec milo_postgres psql -U postgres -d milo -c "\dt" 2>&1
+    echo ""
+    echo "Trying to create tables one by one to identify the issue..."
+    docker exec milo_postgres psql -U postgres -d milo -c "CREATE TABLE IF NOT EXISTS test_table (id SERIAL PRIMARY KEY);" 2>&1
+    docker exec milo_postgres psql -U postgres -d milo -c "DROP TABLE IF EXISTS test_table;" 2>&1
+fi
 echo ""
 
 echo "7. Starting API service (with longer wait for migrations)..."
