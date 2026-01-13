@@ -1,0 +1,12 @@
+{
+  "commands": [
+    "hostname",
+    "whoami",
+    "uname -a",
+    "dig +short db.ffrtlelsqhnxjfwwnazf.supabase.co",
+    "getent hosts aws-1-eu-west-1.pooler.supabase.com || true",
+    "ss -tnp | head -n 50",
+    "ps aux | egrep \"dotnet|milo|node|pgbouncer|postgres\" | head -n 50",
+    "curl -sS --connect-timeout 5 https://api.codingeverest.com/api/health"
+  ]
+}
