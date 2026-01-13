@@ -1020,12 +1020,17 @@ async function handleTaskSubmit(event) {
         assigneeId: document.getElementById('taskAssignee').value ? parseInt(document.getElementById('taskAssignee').value) : null,
         productId: document.getElementById('taskProduct').value ? parseInt(document.getElementById('taskProduct').value) : null,
         priority: parseInt(document.getElementById('taskPriority').value),
-        // Only include startDate if it has a value - don't send null to prevent unwanted updates
-        ...(startDate && { startDate: startDate }),
-        // Only include dueDate if it has a value
-        ...(dueDate && { dueDate: dueDate }),
+        // Always send dates - send null if empty to allow clearing, or the date value if set
+        startDate: startDate, // Will be null if empty, or ISO string if set
+        dueDate: dueDate, // Will be null if empty, or ISO string if set
         checklist: checklistItems.length > 0 ? checklistItems : [] // Always send array, even if empty
     };
+    
+    console.log('Task data being sent:', {
+        ...taskData,
+        startDate: startDate ? startDate : 'null',
+        dueDate: dueDate ? dueDate : 'null'
+    });
     
     console.log('Saving task with checklist items:', checklistItems.length, checklistItems);
     

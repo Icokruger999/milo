@@ -582,9 +582,8 @@ public class TasksController : ControllerBase
         {
             task.Priority = request.Priority.Value;
         }
-        // Handle DueDate: only update if explicitly provided with a value
-        // If DueDate is not in the request at all, don't change the existing value
-        // This prevents the due date from being updated when the user just opens and closes the task
+        // Handle DueDate: update if provided (including null to clear)
+        // The frontend now always sends dueDate (null if empty, or value if set)
         if (request.DueDate.HasValue)
         {
             // Ensure DueDate is UTC for PostgreSQL
@@ -605,10 +604,15 @@ public class TasksController : ControllerBase
                 task.DueDate = dueDate;
             }
         }
-        // If DueDate is not provided in request, don't change the existing value
-        // Handle StartDate: only update if explicitly provided with a value
-        // If StartDate is not in the request at all, don't change the existing value
-        // This prevents the start date from being updated when the user just opens and closes the task
+        else
+        {
+            // If DueDate is explicitly null in request, clear it
+            // This allows users to remove the due date
+            task.DueDate = null;
+        }
+        
+        // Handle StartDate: update if provided (including null to clear)
+        // The frontend now always sends startDate (null if empty, or value if set)
         if (request.StartDate.HasValue)
         {
             var startDate = request.StartDate.Value;
@@ -625,8 +629,12 @@ public class TasksController : ControllerBase
                 task.StartDate = startDate;
             }
         }
-        // If StartDate is not provided in request (null), don't change the existing value
-        // This prevents accidentally clearing or updating the start date
+        else
+        {
+            // If StartDate is explicitly null in request, clear it
+            // This allows users to remove the start date
+            task.StartDate = null;
+        }
         if (request.ParentTaskId.HasValue)
         {
             task.ParentTaskId = request.ParentTaskId;
