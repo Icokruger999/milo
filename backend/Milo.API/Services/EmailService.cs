@@ -910,13 +910,13 @@ If you didn't request this, please ignore this email.";
         try
         {
                 var subject = $"Daily Milo Users Report - {DateTime.UtcNow.AddHours(2):yyyy-MM-dd}";
-                
-                var activeUsers = users.Where(u => u.IsActive).ToList();
-                var inactiveUsers = users.Where(u => !u.IsActive).ToList();
-                var totalUsers = users.Count;
-                var newUsersToday = users.Where(u => u.CreatedAt.Date == DateTime.UtcNow.Date).ToList();
-                
-                var htmlBody = $@"
+            
+            var activeUsers = users.Where(u => u.IsActive).ToList();
+            var inactiveUsers = users.Where(u => !u.IsActive).ToList();
+            var totalUsers = users.Count;
+            var newUsersToday = users.Where(u => u.CreatedAt.Date == DateTime.UtcNow.Date).ToList();
+            
+            var htmlBody = $@"
 <!DOCTYPE html>
 <html>
 <head>
