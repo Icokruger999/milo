@@ -67,6 +67,15 @@ public class EmailService : IEmailService
                 Credentials = new NetworkCredential(smtpUsername, smtpPassword)
             };
 
+            // Create plain text version from HTML (simple strip)
+            var plainTextBody = System.Text.RegularExpressions.Regex.Replace(htmlBody, "<[^>]*>", "")
+                .Replace("&nbsp;", " ")
+                .Replace("&amp;", "&")
+                .Replace("&lt;", "<")
+                .Replace("&gt;", ">")
+                .Replace("&quot;", "\"")
+                .Trim();
+
             var message = new MailMessage
             {
                 From = new MailAddress(fromEmail, fromName),
@@ -74,6 +83,10 @@ public class EmailService : IEmailService
                 Body = htmlBody,
                 IsBodyHtml = true
             };
+            
+            // Add plain text alternative
+            var plainTextView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(plainTextBody, null, System.Net.Mime.MediaTypeNames.Text.Plain);
+            message.AlternateViews.Add(plainTextView);
 
             message.To.Add(new MailAddress(to));
 
@@ -509,19 +522,23 @@ public class EmailService : IEmailService
             <h1>Project Invitation</h1>
         </div>
         <div class='content'>
-            <p>Hello {name},</p>
+            <p>Hello {escapedName},</p>
             <p>You have been invited to join a project:</p>
             <div class='project-box'>
-                <div class='project-name'>{projectName}</div>
-                <div class='project-key'>Project Key: {projectKey}</div>
+                <div class='project-name'>{escapedProjectName}</div>
+                <div class='project-key'>Project Key: {escapedProjectKey}</div>
             </div>
             <p>Click the button below to accept the invitation and join the project:</p>
             <p style='text-align: center;'>
                 <a href='{invitationLink}' class='cta-button'>Accept Invitation</a>
             </p>
             <div class='token'>
-                <p>Or use this invitation token: <code>{invitationToken}</code></p>
+                <p>Or use this invitation token: <code>{escapedToken}</code></p>
             </div>
+            <p style='margin-top: 24px; font-size: 12px; color: #6B778C;'>
+                If the button doesn't work, copy and paste this link into your browser:<br/>
+                <a href='{invitationLink}' style='color: #0052CC; word-break: break-all;'>{invitationLink}</a>
+            </p>
         </div>
         <div class='footer'>
             <p>This is an automated invitation from Milo</p>
