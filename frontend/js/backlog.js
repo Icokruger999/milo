@@ -165,7 +165,12 @@ async function loadBacklogTasks() {
         const now = Date.now();
         if (backlogDataCache.tasks && (now - backlogDataCache.timestamp < backlogDataCache.duration)) {
             console.log('Using cached backlog data');
-            const apiTasks = backlogDataCache.tasks;
+            let apiTasks = backlogDataCache.tasks;
+            
+            // Ensure apiTasks is an array (handle both old and new cache formats)
+            if (!Array.isArray(apiTasks)) {
+                apiTasks = apiTasks.tasks || [];
+            }
             
             // Map cached tasks
             allTasks = apiTasks.map(task => ({
@@ -197,7 +202,15 @@ async function loadBacklogTasks() {
 
         const response = await apiClient.get(queryUrl);
         if (response.ok) {
-            let apiTasks = await response.json();
+            const data = await response.json();
+            // Handle both paginated and non-paginated responses for backwards compatibility
+            let apiTasks = data.tasks || data;
+            
+            // Ensure apiTasks is an array
+            if (!Array.isArray(apiTasks)) {
+                console.error('API did not return an array. Response:', data);
+                apiTasks = [];
+            }
             
             // Cache the data
             backlogDataCache.tasks = apiTasks;
