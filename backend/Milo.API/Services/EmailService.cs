@@ -453,8 +453,37 @@ public class EmailService : IEmailService
     {
         try
         {
+            // Validate inputs
+            if (string.IsNullOrEmpty(email))
+            {
+                _logger.LogError("SendProjectInvitationEmailAsync: Email is null or empty");
+                return false;
+            }
+            if (string.IsNullOrEmpty(invitationToken))
+            {
+                _logger.LogError("SendProjectInvitationEmailAsync: InvitationToken is null or empty");
+                return false;
+            }
+            if (string.IsNullOrEmpty(projectName))
+            {
+                _logger.LogWarning("SendProjectInvitationEmailAsync: ProjectName is null or empty, using default");
+                projectName = "a project";
+            }
+            if (string.IsNullOrEmpty(projectKey))
+            {
+                _logger.LogWarning("SendProjectInvitationEmailAsync: ProjectKey is null or empty, using project name");
+                projectKey = projectName;
+            }
+            if (string.IsNullOrEmpty(name))
+            {
+                _logger.LogWarning("SendProjectInvitationEmailAsync: Name is null or empty, using email");
+                name = email;
+            }
+            
             var subject = $"Project Invitation: {projectName}";
             var invitationLink = $"https://www.codingeverest.com/milo-board.html?invite={invitationToken}";
+            
+            _logger.LogInformation($"Sending project invitation email to {email} for project {projectName} with token {invitationToken.Substring(0, Math.Min(8, invitationToken.Length))}...");
             
             var htmlBody = $@"
 <!DOCTYPE html>
