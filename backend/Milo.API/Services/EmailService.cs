@@ -856,7 +856,7 @@ If you didn't request this, please ignore this email.";
         try
         {
             var adminEmail = "ico@astutetech.co.za";
-                var subject = $"New User Signed Up: {userName}";
+            var subject = $"New User Signed Up: {userName}";
                 
                 var htmlBody = $@"
 <!DOCTYPE html>
@@ -991,13 +991,13 @@ If you didn't request this, please ignore this email.";
 </body>
 </html>";
 
-                return await SendEmailAsync(recipientEmail, subject, htmlBody);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error sending daily users report email");
-                return false;
-            }
+            return await SendEmailAsync(recipientEmail, subject, htmlBody);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending daily users report email");
+            return false;
+        }
     }
 }
 
