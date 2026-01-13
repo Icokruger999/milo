@@ -234,6 +234,32 @@
             window.currentUser = user;
         })();
 
+        // Check for pending invitation and accept it on page load
+        async function checkAndAcceptInvitation() {
+            const inviteToken = localStorage.getItem('milo_pending_invitation');
+            if (inviteToken) {
+                const currentUser = window.currentUser || authService.getCurrentUser();
+                if (currentUser && currentUser.id) {
+                    try {
+                        const acceptResponse = await apiClient.post('/invitations/accept', {
+                            token: inviteToken,
+                            userId: currentUser.id
+                        });
+                        if (acceptResponse.ok) {
+                            const acceptData = await acceptResponse.json();
+                            console.log('Invitation accepted on project selector page:', acceptData);
+                            localStorage.removeItem('milo_pending_invitation');
+                            // Reload projects to show the newly accepted one
+                            return true; // Indicate invitation was accepted
+                        }
+                    } catch (error) {
+                        console.error('Failed to accept invitation:', error);
+                    }
+                }
+            }
+            return false;
+        }
+
         // Load projects
         async function loadProjects() {
             try {
@@ -244,9 +270,17 @@
                     return;
                 }
                 
+                // Check for pending invitation first
+                const invitationAccepted = await checkAndAcceptInvitation();
+                
                 // Pass user ID to load only projects the user has access to
                 const projects = await projectSelector.loadProjects(currentUser.id);
                 const container = document.getElementById('projectList');
+                
+                // If invitation was just accepted, log it
+                if (invitationAccepted) {
+                    console.log('Projects loaded after invitation acceptance:', projects.length, 'projects');
+                }
 
                 if (projects.length === 0) {
                     container.innerHTML = `

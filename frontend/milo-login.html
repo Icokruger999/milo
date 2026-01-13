@@ -285,6 +285,7 @@
                 if (result.success) {
                     // Check for pending invitation and accept it
                     const inviteToken = localStorage.getItem('milo_pending_invitation');
+                    let invitationAccepted = false;
                     if (inviteToken && result.user && result.user.id) {
                         try {
                             const acceptResponse = await apiClient.post('/invitations/accept', {
@@ -294,6 +295,7 @@
                             if (acceptResponse.ok) {
                                 const acceptData = await acceptResponse.json();
                                 console.log('Invitation accepted:', acceptData);
+                                invitationAccepted = true;
                                 // Remove invitation token
                                 localStorage.removeItem('milo_pending_invitation');
                                 // If project is returned, set it as current
@@ -312,8 +314,21 @@
                         // Redirect to change password page
                         window.location.href = `milo-change-password.html?email=${encodeURIComponent(email)}`;
                     } else {
-                        // User successfully logged in
-                        const projects = result.projects || [];
+                        // If invitation was just accepted, reload projects to include the new one
+                        let projects = result.projects || [];
+                        if (invitationAccepted) {
+                            try {
+                                // Reload projects to get the newly accepted one
+                                const refreshedProjects = await projectSelector.loadProjects(result.user.id);
+                                if (refreshedProjects && refreshedProjects.length > 0) {
+                                    projects = refreshedProjects;
+                                    console.log('Projects refreshed after invitation acceptance:', projects);
+                                }
+                            } catch (error) {
+                                console.error('Failed to refresh projects after invitation:', error);
+                                // Continue with original projects list
+                            }
+                        }
                         
                         if (projects.length === 0) {
                             // No projects yet - go to project selector where they can create or join
