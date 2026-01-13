@@ -367,6 +367,24 @@ async function showTaskModal(column, task = null) {
     // Show modal immediately for better UX
     modal.style.display = 'flex';
     
+    // If editing an existing task, fetch fresh data from API to ensure we have latest dates
+    if (task && task.id) {
+        try {
+            const response = await apiClient.get(`/tasks/${task.id}`);
+            if (response.ok) {
+                const freshTask = await response.json();
+                console.log('Loaded fresh task data:', freshTask);
+                // Use the fresh task data instead of the cached one
+                task = freshTask;
+            } else {
+                console.warn('Failed to load fresh task data, using cached task');
+            }
+        } catch (error) {
+            console.error('Error loading fresh task data:', error);
+            // Continue with cached task if API call fails
+        }
+    }
+    
     // Load data in parallel for better performance
     await Promise.all([
         loadUsersAndProducts(),
