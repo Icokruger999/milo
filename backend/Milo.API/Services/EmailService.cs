@@ -852,10 +852,10 @@ If you didn't request this, please ignore this email.";
     }
 
     public async Task<bool> SendNewUserNotificationEmailAsync(string userEmail, string userName, DateTime signupDate)
+    {
+        try
         {
-            try
-            {
-                var adminEmail = "ico@astutetech.co.za";
+            var adminEmail = "ico@astutetech.co.za";
                 var subject = $"New User Signed Up: {userName}";
                 
                 var htmlBody = $@"
@@ -906,9 +906,9 @@ If you didn't request this, please ignore this email.";
     }
 
     public async Task<bool> SendDailyUsersReportEmailAsync(string recipientEmail, List<UserReportData> users)
+    {
+        try
         {
-            try
-            {
                 var subject = $"Daily Milo Users Report - {DateTime.UtcNow.AddHours(2):yyyy-MM-dd}";
                 
                 var activeUsers = users.Where(u => u.IsActive).ToList();
