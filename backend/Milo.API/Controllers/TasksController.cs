@@ -602,6 +602,9 @@ public class TasksController : ControllerBase
                 task.DueDate = dueDate;
             }
         }
+        // Handle StartDate: only update if explicitly provided with a value
+        // If StartDate is not in the request at all, don't change the existing value
+        // This prevents the start date from being updated when the user just opens and closes the task
         if (request.StartDate.HasValue)
         {
             var startDate = request.StartDate.Value;
@@ -618,6 +621,8 @@ public class TasksController : ControllerBase
                 task.StartDate = startDate;
             }
         }
+        // If StartDate is not provided in request (null), don't change the existing value
+        // This prevents accidentally clearing or updating the start date
         if (request.ParentTaskId.HasValue)
         {
             task.ParentTaskId = request.ParentTaskId;

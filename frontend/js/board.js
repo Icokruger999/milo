@@ -410,12 +410,26 @@ async function showTaskModal(column, task = null) {
         // Set priority
         document.getElementById('taskPriority').value = task.priority !== undefined ? task.priority : 0;
         
-        // Set start date
-        if (task.startDate) {
-            const startDate = new Date(task.startDate);
-            document.getElementById('taskStartDate').value = startDate.toISOString().split('T')[0];
-        } else {
-            document.getElementById('taskStartDate').value = '';
+        // Set start date - only if task has a startDate, otherwise leave empty
+        // Don't auto-populate with current date
+        const startDateInput = document.getElementById('taskStartDate');
+        if (startDateInput) {
+            if (task.startDate) {
+                try {
+                    const startDate = new Date(task.startDate);
+                    // Check if date is valid
+                    if (!isNaN(startDate.getTime())) {
+                        startDateInput.value = startDate.toISOString().split('T')[0];
+                    } else {
+                        startDateInput.value = '';
+                    }
+                } catch (e) {
+                    console.error('Error parsing start date:', e);
+                    startDateInput.value = '';
+                }
+            } else {
+                startDateInput.value = '';
+            }
         }
         
         // Set due date
@@ -979,8 +993,10 @@ async function handleTaskSubmit(event) {
         assigneeId: document.getElementById('taskAssignee').value ? parseInt(document.getElementById('taskAssignee').value) : null,
         productId: document.getElementById('taskProduct').value ? parseInt(document.getElementById('taskProduct').value) : null,
         priority: parseInt(document.getElementById('taskPriority').value),
-        startDate: startDate,
-        dueDate: dueDate,
+        // Only include startDate if it has a value - don't send null to prevent unwanted updates
+        ...(startDate && { startDate: startDate }),
+        // Only include dueDate if it has a value
+        ...(dueDate && { dueDate: dueDate }),
         checklist: checklistItems.length > 0 ? checklistItems : [] // Always send array, even if empty
     };
     
