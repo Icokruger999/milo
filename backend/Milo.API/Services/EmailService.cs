@@ -617,7 +617,7 @@ If you didn't request this, please ignore this email.";
             }
             
             var subject = $"Project Invitation: {projectName}";
-            var invitationLink = $"https://www.codingeverest.com/milo-board.html?invite={invitationToken}";
+            var invitationLink = $"https://www.codingeverest.com/milo-accept-invitation.html?token={invitationToken}";
             
             _logger.LogInformation($"Sending project invitation email to {email} for project {projectName} with token {invitationToken.Substring(0, Math.Min(8, invitationToken.Length))}...");
             

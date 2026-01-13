@@ -152,6 +152,54 @@ public class InvitationsController : ControllerBase
         return Ok(invitations);
     }
 
+    [HttpGet("by-token")]
+    public async Task<IActionResult> GetInvitationByToken([FromQuery] string token)
+    {
+        if (string.IsNullOrEmpty(token))
+        {
+            return BadRequest(new { message = "Token is required" });
+        }
+
+        var invitation = await _context.ProjectInvitations
+            .Include(i => i.Project)
+            .ThenInclude(p => p.Owner)
+            .Include(i => i.InvitedBy)
+            .Where(i => i.Token == token && i.Status == "pending")
+            .Select(i => new
+            {
+                id = i.Id,
+                project = new
+                {
+                    id = i.Project.Id,
+                    name = i.Project.Name,
+                    key = i.Project.Key,
+                    description = i.Project.Description
+                },
+                invitedBy = new
+                {
+                    id = i.InvitedBy.Id,
+                    name = i.InvitedBy.Name,
+                    email = i.InvitedBy.Email
+                },
+                email = i.Email,
+                createdAt = i.CreatedAt,
+                expiresAt = i.ExpiresAt
+            })
+            .FirstOrDefaultAsync();
+
+        if (invitation == null)
+        {
+            return NotFound(new { message = "Invitation not found or already used" });
+        }
+
+        if (invitation.expiresAt.HasValue && invitation.expiresAt.Value < DateTime.UtcNow)
+        {
+            return BadRequest(new { message = "Invitation has expired" });
+        }
+
+        return Ok(invitation);
+    }
+
     [HttpPost("accept")]
     public async Task<IActionResult> AcceptInvitation([FromBody] AcceptInvitationRequest request)
     {

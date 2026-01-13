@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accept Invitation - Milo</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #F4F5F7;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .invitation-container {
+            width: 100%;
+            max-width: 500px;
+            padding: 24px;
+        }
+
+        .invitation-box {
+            background: #FFFFFF;
+            border-radius: 8px;
+            padding: 32px;
+            box-shadow: 0 2px 8px rgba(9, 30, 66, 0.15);
+        }
+
+        .invitation-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .invitation-logo {
+            width: 48px;
+            height: 48px;
+            background: #0052CC;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px;
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .invitation-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #172B4D;
+            margin-bottom: 8px;
+        }
+
+        .invitation-subtitle {
+            font-size: 14px;
+            color: #6B778C;
+        }
+
+        .project-info {
+            background: #F4F5F7;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .project-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #172B4D;
+            margin-bottom: 4px;
+        }
+
+        .project-key {
+            font-size: 14px;
+            color: #6B778C;
+            margin-bottom: 12px;
+        }
+
+        .project-description {
+            font-size: 14px;
+            color: #42526E;
+            line-height: 1.5;
+        }
+
+        .invited-by {
+            font-size: 14px;
+            color: #6B778C;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .invited-by strong {
+            color: #172B4D;
+        }
+
+        .auth-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .auth-button {
+            width: 100%;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .auth-button-primary {
+            background: #0052CC;
+            color: white;
+        }
+
+        .auth-button-primary:hover {
+            background: #0747A6;
+        }
+
+        .auth-button-secondary {
+            background: #FFFFFF;
+            color: #0052CC;
+            border: 2px solid #0052CC;
+        }
+
+        .auth-button-secondary:hover {
+            background: #F4F5F7;
+        }
+
+        .error-message {
+            background: #FFEBEE;
+            border-left: 4px solid #DE350B;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            color: #DE350B;
+            font-size: 14px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6B778C;
+        }
+
+        .success-message {
+            background: #E3FCEF;
+            border-left: 4px solid #36B37E;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            color: #006644;
+            font-size: 14px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="invitation-container">
+        <div class="invitation-box">
+            <div id="loadingState" class="loading">
+                <p>Loading invitation details...</p>
+            </div>
+
+            <div id="errorState" style="display: none;">
+                <div class="invitation-header">
+                    <div class="invitation-logo">M</div>
+                    <h1 class="invitation-title">Invitation Not Found</h1>
+                    <p class="invitation-subtitle">This invitation may have expired or already been used.</p>
+                </div>
+                <div style="text-align: center; margin-top: 24px;">
+                    <a href="milo-login.html" style="color: #0052CC; text-decoration: none; font-weight: 600;">Go to Login</a>
+                </div>
+            </div>
+
+            <div id="invitationContent" style="display: none;">
+                <div class="invitation-header">
+                    <div class="invitation-logo">M</div>
+                    <h1 class="invitation-title">You've Been Invited!</h1>
+                    <p class="invitation-subtitle">Join a project on Milo</p>
+                </div>
+
+                <div id="errorMessage" class="error-message"></div>
+                <div id="successMessage" class="success-message"></div>
+
+                <div class="project-info">
+                    <div class="project-name" id="projectName">Loading...</div>
+                    <div class="project-key" id="projectKey"></div>
+                    <div class="project-description" id="projectDescription"></div>
+                </div>
+
+                <div class="invited-by">
+                    Invited by <strong id="invitedByName">Loading...</strong>
+                </div>
+
+                <div class="auth-options">
+                    <button class="auth-button auth-button-primary" onclick="goToLogin()">
+                        Sign In to Accept
+                    </button>
+                    <button class="auth-button auth-button-secondary" onclick="goToSignup()">
+                        Create Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/api-client.js"></script>
+    <script>
+        let invitationToken = null;
+        let invitationData = null;
+
+        // Get token from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        invitationToken = urlParams.get('token') || urlParams.get('invite');
+
+        async function loadInvitation() {
+            if (!invitationToken) {
+                showError('No invitation token provided');
+                showErrorState();
+                return;
+            }
+
+            try {
+                // Store token for later use
+                localStorage.setItem('milo_pending_invitation', invitationToken);
+
+                // Get invitation details from API
+                const response = await apiClient.get(`/invitations/by-token?token=${encodeURIComponent(invitationToken)}`);
+                
+                if (response.ok) {
+                    invitationData = await response.json();
+                    displayInvitation(invitationData);
+                } else if (response.status === 404) {
+                    showErrorState();
+                } else {
+                    const error = await response.json();
+                    showError(error.message || 'Failed to load invitation');
+                    showErrorState();
+                }
+            } catch (error) {
+                console.error('Error loading invitation:', error);
+                showError('Failed to load invitation. Please try again.');
+                showErrorState();
+            }
+        }
+
+        function displayInvitation(data) {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('invitationContent').style.display = 'block';
+
+            document.getElementById('projectName').textContent = data.project.name;
+            document.getElementById('projectKey').textContent = `Project Key: ${data.project.key}`;
+            document.getElementById('projectDescription').textContent = data.project.description || 'No description provided.';
+            document.getElementById('invitedByName').textContent = data.invitedBy.name || data.invitedBy.email;
+        }
+
+        function showErrorState() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'block';
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.classList.add('show');
+        }
+
+        function goToLogin() {
+            // Store invitation token and redirect to login
+            if (invitationToken) {
+                localStorage.setItem('milo_pending_invitation', invitationToken);
+            }
+            window.location.href = 'milo-login.html';
+        }
+
+        function goToSignup() {
+            // Store invitation token and redirect to signup
+            if (invitationToken) {
+                localStorage.setItem('milo_pending_invitation', invitationToken);
+            }
+            window.location.href = 'milo-signup.html';
+        }
+
+        // Load invitation on page load
+        if (invitationToken) {
+            loadInvitation();
+        } else {
+            showError('No invitation token found in URL');
+            showErrorState();
+        }
+    </script>
+</body>
+</html>
