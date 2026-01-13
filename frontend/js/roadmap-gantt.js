@@ -85,14 +85,25 @@ async function loadRoadmapData() {
 
         const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
         if (response.ok) {
-            const tasks = await response.json();
+            const data = await response.json();
+            // Handle both paginated and non-paginated responses
+            const tasks = data.tasks || data;
+            const tasksArray = Array.isArray(tasks) ? tasks : [];
+            
+            console.log('Roadmap loaded tasks:', {
+                isArray: Array.isArray(data),
+                hasTasks: !!data.tasks,
+                tasksCount: tasksArray.length,
+                projectId: currentProject.id,
+                sampleTask: tasksArray[0]
+            });
             
             // Organize tasks by type
             // Default to today for tasks without startDate so they're visible on the roadmap
             const today = new Date();
             today.setHours(0, 0, 0, 0); // Set to start of today
             
-            roadmapData.tasks = tasks.map(task => {
+            roadmapData.tasks = tasksArray.map(task => {
                 // If no startDate, default to today (not createdAt) so tasks are visible
                 let startDate = null;
                 if (task.startDate) {
@@ -145,6 +156,13 @@ function setViewMode(mode) {
     document.getElementById('viewWeeks').classList.toggle('active', mode === 'weeks');
     document.getElementById('viewMonths').classList.toggle('active', mode === 'months');
     renderTimeline();
+    
+    // Only scroll to today for Days view, otherwise maintain scroll position
+    if (mode === 'days') {
+        setTimeout(() => {
+            scrollToToday();
+        }, 100);
+    }
 }
 
 // Apply filters
@@ -227,26 +245,30 @@ function renderTimeline() {
     renderTimelineBody();
     updateCurrentDateLine();
     
-    // Always auto-scroll to Today after rendering (with delay for layout)
-    // Use multiple attempts to ensure timeline is fully rendered
-    // Also ensure view mode is set to Days
-    setTimeout(() => {
-        // Make sure Days view is active
-        const viewDaysBtn = document.getElementById('viewDays');
-        if (viewDaysBtn && !viewDaysBtn.classList.contains('active')) {
-            setViewMode('days');
-        }
-        scrollToToday();
-    }, 100);
-    setTimeout(() => {
-        scrollToToday();
-    }, 300);
-    setTimeout(() => {
-        scrollToToday();
-    }, 600);
-    setTimeout(() => {
-        scrollToToday();
-    }, 1000);
+    // Only auto-scroll to Today for Days view mode
+    // For Weeks and Months, maintain current scroll position or start from beginning
+    if (currentViewMode === 'days') {
+        setTimeout(() => {
+            scrollToToday();
+        }, 100);
+        setTimeout(() => {
+            scrollToToday();
+        }, 300);
+        setTimeout(() => {
+            scrollToToday();
+        }, 600);
+        setTimeout(() => {
+            scrollToToday();
+        }, 1000);
+    } else {
+        // For weeks/months, scroll to the start of the timeline
+        setTimeout(() => {
+            const timelineArea = document.getElementById('timelineArea');
+            if (timelineArea) {
+                timelineArea.scrollLeft = 0;
+            }
+        }, 100);
+    }
 }
 
 // Get cell width based on view mode
