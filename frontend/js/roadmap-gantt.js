@@ -103,39 +103,60 @@ async function loadRoadmapData() {
             const today = new Date();
             today.setHours(0, 0, 0, 0); // Set to start of today
             
-            roadmapData.tasks = tasksArray.map(task => {
-                // If no startDate, default to today (not createdAt) so tasks are visible
-                let startDate = null;
-                if (task.startDate) {
-                    startDate = new Date(task.startDate);
-                } else {
-                    // Default to today for visibility
-                    startDate = new Date(today);
-                }
-                
-                // If no dueDate, default to 7 days from startDate
-                let endDate = null;
-                if (task.dueDate) {
-                    endDate = new Date(task.dueDate);
-                } else if (startDate) {
-                    // Default to 7 days from start date
-                    endDate = new Date(startDate);
-                    endDate.setDate(endDate.getDate() + 7);
-                }
-                
-                return {
-                    id: task.id,
-                    taskId: task.taskId || `TASK-${task.id}`,
-                    title: task.title,
-                    type: task.taskType || 'Task',
-                    status: task.status,
-                    startDate: startDate,
-                    endDate: endDate,
-                    assigneeId: task.assigneeId,
-                    assignee: task.assignee,
-                    parentTaskId: task.parentTaskId,
-                    priority: task.priority
-                };
+            // Only include tasks that have actual dates set - don't create fake dates
+            roadmapData.tasks = tasksArray
+                .filter(task => {
+                    // Only show tasks that have at least a startDate or dueDate set
+                    return task.startDate || task.dueDate;
+                })
+                .map(task => {
+                    // Use actual dates from database - no defaults
+                    let startDate = null;
+                    if (task.startDate) {
+                        const parsed = new Date(task.startDate);
+                        // Only use if valid date
+                        if (!isNaN(parsed.getTime()) && parsed.getFullYear() > 1900) {
+                            startDate = parsed;
+                        }
+                    }
+                    
+                    let endDate = null;
+                    if (task.dueDate) {
+                        const parsed = new Date(task.dueDate);
+                        // Only use if valid date
+                        if (!isNaN(parsed.getTime()) && parsed.getFullYear() > 1900) {
+                            endDate = parsed;
+                        }
+                    }
+                    
+                    // If we have a dueDate but no startDate, use dueDate as startDate
+                    // If we have a startDate but no dueDate, use startDate as endDate (1 day task)
+                    if (!startDate && endDate) {
+                        startDate = new Date(endDate);
+                    }
+                    if (startDate && !endDate) {
+                        endDate = new Date(startDate);
+                    }
+                    
+                    return {
+                        id: task.id,
+                        taskId: task.taskId || `TASK-${task.id}`,
+                        title: task.title,
+                        type: task.taskType || 'Task',
+                        status: task.status,
+                        startDate: startDate,
+                        endDate: endDate,
+                        assigneeId: task.assigneeId,
+                        assignee: task.assignee,
+                        parentTaskId: task.parentTaskId,
+                        priority: task.priority
+                    };
+                });
+            
+            console.log('Roadmap tasks after filtering:', {
+                total: tasksArray.length,
+                withDates: roadmapData.tasks.length,
+                withoutDates: tasksArray.length - roadmapData.tasks.length
             });
 
             // Create releases and milestones from parent tasks

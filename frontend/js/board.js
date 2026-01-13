@@ -364,32 +364,41 @@ async function showTaskModal(column, task = null) {
         deleteButton.style.display = task ? 'block' : 'none';
     }
     
-    // Show modal immediately for better UX
+    // Show modal immediately for better UX (don't wait for API calls)
     modal.style.display = 'flex';
     
-    // If editing an existing task, fetch fresh data from API to ensure we have latest dates
-    if (task && task.id) {
-        try {
-            const response = await apiClient.get(`/tasks/${task.id}`);
-            if (response.ok) {
-                const freshTask = await response.json();
-                console.log('Loaded fresh task data:', freshTask);
-                // Use the fresh task data instead of the cached one
-                task = freshTask;
-            } else {
-                console.warn('Failed to load fresh task data, using cached task');
-            }
-        } catch (error) {
-            console.error('Error loading fresh task data:', error);
-            // Continue with cached task if API call fails
-        }
-    }
-    
-    // Load data in parallel for better performance
-    await Promise.all([
+    // Load dropdowns in parallel (non-blocking)
+    const loadPromise = Promise.all([
         loadUsersAndProducts(),
         loadLabels()
     ]);
+    
+    // If editing an existing task, fetch fresh data from API in background
+    // But populate form immediately with cached data for better UX
+    if (task && task.id) {
+        // Populate form immediately with cached task data
+        populateTaskForm(task);
+        
+        // Then fetch fresh data in background and update if different
+        loadPromise.then(async () => {
+            try {
+                const response = await apiClient.get(`/tasks/${task.id}`);
+                if (response.ok) {
+                    const freshTask = await response.json();
+                    console.log('Loaded fresh task data:', freshTask);
+                    // Only update if dates are different (to avoid flickering)
+                    if (freshTask.startDate !== task.startDate || freshTask.dueDate !== task.dueDate) {
+                        populateTaskForm(freshTask);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading fresh task data:', error);
+            }
+        });
+    } else {
+        // For new tasks, just wait for dropdowns
+        await loadPromise;
+    }
     
     if (task) {
         // Set all form values AFTER dropdowns are populated
@@ -536,6 +545,159 @@ async function showTaskModal(column, task = null) {
         currentTaskComments = [];
         document.getElementById('taskCommentsList').innerHTML = '<div style="color: #6B778C; font-size: 13px; text-align: center; padding: 8px;">No comments yet</div>';
         document.getElementById('taskChecklist').innerHTML = '<div style="color: #6B778C; font-size: 12px; text-align: center; padding: 8px;">No checklist items yet</div>';
+    }
+}
+
+// Helper function to populate task form (extracted for reuse)
+function populateTaskForm(task) {
+    // Set all form values
+    const titleInput = document.getElementById('taskTitle');
+    if (titleInput) titleInput.value = task.title || '';
+    
+    const descInput = document.getElementById('taskDescription');
+    if (descInput) {
+        descInput.value = task.description || '';
+        // Update description preview if description exists
+        if (task.description && task.description.trim()) {
+            updateDescriptionPreview();
+        }
+    }
+    
+    // Set status BEFORE other dropdowns
+    const statusSelect = document.getElementById('taskStatus');
+    if (statusSelect) {
+        statusSelect.value = task.status || 'todo';
+    }
+    
+    // Set assignee
+    const assigneeSelect = document.getElementById('taskAssignee');
+    if (assigneeSelect && task.assigneeId) {
+        assigneeSelect.value = task.assigneeId;
+    }
+    
+    // Set label
+    const labelSelect = document.getElementById('taskLabel');
+    if (labelSelect && task.label) {
+        labelSelect.value = task.label.toLowerCase();
+    }
+    
+    // Set product
+    const productSelect = document.getElementById('taskProduct');
+    if (productSelect && task.productId) {
+        productSelect.value = task.productId;
+    }
+    
+    // Set priority
+    const priorityInput = document.getElementById('taskPriority');
+    if (priorityInput) {
+        priorityInput.value = task.priority !== undefined ? task.priority : 0;
+    }
+    
+    // Set start date - ONLY if task has a valid startDate, otherwise leave EMPTY
+    const startDateInput = document.getElementById('taskStartDate');
+    if (startDateInput) {
+        // Clear first to ensure it's empty
+        startDateInput.value = '';
+        
+        if (task.startDate) {
+            try {
+                // Handle both string and Date objects
+                const startDate = task.startDate instanceof Date 
+                    ? task.startDate 
+                    : new Date(task.startDate);
+                
+                // Check if date is valid and not a default/invalid date
+                if (!isNaN(startDate.getTime()) && startDate.getFullYear() > 1900) {
+                    // Format as YYYY-MM-DD for HTML date input
+                    const year = startDate.getFullYear();
+                    const month = String(startDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(startDate.getDate()).padStart(2, '0');
+                    startDateInput.value = `${year}-${month}-${day}`;
+                    console.log('Set start date input to:', startDateInput.value, 'from task.startDate:', task.startDate);
+                } else {
+                    console.warn('Invalid start date:', task.startDate);
+                    startDateInput.value = '';
+                }
+            } catch (e) {
+                console.error('Error parsing start date:', e, 'task.startDate:', task.startDate);
+                startDateInput.value = '';
+            }
+        } else {
+            // Explicitly set to empty string (not null or undefined)
+            startDateInput.value = '';
+        }
+    }
+    
+    // Set due date - ONLY if task has a valid dueDate, otherwise leave EMPTY
+    const dueDateInput = document.getElementById('taskDueDate');
+    if (dueDateInput) {
+        // Clear first to ensure it's empty
+        dueDateInput.value = '';
+        
+        if (task.dueDate) {
+            try {
+                // Handle both string and Date objects
+                const dueDate = task.dueDate instanceof Date 
+                    ? task.dueDate 
+                    : new Date(task.dueDate);
+                
+                // Check if date is valid and not a default/invalid date
+                if (!isNaN(dueDate.getTime()) && dueDate.getFullYear() > 1900) {
+                    // Format as YYYY-MM-DD for HTML date input
+                    const year = dueDate.getFullYear();
+                    const month = String(dueDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(dueDate.getDate()).padStart(2, '0');
+                    dueDateInput.value = `${year}-${month}-${day}`;
+                    console.log('Set due date input to:', dueDateInput.value, 'from task.dueDate:', task.dueDate);
+                } else {
+                    console.warn('Invalid due date:', task.dueDate);
+                    dueDateInput.value = '';
+                }
+            } catch (e) {
+                console.error('Error parsing due date:', e, 'task.dueDate:', task.dueDate);
+                dueDateInput.value = '';
+            }
+        } else {
+            // Explicitly set to empty string (not null or undefined)
+            dueDateInput.value = '';
+        }
+    }
+    
+    // Load checklist if exists
+    const checklistDiv = document.getElementById('taskChecklist');
+    if (checklistDiv) {
+        let checklist = task.checklist;
+        
+        // Parse checklist if it's a string (JSON)
+        if (typeof checklist === 'string' && checklist.trim()) {
+            try {
+                checklist = JSON.parse(checklist);
+            } catch (e) {
+                console.error('Failed to parse checklist:', e);
+                checklist = null;
+            }
+        }
+        
+        if (checklist && Array.isArray(checklist) && checklist.length > 0) {
+            checklistDiv.innerHTML = '';
+            checklist.forEach((item, idx) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 6px; background: white; border-radius: 3px;';
+                itemDiv.innerHTML = `
+                    <input type="checkbox" ${item.completed ? 'checked' : ''} style="cursor: pointer;">
+                    <input type="text" value="${(item.text || '').replace(/"/g, '&quot;')}" style="flex: 1; padding: 4px 8px; border: 1px solid #ddd; border-radius: 3px; font-size: 13px;">
+                    <button onclick="removeChecklistItemFromModal(this)" style="background: none; border: none; color: #DE350B; cursor: pointer; font-size: 16px; padding: 0 8px;">×</button>
+                `;
+                checklistDiv.appendChild(itemDiv);
+            });
+        } else {
+            checklistDiv.innerHTML = '<div style="color: #6B778C; font-size: 12px; text-align: center; padding: 8px;">No checklist items yet</div>';
+        }
+    }
+    
+    // Load comments asynchronously (non-blocking)
+    if (task.id) {
+        loadTaskComments(task.id).catch(err => console.error('Error loading comments:', err));
     }
 }
 
