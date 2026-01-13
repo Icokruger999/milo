@@ -19,54 +19,14 @@ if (string.IsNullOrEmpty(connectionString))
     throw new InvalidOperationException("DefaultConnection connection string is required in appsettings.json");
 }
 
-// Handle Supabase connection string - decode if base64 encoded or convert URI format
-if (!string.IsNullOrEmpty(connectionString))
-{
-    try
-    {
-        string processedConnectionString = connectionString;
-        
-        // Try to decode as base64 first (for encrypted/encoded Supabase strings)
-        if (connectionString.EndsWith("==") || connectionString.EndsWith("="))
-        {
-            try
-            {
-                var decoded = System.Text.Encoding.UTF8.GetString(System.Convert.FromBase64String(connectionString));
-                if (decoded.Contains("postgresql://") || decoded.Contains("postgres://") || 
-                    decoded.Contains("Host=") || decoded.Contains("host="))
-                {
-                    processedConnectionString = decoded;
-                }
-            }
-            catch
-            {
-                // Not base64, use as-is
-            }
-        }
-        
-        // Parse and configure connection string
-        var connBuilder = new NpgsqlConnectionStringBuilder(processedConnectionString);
-        
-        // Ensure SSL is enabled for Supabase (required)
-        connBuilder.SslMode = SslMode.Require;
-        
-        // Note: Use Supabase connection pooler (aws-X-region.pooler.supabase.com) in appsettings.json
-        // The pooler has IPv4 support and will work with EC2 instances that don't have IPv6
-        
-        connectionString = connBuilder.ConnectionString;
-    }
-    catch
-    {
-        // If parsing fails, use as-is - Npgsql will try to handle it
-    }
-}
-
+// We are now using a Direct Connection string in appsettings.json
+// To avoid "Tenant" errors, we use the connection string exactly as provided.
 builder.Services.AddDbContext<MiloDbContext>(options =>
     options.UseNpgsql(connectionString, npgsqlOptions =>
     {
-        npgsqlOptions.CommandTimeout(30); // 30 second timeout
+        npgsqlOptions.CommandTimeout(30);
     })
-    .EnableSensitiveDataLogging(false)); // Disable for performance in production
+    .EnableSensitiveDataLogging(false));
 
 // Add email service
 builder.Services.AddScoped<Milo.API.Services.IEmailService, Milo.API.Services.EmailService>();
@@ -85,47 +45,46 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials()
-            .SetPreflightMaxAge(TimeSpan.FromSeconds(86400)); // Cache preflight for 24 hours
+            .SetPreflightMaxAge(TimeSpan.FromSeconds(86400));
     });
 });
 
 var app = builder.Build();
 
-// Apply database migrations to create all tables (non-blocking)
-// COMMENTED OUT: Database migrations will be handled manually in Supabase
-// _ = Task.Run(async () =>
-// {
-//     await Task.Delay(2000); // Wait 2 seconds for app to start
-//     using (var scope = app.Services.CreateScope())
-//     {
-//         var dbContext = scope.ServiceProvider.GetRequiredService<MiloDbContext>();
-//         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-//         try
-//         {
-//             // Use Migrate() instead of EnsureCreated() to properly run migrations
-//             // This will create all tables defined in the InitialCreate migration
-//             dbContext.Database.Migrate();
-//             logger.LogInformation("Database migrations applied successfully.");
-//         }
-//         catch (Exception ex)
-//         {
-//             // Log error but don't fail startup - database might not be configured yet
-//             logger.LogWarning(ex, "Database migration failed. Ensure RDS connection string is configured. Error: {Error}", ex.Message);
-//         }
-//     }
-// });
+/* --- CRITICAL FIX ---
+   We are commenting out the automatic migration block. 
+   Supabase/Managed Postgres often blocks the 'Migrate()' command 
+   from the 'postgres' user, causing the "Tenant not found" crash.
+   We will manage database schema manually in the Supabase SQL editor.
+*/
 
-// Configure the HTTP request pipeline for production
-// Swagger disabled in production for security
-// HTTPS redirection handled by reverse proxy (if configured)
+/*
+_ = Task.Run(async () =>
+{
+    await Task.Delay(2000); 
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbContext = scope.ServiceProvider.GetRequiredService<MiloDbContext>();
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        try
+        {
+            dbContext.Database.Migrate();
+            logger.LogInformation("Database migrations applied successfully.");
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Database migration failed.");
+        }
+    }
+});
+*/
 
 // Add error handling middleware
 app.UseExceptionHandler("/api/error");
 
-// CORS must be early in the pipeline, before UseAuthorization
+// CORS must be early in the pipeline
 app.UseCors("AllowFrontend");
 
-// Add cache control headers to prevent caching for API responses
 app.Use(async (context, next) =>
 {
     context.Response.Headers.Append("Cache-Control", "no-cache, no-store, must-revalidate");
@@ -135,10 +94,7 @@ app.Use(async (context, next) =>
 });
 
 app.UseAuthorization();
-
 app.MapControllers().RequireCors("AllowFrontend");
-
 app.MapGet("/api/health", () => new { status = "ok", message = "Milo API is running" });
 
 app.Run();
-
