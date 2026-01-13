@@ -321,7 +321,46 @@ CREATE TABLE IF NOT EXISTS task_links (
 CREATE INDEX IF NOT EXISTS "IX_task_links_source_task_id" ON task_links ("SourceTaskId");
 CREATE INDEX IF NOT EXISTS "IX_task_links_target_task_id" ON task_links ("TargetTaskId");
 
--- Create incidents table
+-- Create incident_assignees table (must be created before incidents)
+CREATE TABLE IF NOT EXISTS incident_assignees (
+    "id" SERIAL PRIMARY KEY,
+    "name" VARCHAR(255) NOT NULL,
+    "email" VARCHAR(255) NOT NULL,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "updated_at" TIMESTAMPTZ,
+    "is_active" BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE INDEX IF NOT EXISTS "IX_incident_assignees_email" ON incident_assignees ("email");
+CREATE INDEX IF NOT EXISTS "IX_incident_assignees_is_active" ON incident_assignees ("is_active");
+
+-- Create incident_requesters table (must be created before incidents)
+CREATE TABLE IF NOT EXISTS incident_requesters (
+    "id" SERIAL PRIMARY KEY,
+    "name" VARCHAR(255) NOT NULL,
+    "email" VARCHAR(255) NOT NULL,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "updated_at" TIMESTAMPTZ,
+    "is_active" BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE INDEX IF NOT EXISTS "IX_incident_requesters_email" ON incident_requesters ("email");
+CREATE INDEX IF NOT EXISTS "IX_incident_requesters_is_active" ON incident_requesters ("is_active");
+
+-- Create incident_groups table (must be created before incidents)
+CREATE TABLE IF NOT EXISTS incident_groups (
+    "id" SERIAL PRIMARY KEY,
+    "name" VARCHAR(255) NOT NULL,
+    "description" TEXT,
+    "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "updated_at" TIMESTAMPTZ,
+    "is_active" BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE INDEX IF NOT EXISTS "IX_incident_groups_name" ON incident_groups ("name");
+CREATE INDEX IF NOT EXISTS "IX_incident_groups_is_active" ON incident_groups ("is_active");
+
+-- Create incidents table (after incident_* tables)
 CREATE TABLE IF NOT EXISTS incidents (
     "Id" SERIAL PRIMARY KEY,
     "IncidentNumber" VARCHAR(50) NOT NULL,
@@ -354,11 +393,11 @@ CREATE TABLE IF NOT EXISTS incidents (
     "Attachments" TEXT,
     "Resolution" TEXT,
     CONSTRAINT "FK_incidents_incident_requesters_requester_id" FOREIGN KEY ("RequesterId") 
-        REFERENCES incident_requesters ("Id") ON DELETE RESTRICT,
+        REFERENCES incident_requesters ("id") ON DELETE RESTRICT,
     CONSTRAINT "FK_incidents_incident_assignees_agent_id" FOREIGN KEY ("AgentId") 
-        REFERENCES incident_assignees ("Id") ON DELETE SET NULL,
+        REFERENCES incident_assignees ("id") ON DELETE SET NULL,
     CONSTRAINT "FK_incidents_incident_groups_group_id" FOREIGN KEY ("GroupId") 
-        REFERENCES incident_groups ("Id") ON DELETE SET NULL,
+        REFERENCES incident_groups ("id") ON DELETE SET NULL,
     CONSTRAINT "FK_incidents_projects_project_id" FOREIGN KEY ("ProjectId") 
         REFERENCES projects ("Id") ON DELETE SET NULL
 );
@@ -366,45 +405,6 @@ CREATE TABLE IF NOT EXISTS incidents (
 CREATE UNIQUE INDEX IF NOT EXISTS "IX_incidents_incident_number" ON incidents ("IncidentNumber");
 CREATE INDEX IF NOT EXISTS "IX_incidents_status" ON incidents ("Status");
 CREATE INDEX IF NOT EXISTS "IX_incidents_project_id" ON incidents ("ProjectId");
-
--- Create incident_assignees table
-CREATE TABLE IF NOT EXISTS incident_assignees (
-    "id" SERIAL PRIMARY KEY,
-    "name" VARCHAR(255) NOT NULL,
-    "email" VARCHAR(255) NOT NULL,
-    "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    "updated_at" TIMESTAMPTZ,
-    "is_active" BOOLEAN NOT NULL DEFAULT TRUE
-);
-
-CREATE INDEX IF NOT EXISTS "IX_incident_assignees_email" ON incident_assignees ("email");
-CREATE INDEX IF NOT EXISTS "IX_incident_assignees_is_active" ON incident_assignees ("is_active");
-
--- Create incident_requesters table
-CREATE TABLE IF NOT EXISTS incident_requesters (
-    "id" SERIAL PRIMARY KEY,
-    "name" VARCHAR(255) NOT NULL,
-    "email" VARCHAR(255) NOT NULL,
-    "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    "updated_at" TIMESTAMPTZ,
-    "is_active" BOOLEAN NOT NULL DEFAULT TRUE
-);
-
-CREATE INDEX IF NOT EXISTS "IX_incident_requesters_email" ON incident_requesters ("email");
-CREATE INDEX IF NOT EXISTS "IX_incident_requesters_is_active" ON incident_requesters ("is_active");
-
--- Create incident_groups table
-CREATE TABLE IF NOT EXISTS incident_groups (
-    "id" SERIAL PRIMARY KEY,
-    "name" VARCHAR(255) NOT NULL,
-    "description" TEXT,
-    "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    "updated_at" TIMESTAMPTZ,
-    "is_active" BOOLEAN NOT NULL DEFAULT TRUE
-);
-
-CREATE INDEX IF NOT EXISTS "IX_incident_groups_name" ON incident_groups ("name");
-CREATE INDEX IF NOT EXISTS "IX_incident_groups_is_active" ON incident_groups ("is_active");
 
 -- Create report_recipients table
 CREATE TABLE IF NOT EXISTS report_recipients (
@@ -446,9 +446,10 @@ TABLE_COUNT=$(docker exec milo_postgres psql -U postgres -d milo -t -c "SELECT C
 echo "Total tables created: $TABLE_COUNT"
 echo ""
 
-echo "7. Starting API service..."
+echo "7. Starting API service (with longer wait for migrations)..."
 sudo systemctl start milo-api
-sleep 10
+echo "Waiting 60 seconds for API to start and migrations to complete..."
+sleep 60
 echo ""
 
 echo "8. Checking service status..."

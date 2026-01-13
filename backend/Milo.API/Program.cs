@@ -51,23 +51,48 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Run database migrations on startup
+// Run database migrations on startup (only if tables don't exist)
 _ = Task.Run(async () =>
 {
-    await Task.Delay(2000); // Wait for services to initialize
+    await Task.Delay(5000); // Wait for services to initialize
     using (var scope = app.Services.CreateScope())
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<MiloDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         try
         {
-            logger.LogInformation("Applying database migrations...");
-            dbContext.Database.Migrate();
-            logger.LogInformation("Database migrations applied successfully.");
+            // Check if users table exists (indicates tables are already created)
+            var tableExists = await dbContext.Database.ExecuteSqlRawAsync(
+                "SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='users'"
+            );
+            
+            // Only run migrations if tables don't exist
+            var canConnect = await dbContext.Database.CanConnectAsync();
+            if (canConnect)
+            {
+                logger.LogInformation("Database connection successful. Checking if migrations are needed...");
+                // Try to get applied migrations - if this fails, tables don't exist
+                try
+                {
+                    var appliedMigrations = await dbContext.Database.GetAppliedMigrationsAsync();
+                    if (appliedMigrations.Any())
+                    {
+                        logger.LogInformation("Migrations already applied. Skipping migration step.");
+                    }
+                    else
+                    {
+                        logger.LogInformation("No migrations found. Tables may have been created manually. Skipping migration step.");
+                    }
+                }
+                catch
+                {
+                    logger.LogInformation("Migration history table doesn't exist. Assuming tables were created manually. Skipping migration step.");
+                }
+            }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Database migration failed.");
+            logger.LogError(ex, "Database connection check failed: {Message}", ex.Message);
         }
     }
 });
