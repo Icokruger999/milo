@@ -218,6 +218,10 @@ public class TasksController : ControllerBase
             {
                 return BadRequest(new { message = "Title is required" });
             }
+            
+            // Log received dates for debugging
+            _logger.LogInformation($"[CREATE TASK] Received StartDate: {request.StartDate}, DueDate: {request.DueDate}");
+            _logger.LogInformation($"[CREATE TASK] StartDate.HasValue: {request.StartDate.HasValue}, DueDate.HasValue: {request.DueDate.HasValue}");
 
             // Get project key for task ID prefix
             string taskPrefix = "TASK";
@@ -332,6 +336,9 @@ public class TasksController : ControllerBase
                 Checklist = checklistJson,
                 CreatedAt = DateTime.UtcNow
             };
+            
+            // Log what we're saving to database
+            _logger.LogInformation($"[CREATE TASK] Saving to DB - StartDate: {task.StartDate}, DueDate: {task.DueDate}");
 
             _context.Tasks.Add(task);
             await _context.SaveChangesAsync();
