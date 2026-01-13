@@ -101,6 +101,56 @@ public class EmailService : IEmailService
         }
     }
 
+    public async Task<bool> SendEmailWithPlainTextAsync(string to, string subject, string htmlBody, string plainTextBody)
+    {
+        try
+        {
+            var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
+            var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
+            var smtpUsername = _configuration["Email:SmtpUser"] ?? _configuration["Email:Username"] ?? "";
+            var smtpPassword = _configuration["Email:SmtpPassword"] ?? _configuration["Email:Password"] ?? "";
+            var fromEmail = _configuration["Email:FromEmail"] ?? smtpUsername;
+            var fromName = _configuration["Email:FromName"] ?? "Milo - Incident Management";
+
+            if (string.IsNullOrEmpty(smtpUsername) || string.IsNullOrEmpty(smtpPassword))
+            {
+                _logger.LogWarning("Email configuration not set. Skipping email send.");
+                return false;
+            }
+
+            using var client = new SmtpClient(smtpHost, smtpPort)
+            {
+                EnableSsl = true,
+                Credentials = new NetworkCredential(smtpUsername, smtpPassword)
+            };
+
+            var message = new MailMessage
+            {
+                From = new MailAddress(fromEmail, fromName),
+                Subject = subject
+            };
+
+            // Add plain text version first (some email clients prefer this)
+            var plainTextView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(plainTextBody, null, System.Net.Mime.MediaTypeNames.Text.Plain);
+            message.AlternateViews.Add(plainTextView);
+
+            // Add HTML version
+            var htmlView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(htmlBody, null, System.Net.Mime.MediaTypeNames.Text.Html);
+            message.AlternateViews.Add(htmlView);
+
+            message.To.Add(new MailAddress(to));
+
+            await client.SendMailAsync(message);
+            _logger.LogInformation("Email with plain text alternative sent successfully to {To}", to);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending email with plain text to {To}", to);
+            return false;
+        }
+    }
+
     private string GenerateReportHtml(string recipientName, DailyReportData reportData)
     {
         var html = new StringBuilder();
@@ -292,50 +342,96 @@ public class EmailService : IEmailService
             
             // HTML encode the name to prevent XSS
             var escapedName = System.Net.WebUtility.HtmlEncode(name);
+            var escapedPassword = System.Net.WebUtility.HtmlEncode(temporaryPassword);
             
+            // Create plain text version first (for Outlook and email clients that don't support HTML)
+            var plainTextBody = $@"Your Temporary Password - Milo
+
+Hello {name},
+
+Your temporary password has been generated. Please use the following password to log in:
+
+TEMPORARY PASSWORD: {temporaryPassword}
+
+IMPORTANT: For security reasons, please change this password after your first login.
+
+Login URL: https://www.codingeverest.com/milo-login.html
+
+This is an automated message from Milo
+If you didn't request this, please ignore this email.";
+            
+            // HTML version with inline styles for Outlook compatibility
             var htmlBody = $@"
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset='utf-8'>
-    <style>
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 20px; }}
-        .container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; }}
-        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 32px 24px; text-align: center; }}
-        .content {{ padding: 32px 24px; }}
-        .password-box {{ background: #F4F5F7; border: 2px dashed #0052CC; border-radius: 6px; padding: 20px; text-align: center; margin: 24px 0; }}
-        .password {{ font-size: 24px; font-weight: 700; color: #0052CC; letter-spacing: 2px; font-family: 'Courier New', monospace; }}
-        .footer {{ background: #F4F5F7; padding: 24px; text-align: center; font-size: 12px; color: #6B778C; }}
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <!--[if mso]>
+    <style type='text/css'>
+        body, table, td {{ font-family: Arial, sans-serif !important; }}
     </style>
+    <![endif]-->
 </head>
-<body>
-    <div class='container'>
-        <div class='header'>
-            <h1>Your Temporary Password</h1>
-        </div>
-        <div class='content'>
-            <p>Hello {escapedName},</p>
-            <p>Your temporary password has been generated. Please use the following password to log in:</p>
-            <div class='password-box'>
-                <div class='password'>{temporaryPassword}</div>
-            </div>
-            <p><strong>Important:</strong> For security reasons, please change this password after your first login.</p>
-            <p style='margin-top: 32px; text-align: center;'>
-                <a href='https://www.codingeverest.com/milo-login.html' style='display: inline-block; background: #0052CC; color: #FFFFFF; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;'>Log In Now</a>
-            </p>
-            <p style='margin-top: 24px; font-size: 12px; color: #6B778C;'>
-                Login URL: <a href='https://www.codingeverest.com/milo-login.html' style='color: #0052CC;'>https://www.codingeverest.com/milo-login.html</a>
-            </p>
-        </div>
-        <div class='footer'>
-            <p>This is an automated message from Milo</p>
-            <p>If you didn't request this, please ignore this email.</p>
-        </div>
-    </div>
+<body style='margin: 0; padding: 0; background-color: #F4F5F7; font-family: Arial, Helvetica, sans-serif;'>
+    <table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0' style='background-color: #F4F5F7; padding: 20px;'>
+        <tr>
+            <td align='center'>
+                <table role='presentation' width='600' cellpadding='0' cellspacing='0' border='0' style='background-color: #FFFFFF; border-radius: 8px; max-width: 600px; width: 100%;'>
+                    <!-- Header -->
+                    <tr>
+                        <td style='background-color: #0052CC; padding: 32px 24px; text-align: center; border-radius: 8px 8px 0 0;'>
+                            <h1 style='margin: 0; color: #FFFFFF; font-size: 28px; font-weight: 600;'>Your Temporary Password</h1>
+                        </td>
+                    </tr>
+                    <!-- Content -->
+                    <tr>
+                        <td style='padding: 32px 24px;'>
+                            <p style='margin: 0 0 16px 0; font-size: 16px; color: #172B4D; line-height: 1.6;'>Hello {escapedName},</p>
+                            <p style='margin: 0 0 24px 0; font-size: 16px; color: #172B4D; line-height: 1.6;'>Your temporary password has been generated. Please use the following password to log in:</p>
+                            
+                            <!-- Password Box -->
+                            <table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0' style='background-color: #F4F5F7; border: 2px dashed #0052CC; border-radius: 6px; margin: 24px 0;'>
+                                <tr>
+                                    <td style='padding: 20px; text-align: center;'>
+                                        <div style='font-size: 28px; font-weight: 700; color: #0052CC; letter-spacing: 3px; font-family: 'Courier New', Courier, monospace; word-break: break-all;'>{escapedPassword}</div>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <p style='margin: 24px 0 16px 0; font-size: 16px; color: #172B4D; line-height: 1.6;'><strong style='color: #DE350B;'>IMPORTANT:</strong> For security reasons, please change this password after your first login.</p>
+                            
+                            <!-- Login Button -->
+                            <table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0' style='margin: 32px 0;'>
+                                <tr>
+                                    <td align='center'>
+                                        <a href='https://www.codingeverest.com/milo-login.html' style='display: inline-block; background-color: #0052CC; color: #FFFFFF; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;'>Log In Now</a>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Login URL as text -->
+                            <p style='margin: 24px 0 0 0; font-size: 12px; color: #6B778C; line-height: 1.6;'>
+                                Login URL: <a href='https://www.codingeverest.com/milo-login.html' style='color: #0052CC; text-decoration: underline; word-break: break-all;'>https://www.codingeverest.com/milo-login.html</a>
+                            </p>
+                        </td>
+                    </tr>
+                    <!-- Footer -->
+                    <tr>
+                        <td style='background-color: #F4F5F7; padding: 24px; text-align: center; border-radius: 0 0 8px 8px;'>
+                            <p style='margin: 0 0 8px 0; font-size: 12px; color: #6B778C;'>This is an automated message from Milo</p>
+                            <p style='margin: 0; font-size: 12px; color: #6B778C;'>If you didn't request this, please ignore this email.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>";
 
-            return await SendEmailAsync(email, subject, htmlBody);
+            // Send email with both HTML and plain text versions
+            return await SendEmailWithPlainTextAsync(email, subject, htmlBody, plainTextBody);
         }
         catch (Exception ex)
         {
