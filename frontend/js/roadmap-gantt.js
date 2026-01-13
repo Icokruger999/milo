@@ -67,8 +67,8 @@ document.addEventListener('DOMContentLoaded', function() {
         today: now.toISOString()
     });
     
-    // Set default view mode to "Days"
-    currentViewMode = 'days';
+    // Set default view mode to "Days" and update UI
+    setViewMode('days');
     
     // Load roadmap data - this will call renderRoadmap() which calls scrollToToday()
     loadRoadmapData();
@@ -229,7 +229,13 @@ function renderTimeline() {
     
     // Always auto-scroll to Today after rendering (with delay for layout)
     // Use multiple attempts to ensure timeline is fully rendered
+    // Also ensure view mode is set to Days
     setTimeout(() => {
+        // Make sure Days view is active
+        const viewDaysBtn = document.getElementById('viewDays');
+        if (viewDaysBtn && !viewDaysBtn.classList.contains('active')) {
+            setViewMode('days');
+        }
         scrollToToday();
     }, 100);
     setTimeout(() => {
@@ -238,6 +244,9 @@ function renderTimeline() {
     setTimeout(() => {
         scrollToToday();
     }, 600);
+    setTimeout(() => {
+        scrollToToday();
+    }, 1000);
 }
 
 // Get cell width based on view mode

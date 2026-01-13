@@ -416,18 +416,29 @@ async function showTaskModal(column, task = null) {
         if (startDateInput) {
             if (task.startDate) {
                 try {
-                    const startDate = new Date(task.startDate);
+                    // Handle both string and Date objects
+                    const startDate = task.startDate instanceof Date 
+                        ? task.startDate 
+                        : new Date(task.startDate);
+                    
                     // Check if date is valid
                     if (!isNaN(startDate.getTime())) {
-                        startDateInput.value = startDate.toISOString().split('T')[0];
+                        // Format as YYYY-MM-DD for HTML date input
+                        const year = startDate.getFullYear();
+                        const month = String(startDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(startDate.getDate()).padStart(2, '0');
+                        startDateInput.value = `${year}-${month}-${day}`;
+                        console.log('Set start date input to:', startDateInput.value, 'from task.startDate:', task.startDate);
                     } else {
+                        console.warn('Invalid start date:', task.startDate);
                         startDateInput.value = '';
                     }
                 } catch (e) {
-                    console.error('Error parsing start date:', e);
+                    console.error('Error parsing start date:', e, 'task.startDate:', task.startDate);
                     startDateInput.value = '';
                 }
             } else {
+                console.log('No start date in task');
                 startDateInput.value = '';
             }
         }
@@ -438,18 +449,29 @@ async function showTaskModal(column, task = null) {
         if (dueDateInput) {
             if (task.dueDate) {
                 try {
-                    const dueDate = new Date(task.dueDate);
+                    // Handle both string and Date objects
+                    const dueDate = task.dueDate instanceof Date 
+                        ? task.dueDate 
+                        : new Date(task.dueDate);
+                    
                     // Check if date is valid
                     if (!isNaN(dueDate.getTime())) {
-                        dueDateInput.value = dueDate.toISOString().split('T')[0];
+                        // Format as YYYY-MM-DD for HTML date input
+                        const year = dueDate.getFullYear();
+                        const month = String(dueDate.getMonth() + 1).padStart(2, '0');
+                        const day = String(dueDate.getDate()).padStart(2, '0');
+                        dueDateInput.value = `${year}-${month}-${day}`;
+                        console.log('Set due date input to:', dueDateInput.value, 'from task.dueDate:', task.dueDate);
                     } else {
+                        console.warn('Invalid due date:', task.dueDate);
                         dueDateInput.value = '';
                     }
                 } catch (e) {
-                    console.error('Error parsing due date:', e);
+                    console.error('Error parsing due date:', e, 'task.dueDate:', task.dueDate);
                     dueDateInput.value = '';
                 }
             } else {
+                console.log('No due date in task');
                 dueDateInput.value = '';
             }
         }
