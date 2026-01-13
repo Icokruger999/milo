@@ -220,6 +220,121 @@ public class AuthController : ControllerBase
             .Select(s => s[random.Next(s.Length)]).ToArray());
     }
 
+    [HttpPost("check-user")]
+    public async Task<IActionResult> CheckUser([FromBody] CheckUserRequest request)
+    {
+        if (request == null || string.IsNullOrEmpty(request.Email))
+        {
+            return BadRequest(new { message = "Email is required" });
+        }
+
+        try
+        {
+            var emailLower = request.Email.ToLower();
+            var user = await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == emailLower);
+
+            if (user == null)
+            {
+                return Ok(new
+                {
+                    exists = false,
+                    message = "User does not exist. They can proceed with signup."
+                });
+            }
+
+            return Ok(new
+            {
+                exists = true,
+                user = new
+                {
+                    id = user.Id,
+                    email = user.Email,
+                    name = user.Name,
+                    isActive = user.IsActive,
+                    requiresPasswordChange = user.RequiresPasswordChange,
+                    createdAt = user.CreatedAt
+                },
+                message = user.IsActive 
+                    ? "User exists and is active. They should try logging in or request password reset."
+                    : "User exists but is inactive."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking user: {Email}", request.Email);
+            return StatusCode(500, new { message = "Error checking user", error = ex.Message });
+        }
+    }
+
+    [HttpPost("resend-temp-password")]
+    public async Task<IActionResult> ResendTemporaryPassword([FromBody] ResendPasswordRequest request)
+    {
+        if (request == null || string.IsNullOrEmpty(request.Email))
+        {
+            return BadRequest(new { message = "Email is required" });
+        }
+
+        try
+        {
+            var emailLower = request.Email.ToLower();
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == emailLower);
+
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            if (!user.IsActive)
+            {
+                return BadRequest(new { message = "User account is inactive" });
+            }
+
+            // Generate new temporary password
+            var tempPassword = GenerateTemporaryPassword();
+            
+            // Update user's password
+            user.PasswordHash = tempPassword;
+            user.RequiresPasswordChange = true;
+            await _context.SaveChangesAsync();
+
+            // Send email with temporary password (fire and forget)
+            _ = System.Threading.Tasks.Task.Run(async () =>
+            {
+                try
+                {
+                    _logger.LogInformation($"Resending temporary password email to {request.Email}");
+                    var emailSent = await _emailService.SendTemporaryPasswordEmailAsync(user.Email, user.Name, tempPassword);
+                    if (emailSent)
+                    {
+                        _logger.LogInformation($"✓ Temporary password email resent successfully to {request.Email}");
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"✗ Temporary password email was not sent to {request.Email} - email service returned false");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"✗ FAILED to resend temporary password email to {request.Email}. Error: {ex.Message}");
+                }
+            });
+
+            return Ok(new
+            {
+                success = true,
+                message = "Temporary password has been regenerated and sent to your email."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resending temporary password: {Email}", request.Email);
+            return StatusCode(500, new { message = "Error resending password", error = ex.Message });
+        }
+    }
+
     [HttpPost("verify")]
     public IActionResult VerifyToken([FromBody] TokenRequest request)
     {
