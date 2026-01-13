@@ -619,6 +619,12 @@ If you didn't request this, please ignore this email.";
             var subject = $"Project Invitation: {projectName}";
             var invitationLink = $"https://www.codingeverest.com/milo-accept-invitation.html?token={invitationToken}";
             
+            // HTML encode all dynamic content to prevent XSS
+            var escapedName = System.Net.WebUtility.HtmlEncode(name);
+            var escapedProjectName = System.Net.WebUtility.HtmlEncode(projectName);
+            var escapedProjectKey = System.Net.WebUtility.HtmlEncode(projectKey);
+            var escapedToken = System.Net.WebUtility.HtmlEncode(invitationToken);
+            
             _logger.LogInformation($"Sending project invitation email to {email} for project {projectName} with token {invitationToken.Substring(0, Math.Min(8, invitationToken.Length))}...");
             
             var htmlBody = $@"
