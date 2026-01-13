@@ -9,6 +9,7 @@ public interface IEmailService
 {
     Task<bool> SendDailyIncidentReportAsync(string recipientEmail, string recipientName, DailyReportData reportData);
     Task<bool> SendEmailAsync(string to, string subject, string htmlBody);
+    Task<bool> SendEmailWithPlainTextAsync(string to, string subject, string htmlBody, string plainTextBody);
     Task<bool> SendTemporaryPasswordEmailAsync(string email, string name, string temporaryPassword);
     Task<bool> SendTaskAssignmentEmailAsync(string email, string assigneeName, string taskTitle, string taskId, string projectName, string? taskLink = null);
     Task<bool> SendTeamProjectAssignmentEmailAsync(string email, string memberName, string teamName, string projectName, string projectKey);
