@@ -704,6 +704,9 @@ public class TasksController : ControllerBase
         }
 
         task.IsDeleted = true;
+        // Log what we're saving to database
+        _logger.LogInformation($"[UPDATE TASK {id}] Saving to DB - StartDate: {task.StartDate}, DueDate: {task.DueDate}");
+        
         task.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
