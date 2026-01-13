@@ -244,21 +244,34 @@ async function loadDashboardData() {
                 console.log('📡 API Response Status:', response.status, response.ok ? '✅' : '❌');
                 
                 if (response.ok) {
-                    const tasks = await response.json();
-                    console.log('✅ Loaded tasks:', tasks.length, 'tasks');
+                    const data = await response.json();
+                    // Handle both paginated and non-paginated responses
+                    const tasks = data.tasks || data;
                     
-                    if (tasks.length === 0) {
+                    // Ensure tasks is an array
+                    const tasksArray = Array.isArray(tasks) ? tasks : [];
+                    
+                    console.log('✅ Loaded tasks:', tasksArray.length, 'tasks');
+                    console.log('📋 Response structure:', {
+                        isArray: Array.isArray(data),
+                        hasTasks: !!data.tasks,
+                        tasksLength: tasksArray.length,
+                        sampleData: data
+                    });
+                    
+                    if (tasksArray.length === 0) {
                         console.warn('⚠️ No tasks found for this project. Please create some tasks on the Board first!');
                         console.info('💡 Tip: Click the "Create" button on the Board page to add tasks');
+                        console.info('💡 Current project ID:', currentProject.id);
                     } else {
-                        console.log('📋 Sample task:', tasks[0]);
+                        console.log('📋 Sample task:', tasksArray[0]);
                     }
                     
                     // Cache the data
-                    dataCache.tasks = tasks;
+                    dataCache.tasks = tasksArray;
                     dataCache.timestamp = now;
                     
-                    dashboardData.tasks = tasks || [];
+                    dashboardData.tasks = tasksArray;
                     // Start with all tasks visible (no filtering yet)
                     dashboardData.filteredTasks = [...dashboardData.tasks];
                     
