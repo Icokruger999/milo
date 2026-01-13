@@ -268,6 +268,57 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpDelete("user")]
+    public async Task<IActionResult> DeleteUser([FromBody] DeleteUserRequest request)
+    {
+        if (request == null || string.IsNullOrEmpty(request.Email))
+        {
+            return BadRequest(new { message = "Email is required" });
+        }
+
+        try
+        {
+            var emailLower = request.Email.ToLower();
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == emailLower);
+
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            // Delete user and related data
+            // First, delete project memberships
+            var projectMembers = await _context.ProjectMembers
+                .Where(pm => pm.UserId == user.Id)
+                .ToListAsync();
+            _context.ProjectMembers.RemoveRange(projectMembers);
+
+            // Delete project invitations
+            var invitations = await _context.ProjectInvitations
+                .Where(pi => pi.Email.ToLower() == emailLower)
+                .ToListAsync();
+            _context.ProjectInvitations.RemoveRange(invitations);
+
+            // Delete user
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"User {request.Email} deleted successfully");
+
+            return Ok(new
+            {
+                success = true,
+                message = $"User {request.Email} has been deleted. They can now sign up again."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting user: {Email}", request.Email);
+            return StatusCode(500, new { message = "Error deleting user", error = ex.Message });
+        }
+    }
+
     [HttpPost("resend-temp-password")]
     public async Task<IActionResult> ResendTemporaryPassword([FromBody] ResendPasswordRequest request)
     {
@@ -492,6 +543,11 @@ public class CheckUserRequest
 }
 
 public class ResendPasswordRequest
+{
+    public string Email { get; set; } = string.Empty;
+}
+
+public class DeleteUserRequest
 {
     public string Email { get; set; } = string.Empty;
 }
