@@ -592,7 +592,11 @@ function showCreateTaskModal() {
         showTaskModal('backlog');
         
         // Listen for task creation completion to reload backlog
+        // Use a more efficient approach: listen for storage event or use a one-time listener
+        let checkCount = 0;
+        const maxChecks = 150; // 30 seconds max (150 * 200ms)
         const checkForNewTask = setInterval(() => {
+            checkCount++;
             // Check if modal is closed (task was created)
             const modal = document.getElementById('taskModal');
             if (!modal || modal.style.display === 'none') {
@@ -601,11 +605,11 @@ function showCreateTaskModal() {
                 setTimeout(() => {
                     loadBacklogTasks();
                 }, 500);
+            } else if (checkCount >= maxChecks) {
+                // Clear interval after max checks to prevent infinite loop
+                clearInterval(checkForNewTask);
             }
         }, 200);
-        
-        // Clear interval after 30 seconds to prevent infinite loop
-        setTimeout(() => clearInterval(checkForNewTask), 30000);
     } else {
         console.error('showTaskModal function not found. Make sure board.js is loaded.');
     }

@@ -432,12 +432,26 @@ async function showTaskModal(column, task = null) {
             }
         }
         
-        // Set due date
-        if (task.dueDate) {
-            const dueDate = new Date(task.dueDate);
-            document.getElementById('taskDueDate').value = dueDate.toISOString().split('T')[0];
-        } else {
-            document.getElementById('taskDueDate').value = '';
+        // Set due date - only if task has a dueDate, otherwise leave empty
+        // Don't auto-populate with current date
+        const dueDateInput = document.getElementById('taskDueDate');
+        if (dueDateInput) {
+            if (task.dueDate) {
+                try {
+                    const dueDate = new Date(task.dueDate);
+                    // Check if date is valid
+                    if (!isNaN(dueDate.getTime())) {
+                        dueDateInput.value = dueDate.toISOString().split('T')[0];
+                    } else {
+                        dueDateInput.value = '';
+                    }
+                } catch (e) {
+                    console.error('Error parsing due date:', e);
+                    dueDateInput.value = '';
+                }
+            } else {
+                dueDateInput.value = '';
+            }
         }
         
         // Load comments asynchronously (non-blocking)
@@ -939,6 +953,19 @@ async function handleCreateLabel(event) {
 async function handleTaskSubmit(event) {
     event.preventDefault();
     
+    // Prevent duplicate submissions
+    const submitButton = document.getElementById('taskSubmitBtn');
+    if (submitButton && submitButton.disabled) {
+        console.log('Form submission already in progress, ignoring duplicate submit');
+        return;
+    }
+    
+    // Disable submit button to prevent double submission
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving...';
+    }
+    
     const modal = document.getElementById('taskModal');
     const column = modal.dataset.column;
     const taskId = modal.dataset.taskId;
@@ -1029,6 +1056,12 @@ async function handleTaskSubmit(event) {
             const savedTask = await response.json();
             closeTaskModal();
             
+            // Re-enable submit button
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Save';
+            }
+            
             // Check if we're on the backlog page
             const isBacklogPage = window.location.pathname.includes('backlog') || window.location.hash === '#backlog';
             
@@ -1041,6 +1074,12 @@ async function handleTaskSubmit(event) {
                 setTimeout(() => loadTasksFromAPI(), 300);
             }
         } else {
+            // Re-enable submit button on error
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Save';
+            }
+            
             const error = await response.json();
             // Show error in modal instead of alert
             const errorDiv = document.createElement('div');
@@ -1052,13 +1091,22 @@ async function handleTaskSubmit(event) {
         }
     } catch (error) {
         console.error('Error saving task:', error);
+        
+        // Re-enable submit button on error
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Save';
+        }
+        
         // Show error in modal instead of alert
         const errorDiv = document.createElement('div');
         errorDiv.style.cssText = 'background: #fee; color: #c33; padding: 12px; border-radius: 4px; margin-bottom: 16px;';
         errorDiv.textContent = 'Failed to save task. Please try again.';
         const form = document.getElementById('taskForm');
-        form.insertBefore(errorDiv, form.firstChild);
-        setTimeout(() => errorDiv.remove(), 5000);
+        if (form) {
+            form.insertBefore(errorDiv, form.firstChild);
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
     }
 }
 

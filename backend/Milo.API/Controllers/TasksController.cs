@@ -582,6 +582,9 @@ public class TasksController : ControllerBase
         {
             task.Priority = request.Priority.Value;
         }
+        // Handle DueDate: only update if explicitly provided with a value
+        // If DueDate is not in the request at all, don't change the existing value
+        // This prevents the due date from being updated when the user just opens and closes the task
         if (request.DueDate.HasValue)
         {
             // Ensure DueDate is UTC for PostgreSQL
@@ -602,6 +605,7 @@ public class TasksController : ControllerBase
                 task.DueDate = dueDate;
             }
         }
+        // If DueDate is not provided in request, don't change the existing value
         // Handle StartDate: only update if explicitly provided with a value
         // If StartDate is not in the request at all, don't change the existing value
         // This prevents the start date from being updated when the user just opens and closes the task
