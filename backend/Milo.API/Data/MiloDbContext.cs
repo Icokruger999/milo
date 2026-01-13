@@ -267,7 +267,7 @@ public class MiloDbContext : DbContext
         // Incident configuration
         modelBuilder.Entity<Incident>(entity =>
         {
-            entity.ToTable("Incidents"); // Map to PascalCase table name
+            // Table name will be converted to snake_case by the loop at the end
             entity.HasIndex(e => e.IncidentNumber).IsUnique();
             
             // Single column indexes for common filters
@@ -308,7 +308,7 @@ public class MiloDbContext : DbContext
         // ReportRecipient configuration
         modelBuilder.Entity<ReportRecipient>(entity =>
         {
-            entity.ToTable("ReportRecipients"); // Map to PascalCase table name
+            // Table name will be converted to snake_case by the loop at the end
             entity.HasIndex(e => e.Email);
             entity.HasIndex(e => e.ProjectId);
             entity.HasIndex(e => e.IsActive);
@@ -370,11 +370,17 @@ public class MiloDbContext : DbContext
                 entity.SetTableName(ToSnakeCase(tableName));
             }
             
-            // Force snake_case column names
+            // Force snake_case column names (skip if already explicitly mapped)
             foreach (var property in entity.GetProperties())
             {
-                var propertyName = property.Name;
-                property.SetColumnName(ToSnakeCase(propertyName));
+                // Only set column name if it hasn't been explicitly mapped
+                // (incident tables already have explicit HasColumnName mappings)
+                var existingColumnName = property.GetColumnName();
+                if (string.IsNullOrEmpty(existingColumnName) || existingColumnName == property.Name)
+                {
+                    var propertyName = property.Name;
+                    property.SetColumnName(ToSnakeCase(propertyName));
+                }
             }
         }
     }

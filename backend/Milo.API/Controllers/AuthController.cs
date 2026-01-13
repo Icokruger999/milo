@@ -57,9 +57,11 @@ public class AuthController : ControllerBase
             }
 
             // Check database users
+            // Use EF.Functions.Like for case-insensitive comparison (works better with PostgreSQL)
+            var emailLower = request.Email.ToLower();
             var user = await _context.Users
                 .AsNoTracking() // Performance: Read-only query
-                .FirstOrDefaultAsync(u => u.Email.ToLower() == request.Email.ToLower() && u.IsActive);
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == emailLower && u.IsActive);
 
             if (user != null)
             {
@@ -126,6 +128,12 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during login: {Error}", ex.Message);
+            _logger.LogError(ex, "Stack trace: {StackTrace}", ex.StackTrace);
+            // Include inner exception details if available (often contains the actual database error)
+            if (ex.InnerException != null)
+            {
+                _logger.LogError(ex.InnerException, "Inner exception: {InnerError}", ex.InnerException.Message);
+            }
             return StatusCode(500, new { message = "An error occurred during login. Please try again.", error = ex.Message });
         }
     }
