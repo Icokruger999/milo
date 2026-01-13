@@ -183,11 +183,24 @@ public class AuthController : ControllerBase
         {
             try
             {
-                await _emailService.SendTemporaryPasswordEmailAsync(request.Email, request.Name, tempPassword);
+                _logger.LogInformation($"Attempting to send temporary password email to {request.Email}");
+                var emailSent = await _emailService.SendTemporaryPasswordEmailAsync(request.Email, request.Name, tempPassword);
+                if (emailSent)
+                {
+                    _logger.LogInformation($"✓ Temporary password email sent successfully to {request.Email}");
+                }
+                else
+                {
+                    _logger.LogWarning($"✗ Temporary password email was not sent to {request.Email} - email service returned false");
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Failed to send temporary password email to {request.Email}");
+                _logger.LogError(ex, $"✗ FAILED to send temporary password email to {request.Email}. Error: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    _logger.LogError(ex.InnerException, $"Inner exception: {ex.InnerException.Message}");
+                }
             }
         });
 

@@ -269,7 +269,30 @@ public class EmailService : IEmailService
     {
         try
         {
+            // Validate inputs
+            if (string.IsNullOrEmpty(email))
+            {
+                _logger.LogError("SendTemporaryPasswordEmailAsync: Email is null or empty");
+                return false;
+            }
+            if (string.IsNullOrEmpty(temporaryPassword))
+            {
+                _logger.LogError("SendTemporaryPasswordEmailAsync: TemporaryPassword is null or empty");
+                return false;
+            }
+            if (string.IsNullOrEmpty(name))
+            {
+                _logger.LogWarning("SendTemporaryPasswordEmailAsync: Name is null or empty, using email");
+                name = email;
+            }
+            
+            _logger.LogInformation($"Sending temporary password email to {email} for user {name}");
+            
             var subject = "Your Temporary Password - Milo";
+            
+            // HTML encode the name to prevent XSS
+            var escapedName = System.Net.WebUtility.HtmlEncode(name);
+            
             var htmlBody = $@"
 <!DOCTYPE html>
 <html>
@@ -291,14 +314,17 @@ public class EmailService : IEmailService
             <h1>Your Temporary Password</h1>
         </div>
         <div class='content'>
-            <p>Hello {name},</p>
+            <p>Hello {escapedName},</p>
             <p>Your temporary password has been generated. Please use the following password to log in:</p>
             <div class='password-box'>
                 <div class='password'>{temporaryPassword}</div>
             </div>
-            <p>For security reasons, please change this password after your first login.</p>
-            <p style='margin-top: 32px;'>
+            <p><strong>Important:</strong> For security reasons, please change this password after your first login.</p>
+            <p style='margin-top: 32px; text-align: center;'>
                 <a href='https://www.codingeverest.com/milo-login.html' style='display: inline-block; background: #0052CC; color: #FFFFFF; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600;'>Log In Now</a>
+            </p>
+            <p style='margin-top: 24px; font-size: 12px; color: #6B778C;'>
+                Login URL: <a href='https://www.codingeverest.com/milo-login.html' style='color: #0052CC;'>https://www.codingeverest.com/milo-login.html</a>
             </p>
         </div>
         <div class='footer'>
