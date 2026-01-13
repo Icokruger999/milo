@@ -51,33 +51,26 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-/* --- CRITICAL FIX ---
-   We are commenting out the automatic migration block. 
-   Supabase/Managed Postgres often blocks the 'Migrate()' command 
-   from the 'postgres' user, causing the "Tenant not found" crash.
-   We will manage database schema manually in the Supabase SQL editor.
-*/
-
-/*
+// Run database migrations on startup
 _ = Task.Run(async () =>
 {
-    await Task.Delay(2000); 
+    await Task.Delay(2000); // Wait for services to initialize
     using (var scope = app.Services.CreateScope())
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<MiloDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         try
         {
+            logger.LogInformation("Applying database migrations...");
             dbContext.Database.Migrate();
             logger.LogInformation("Database migrations applied successfully.");
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "Database migration failed.");
+            logger.LogError(ex, "Database migration failed.");
         }
     }
 });
-*/
 
 // Add error handling middleware
 app.UseExceptionHandler("/api/error");

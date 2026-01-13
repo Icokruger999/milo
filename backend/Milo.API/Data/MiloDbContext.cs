@@ -38,22 +38,20 @@ public class MiloDbContext : DbContext
         // User configuration
         modelBuilder.Entity<User>(entity =>
         {
-            entity.ToTable("users"); // Correct: table is lowercase
+            entity.ToTable("users"); // Table name is lowercase
             entity.HasIndex(e => e.Email).IsUnique();
             entity.Property(e => e.Email).IsRequired();
             entity.Property(e => e.Name).IsRequired();
 
-            // 1. Map the LOWERCASE columns (Assuming C# properties are PascalCase)
+            // All columns mapped to lowercase (snake_case)
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.Name).HasColumnName("name");
             entity.Property(e => e.Email).HasColumnName("email");
             entity.Property(e => e.PasswordHash).HasColumnName("password_hash");
-
-            // 2. Map the PASCALCASE columns (Force quoting for case-sensitivity)
-            entity.Property(e => e.IsActive).HasColumnName("IsActive");
-            entity.Property(e => e.RequiresPasswordChange).HasColumnName("RequiresPasswordChange");
-            entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt");
-            entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
+            entity.Property(e => e.RequiresPasswordChange).HasColumnName("requires_password_change");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
         });
 
         // Task configuration
@@ -374,10 +372,22 @@ public class MiloDbContext : DbContext
         });
 
         // Force all table and column names to snake_case for PostgreSQL compatibility
-        // COMMENTED OUT: Using explicit column mappings instead for mixed case database
-        /*
+        // This ensures all tables and columns are lowercase for PostgreSQL
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
         {
+            // Skip entities that already have explicit table name mappings
+            var existingTableName = entity.GetTableName();
+            if (existingTableName != null && 
+                (existingTableName == "incidents" || 
+                 existingTableName == "report_recipients" ||
+                 existingTableName == "incident_assignees" ||
+                 existingTableName == "incident_requesters" ||
+                 existingTableName == "incident_groups"))
+            {
+                // These already have explicit mappings, skip
+                continue;
+            }
+            
             // Force snake_case table names
             var tableName = entity.GetTableName();
             if (tableName != null)
@@ -385,14 +395,19 @@ public class MiloDbContext : DbContext
                 entity.SetTableName(ToSnakeCase(tableName));
             }
             
-            // Force snake_case column names
+            // Force snake_case column names (skip if already explicitly mapped)
             foreach (var property in entity.GetProperties())
             {
-                var propertyName = property.Name;
-                property.SetColumnName(ToSnakeCase(propertyName));
+                var existingColumnName = property.GetColumnName();
+                // Skip if column already has explicit mapping (like in IncidentAssignee, etc.)
+                if (string.IsNullOrEmpty(existingColumnName) || 
+                    existingColumnName == property.Name)
+                {
+                    var propertyName = property.Name;
+                    property.SetColumnName(ToSnakeCase(propertyName));
+                }
             }
         }
-        */
     }
 
     /// <summary>
