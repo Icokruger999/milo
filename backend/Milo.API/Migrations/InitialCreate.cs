@@ -12,26 +12,25 @@ namespace Milo.API.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Users",
+                name: "users",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Email = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    PasswordHash = table.Column<byte[]>(type: "bytea", nullable: false),
-                    PasswordSalt = table.Column<byte[]>(type: "bytea", nullable: false),
+                    PasswordHash = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     RequiresPasswordChange = table.Column<bool>(type: "boolean", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Users", x => x.Id);
+                    table.PrimaryKey("PK_users", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Products",
+                name: "products",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -42,11 +41,11 @@ namespace Milo.API.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Products", x => x.Id);
+                    table.PrimaryKey("PK_products", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Projects",
+                name: "projects",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -61,17 +60,17 @@ namespace Milo.API.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Projects", x => x.Id);
+                    table.PrimaryKey("PK_projects", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Projects_Users_OwnerId",
+                        name: "FK_projects_users_owner_id",
                         column: x => x.OwnerId,
-                        principalTable: "Users",
+                        principalTable: "users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
-                name: "ProjectInvitations",
+                name: "project_invitations",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -88,23 +87,23 @@ namespace Milo.API.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ProjectInvitations", x => x.Id);
+                    table.PrimaryKey("PK_project_invitations", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ProjectInvitations_Projects_ProjectId",
+                        name: "FK_project_invitations_projects_project_id",
                         column: x => x.ProjectId,
-                        principalTable: "Projects",
+                        principalTable: "projects",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ProjectInvitations_Users_InvitedById",
+                        name: "FK_project_invitations_users_invited_by_id",
                         column: x => x.InvitedById,
-                        principalTable: "Users",
+                        principalTable: "users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
-                name: "ProjectMembers",
+                name: "project_members",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -116,23 +115,23 @@ namespace Milo.API.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ProjectMembers", x => x.Id);
+                    table.PrimaryKey("PK_project_members", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_ProjectMembers_Projects_ProjectId",
+                        name: "FK_project_members_projects_project_id",
                         column: x => x.ProjectId,
-                        principalTable: "Projects",
+                        principalTable: "projects",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ProjectMembers_Users_UserId",
+                        name: "FK_project_members_users_user_id",
                         column: x => x.UserId,
-                        principalTable: "Users",
+                        principalTable: "users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Tasks",
+                name: "tasks",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -154,35 +153,35 @@ namespace Milo.API.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Tasks", x => x.Id);
+                    table.PrimaryKey("PK_tasks", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Tasks_Users_AssigneeId",
+                        name: "FK_tasks_users_assignee_id",
                         column: x => x.AssigneeId,
-                        principalTable: "Users",
+                        principalTable: "users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
-                        name: "FK_Tasks_Users_CreatorId",
+                        name: "FK_tasks_users_creator_id",
                         column: x => x.CreatorId,
-                        principalTable: "Users",
+                        principalTable: "users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
-                        name: "FK_Tasks_Products_ProductId",
+                        name: "FK_tasks_products_product_id",
                         column: x => x.ProductId,
-                        principalTable: "Products",
+                        principalTable: "products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
-                        name: "FK_Tasks_Projects_ProjectId",
+                        name: "FK_tasks_projects_project_id",
                         column: x => x.ProjectId,
-                        principalTable: "Projects",
+                        principalTable: "projects",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.CreateTable(
-                name: "RoadmapItems",
+                name: "roadmap_items",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -197,17 +196,17 @@ namespace Milo.API.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_RoadmapItems", x => x.Id);
+                    table.PrimaryKey("PK_roadmap_items", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_RoadmapItems_Products_ProductId",
+                        name: "FK_roadmap_items_products_product_id",
                         column: x => x.ProductId,
-                        principalTable: "Products",
+                        principalTable: "products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "TimelineEvents",
+                name: "timeline_events",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -221,91 +220,91 @@ namespace Milo.API.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TimelineEvents", x => x.Id);
+                    table.PrimaryKey("PK_timeline_events", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_TimelineEvents_Products_ProductId",
+                        name: "FK_timeline_events_products_product_id",
                         column: x => x.ProductId,
-                        principalTable: "Products",
+                        principalTable: "products",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Users_Email",
-                table: "Users",
+                name: "IX_users_email",
+                table: "users",
                 column: "Email",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Projects_Key",
-                table: "Projects",
+                name: "IX_projects_key",
+                table: "projects",
                 column: "Key");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Projects_Name",
-                table: "Projects",
+                name: "IX_projects_name",
+                table: "projects",
                 column: "Name");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProjectInvitations_Email",
-                table: "ProjectInvitations",
+                name: "IX_project_invitations_email",
+                table: "project_invitations",
                 column: "Email");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProjectInvitations_ProjectId",
-                table: "ProjectInvitations",
+                name: "IX_project_invitations_project_id",
+                table: "project_invitations",
                 column: "ProjectId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProjectInvitations_Token",
-                table: "ProjectInvitations",
+                name: "IX_project_invitations_token",
+                table: "project_invitations",
                 column: "Token",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProjectMembers_ProjectId",
-                table: "ProjectMembers",
+                name: "IX_project_members_project_id",
+                table: "project_members",
                 column: "ProjectId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProjectMembers_UserId",
-                table: "ProjectMembers",
+                name: "IX_project_members_user_id",
+                table: "project_members",
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ProjectMembers_ProjectId_UserId",
-                table: "ProjectMembers",
+                name: "IX_project_members_project_id_user_id",
+                table: "project_members",
                 columns: new[] { "ProjectId", "UserId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tasks_AssigneeId",
-                table: "Tasks",
+                name: "IX_tasks_assignee_id",
+                table: "tasks",
                 column: "AssigneeId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tasks_CreatorId",
-                table: "Tasks",
+                name: "IX_tasks_creator_id",
+                table: "tasks",
                 column: "CreatorId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tasks_ProductId",
-                table: "Tasks",
+                name: "IX_tasks_product_id",
+                table: "tasks",
                 column: "ProductId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tasks_ProjectId",
-                table: "Tasks",
+                name: "IX_tasks_project_id",
+                table: "tasks",
                 column: "ProjectId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tasks_Status",
-                table: "Tasks",
+                name: "IX_tasks_status",
+                table: "tasks",
                 column: "Status");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Tasks_TaskId",
-                table: "Tasks",
+                name: "IX_tasks_task_id",
+                table: "tasks",
                 column: "TaskId");
         }
 
@@ -313,28 +312,28 @@ namespace Milo.API.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "ProjectInvitations");
+                name: "project_invitations");
 
             migrationBuilder.DropTable(
-                name: "ProjectMembers");
+                name: "project_members");
 
             migrationBuilder.DropTable(
-                name: "RoadmapItems");
+                name: "roadmap_items");
 
             migrationBuilder.DropTable(
-                name: "Tasks");
+                name: "tasks");
 
             migrationBuilder.DropTable(
-                name: "TimelineEvents");
+                name: "timeline_events");
 
             migrationBuilder.DropTable(
-                name: "Projects");
+                name: "projects");
 
             migrationBuilder.DropTable(
-                name: "Products");
+                name: "products");
 
             migrationBuilder.DropTable(
-                name: "Users");
+                name: "users");
         }
     }
 }

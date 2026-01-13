@@ -4,7 +4,7 @@ After=network.target postgresql.service
 Wants=network-online.target
 
 [Service]
-Type=notify
+Type=simple
 User=ec2-user
 Group=ec2-user
 WorkingDirectory=/home/ec2-user/milo-backend-publish
@@ -12,6 +12,7 @@ ExecStart=/usr/bin/dotnet /home/ec2-user/milo-backend-publish/Milo.API.dll --url
 Restart=always
 RestartSec=10
 KillSignal=SIGINT
+TimeoutStartSec=300
 TimeoutStopSec=30
 StandardOutput=append:/home/ec2-user/milo-backend.log
 StandardError=append:/home/ec2-user/milo-backend-error.log

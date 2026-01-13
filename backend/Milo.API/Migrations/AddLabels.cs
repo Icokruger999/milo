@@ -12,7 +12,7 @@ namespace Milo.API.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "Labels",
+                name: "labels",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
@@ -27,23 +27,23 @@ namespace Milo.API.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Labels", x => x.Id);
+                    table.PrimaryKey("PK_labels", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Labels_Projects_ProjectId",
+                        name: "FK_labels_projects_project_id",
                         column: x => x.ProjectId,
-                        principalTable: "Projects",
+                        principalTable: "projects",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Labels_Name",
-                table: "Labels",
+                name: "IX_labels_name",
+                table: "labels",
                 column: "Name");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Labels_ProjectId",
-                table: "Labels",
+                name: "IX_labels_project_id",
+                table: "labels",
                 column: "ProjectId");
         }
 
@@ -51,7 +51,7 @@ namespace Milo.API.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "Labels");
+                name: "labels");
         }
     }
 }
