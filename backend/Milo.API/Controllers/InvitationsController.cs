@@ -187,22 +187,36 @@ public class InvitationsController : ControllerBase
             return BadRequest(new { message = "User email does not match invitation email" });
         }
 
-        // Add user as project member
-        var member = new ProjectMember
+        // Check if user is already a member (prevent duplicates)
+        var existingMember = await _context.ProjectMembers
+            .FirstOrDefaultAsync(pm => pm.ProjectId == invitation.ProjectId && pm.UserId == user.Id);
+        
+        if (existingMember == null)
         {
-            ProjectId = invitation.ProjectId,
-            UserId = user.Id,
-            Role = "member",
-            JoinedAt = DateTime.UtcNow
-        };
+            // Add user as project member
+            var member = new ProjectMember
+            {
+                ProjectId = invitation.ProjectId,
+                UserId = user.Id,
+                Role = "member",
+                JoinedAt = DateTime.UtcNow
+            };
 
-        _context.ProjectMembers.Add(member);
+            _context.ProjectMembers.Add(member);
+            _logger.LogInformation($"Added user {user.Id} ({user.Email}) as member to project {invitation.ProjectId}");
+        }
+        else
+        {
+            _logger.LogInformation($"User {user.Id} ({user.Email}) is already a member of project {invitation.ProjectId}");
+        }
 
         // Mark invitation as accepted
         invitation.Status = "accepted";
         invitation.AcceptedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+        
+        _logger.LogInformation($"Invitation accepted: User {user.Id} joined project {invitation.ProjectId} ({invitation.Project.Name})");
 
         return Ok(new
         {

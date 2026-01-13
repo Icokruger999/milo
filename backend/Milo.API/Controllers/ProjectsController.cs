@@ -30,9 +30,16 @@ public class ProjectsController : ControllerBase
         // If userId provided, filter to projects user is member of, owns, or has access through team
         if (userId.HasValue)
         {
-            // Simplified filter for performance - just check owner and direct members
-            query = query.Where(p => p.OwnerId == userId.Value || 
-                                     _context.ProjectMembers.Any(pm => pm.ProjectId == p.Id && pm.UserId == userId.Value));
+            // Get project IDs where user is a member
+            var memberProjectIds = await _context.ProjectMembers
+                .Where(pm => pm.UserId == userId.Value)
+                .Select(pm => pm.ProjectId)
+                .ToListAsync();
+            
+            // Filter to projects user owns OR is a member of
+            query = query.Where(p => p.OwnerId == userId.Value || memberProjectIds.Contains(p.Id));
+            
+            _logger.LogInformation($"GetProjects: User {userId} has {memberProjectIds.Count} project memberships");
         }
 
         var projects = await query.OrderBy(p => p.Name).ToListAsync();
