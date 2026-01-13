@@ -1125,5 +1125,34 @@
     <script src="js/project-selector.js"></script>
     <!-- roadmap.js removed - all functionality merged into roadmap-gantt.js -->
     <script src="js/roadmap-gantt.js"></script>
+    <script>
+        // Check authentication - users must login before accessing roadmap
+        if (!authService.isAuthenticated()) {
+            // Redirect to login - user must authenticate first
+            window.location.href = 'milo-login.html';
+        }
+        
+        // Check password change requirement
+        if (authService.requiresPasswordChange()) {
+            const user = authService.getCurrentUser();
+            if (user && user.email) {
+                window.location.href = `milo-change-password.html?email=${encodeURIComponent(user.email)}`;
+            } else {
+                window.location.href = 'milo-login.html';
+            }
+        }
+
+        // Make logout accessible globally (same as Board page)
+        window.logout = function() {
+            if (typeof authService !== 'undefined' && authService.logout) {
+                authService.logout();
+            } else {
+                // Fallback: clear storage and redirect
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = 'milo-login.html';
+            }
+        };
+    </script>
 </body>
 </html>
