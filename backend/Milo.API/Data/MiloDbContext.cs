@@ -38,17 +38,22 @@ public class MiloDbContext : DbContext
         // User configuration
         modelBuilder.Entity<User>(entity =>
         {
-            entity.ToTable("users"); // Lowercase table name
+            entity.ToTable("users"); // Correct: table is lowercase
             entity.HasIndex(e => e.Email).IsUnique();
             entity.Property(e => e.Email).IsRequired();
             entity.Property(e => e.Name).IsRequired();
-            // Explicitly map PascalCase columns that exist in database
+
+            // 1. Map the LOWERCASE columns (Assuming C# properties are PascalCase)
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasColumnName("name");
+            entity.Property(e => e.Email).HasColumnName("email");
+            entity.Property(e => e.PasswordHash).HasColumnName("password_hash");
+
+            // 2. Map the PASCALCASE columns (Force quoting for case-sensitivity)
             entity.Property(e => e.IsActive).HasColumnName("IsActive");
             entity.Property(e => e.RequiresPasswordChange).HasColumnName("RequiresPasswordChange");
-            entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt");
             entity.Property(e => e.UpdatedAt).HasColumnName("UpdatedAt");
-            // These are already lowercase in DB: id, name, email, password_hash
-            // So they don't need explicit mapping
+            entity.Property(e => e.CreatedAt).HasColumnName("CreatedAt");
         });
 
         // Task configuration
