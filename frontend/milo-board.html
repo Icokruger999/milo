@@ -973,6 +973,15 @@
                     return;
                 }
             }
+            
+            // Early check: If no project is stored, redirect immediately to prevent flash
+            // This happens before any rendering
+            const storedProject = localStorage.getItem('milo_current_project');
+            if (!storedProject) {
+                // No project stored - redirect to selector immediately
+                window.location.href = 'milo-select-project.html';
+                return;
+            }
 
         // Make logout accessible globally
         window.logout = function() {
