@@ -1,5 +1,23 @@
 // Milo Board functionality
 
+// Add this to the top of board.js
+function showToast(message, type = 'info') {
+    console.log(`[TOAST - ${type.toUpperCase()}]: ${message}`);
+    // Optional: Create a simple visual element
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.right = '20px';
+    toast.style.padding = '10px 20px';
+    toast.style.background = type === 'error' ? '#ff4444' : '#333';
+    toast.style.color = 'white';
+    toast.style.borderRadius = '5px';
+    toast.style.zIndex = '9999';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
 // Tasks data - initialized as empty, will be loaded from API
 let tasks = {
     todo: [],
