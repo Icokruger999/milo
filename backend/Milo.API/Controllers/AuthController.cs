@@ -486,6 +486,16 @@ public class AuthController : ControllerBase
     }
 }
 
+public class CheckUserRequest
+{
+    public string Email { get; set; } = string.Empty;
+}
+
+public class ResendPasswordRequest
+{
+    public string Email { get; set; } = string.Empty;
+}
+
 public class LoginRequest
 {
     public string Email { get; set; } = string.Empty;
