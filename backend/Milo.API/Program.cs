@@ -13,14 +13,13 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Configure Entity Framework with PostgreSQL
+// Connection string from appsettings.json (no password needed - using trust authentication for localhost)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrEmpty(connectionString))
 {
     throw new InvalidOperationException("DefaultConnection connection string is required in appsettings.json");
 }
 
-// We are now using a Direct Connection string in appsettings.json
-// To avoid "Tenant" errors, we use the connection string exactly as provided.
 builder.Services.AddDbContext<MiloDbContext>(options =>
     options.UseNpgsql(connectionString, npgsqlOptions =>
     {
@@ -30,6 +29,9 @@ builder.Services.AddDbContext<MiloDbContext>(options =>
 
 // Add email service
 builder.Services.AddScoped<Milo.API.Services.IEmailService, Milo.API.Services.EmailService>();
+
+// Add background service for daily users report
+builder.Services.AddHostedService<Milo.API.Services.DailyUsersReportService>();
 
 // Configure CORS for frontend
 builder.Services.AddCors(options =>

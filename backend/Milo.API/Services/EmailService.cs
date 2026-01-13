@@ -16,6 +16,8 @@ public interface IEmailService
     Task<bool> SendCustomEmailAsync(string to, string subject, string htmlBody, string? textBody = null);
     Task<bool> SendProjectInvitationEmailAsync(string email, string name, string projectName, string projectKey, string invitationToken);
     Task<bool> SendIncidentAssignmentEmailAsync(string email, string assigneeName, string incidentNumber, string subject, string priority, string status, string? incidentLink = null, string? description = null, string? requesterName = null, string? requesterEmail = null, DateTime? createdAt = null, string? category = null, string? source = null);
+    Task<bool> SendNewUserNotificationEmailAsync(string userEmail, string userName, DateTime signupDate);
+    Task<bool> SendDailyUsersReportEmailAsync(string recipientEmail, List<UserReportData> users);
 }
 
 public class EmailService : IEmailService
@@ -848,6 +850,164 @@ If you didn't request this, please ignore this email.";
             return false;
         }
     }
+
+    public async Task<bool> SendNewUserNotificationEmailAsync(string userEmail, string userName, DateTime signupDate)
+        {
+            try
+            {
+                var adminEmail = "ico@astutetech.co.za";
+                var subject = $"New User Signed Up: {userName}";
+                
+                var htmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <style>
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 20px; }}
+        .container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; }}
+        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 32px 24px; text-align: center; }}
+        .content {{ padding: 32px 24px; }}
+        .user-box {{ background: #F4F5F7; border-left: 4px solid #0052CC; padding: 20px; margin: 24px 0; border-radius: 4px; }}
+        .user-name {{ font-size: 20px; font-weight: 700; color: #172B4D; }}
+        .user-email {{ font-size: 14px; color: #6B778C; margin-top: 4px; }}
+        .footer {{ background: #F4F5F7; padding: 24px; text-align: center; font-size: 12px; color: #6B778C; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>New User Signup</h1>
+        </div>
+        <div class='content'>
+            <p>A new user has signed up and successfully logged in to Milo:</p>
+            <div class='user-box'>
+                <div class='user-name'>{System.Net.WebUtility.HtmlEncode(userName)}</div>
+                <div class='user-email'>{System.Net.WebUtility.HtmlEncode(userEmail)}</div>
+                <div style='font-size: 12px; color: #6B778C; margin-top: 8px;'>
+                    Signed up: {signupDate:yyyy-MM-dd HH:mm:ss} UTC
+                </div>
+            </div>
+        </div>
+        <div class='footer'>
+            <p>This is an automated notification from Milo</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+                return await SendEmailAsync(adminEmail, subject, htmlBody);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending new user notification email");
+                return false;
+            }
+    }
+
+    public async Task<bool> SendDailyUsersReportEmailAsync(string recipientEmail, List<UserReportData> users)
+        {
+            try
+            {
+                var subject = $"Daily Milo Users Report - {DateTime.UtcNow.AddHours(2):yyyy-MM-dd}";
+                
+                var activeUsers = users.Where(u => u.IsActive).ToList();
+                var inactiveUsers = users.Where(u => !u.IsActive).ToList();
+                var totalUsers = users.Count;
+                var newUsersToday = users.Where(u => u.CreatedAt.Date == DateTime.UtcNow.Date).ToList();
+                
+                var htmlBody = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <style>
+        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 20px; }}
+        .container {{ max-width: 800px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; }}
+        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 32px 24px; text-align: center; }}
+        .content {{ padding: 32px 24px; }}
+        .stats {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 24px 0; }}
+        .stat-box {{ background: #F4F5F7; padding: 20px; border-radius: 6px; text-align: center; }}
+        .stat-number {{ font-size: 32px; font-weight: 700; color: #0052CC; }}
+        .stat-label {{ font-size: 14px; color: #6B778C; margin-top: 4px; }}
+        .user-table {{ width: 100%; border-collapse: collapse; margin-top: 24px; }}
+        .user-table th {{ background: #F4F5F7; padding: 12px; text-align: left; font-weight: 600; color: #172B4D; border-bottom: 2px solid #DFE1E6; }}
+        .user-table td {{ padding: 12px; border-bottom: 1px solid #DFE1E6; }}
+        .user-table tr:hover {{ background: #F4F5F7; }}
+        .footer {{ background: #F4F5F7; padding: 24px; text-align: center; font-size: 12px; color: #6B778C; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>Daily Milo Users Report</h1>
+            <p style='margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;'>{DateTime.UtcNow.AddHours(2):dddd, MMMM dd, yyyy}</p>
+        </div>
+        <div class='content'>
+            <div class='stats'>
+                <div class='stat-box'>
+                    <div class='stat-number'>{totalUsers}</div>
+                    <div class='stat-label'>Total Users</div>
+                </div>
+                <div class='stat-box'>
+                    <div class='stat-number'>{activeUsers.Count}</div>
+                    <div class='stat-label'>Active Users</div>
+                </div>
+                <div class='stat-box'>
+                    <div class='stat-number'>{inactiveUsers.Count}</div>
+                    <div class='stat-label'>Inactive Users</div>
+                </div>
+                <div class='stat-box'>
+                    <div class='stat-number'>{newUsersToday.Count}</div>
+                    <div class='stat-label'>New Users Today</div>
+                </div>
+            </div>
+            
+            <h2 style='margin-top: 32px; font-size: 18px; color: #172B4D;'>All Users</h2>
+            <table class='user-table'>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Status</th>
+                        <th>Signup Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {string.Join("", users.OrderByDescending(u => u.CreatedAt).Select(u => $@"
+                    <tr>
+                        <td>{System.Net.WebUtility.HtmlEncode(u.Name)}</td>
+                        <td>{System.Net.WebUtility.HtmlEncode(u.Email)}</td>
+                        <td>{(u.IsActive ? "<span style='color: #36B37E; font-weight: 600;'>Active</span>" : "<span style='color: #DE350B;'>Inactive</span>")}</td>
+                        <td>{u.CreatedAt:yyyy-MM-dd HH:mm}</td>
+                    </tr>"))}
+                </tbody>
+            </table>
+        </div>
+        <div class='footer'>
+            <p>This is an automated daily report from Milo</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+                return await SendEmailAsync(recipientEmail, subject, htmlBody);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending daily users report email");
+                return false;
+            }
+    }
+}
+
+// Data class for user reports
+public class UserReportData
+{
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public bool IsActive { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 
 public class DailyReportData

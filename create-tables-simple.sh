@@ -57,14 +57,14 @@ echo ""
 
 # Create tables using individual commands
 echo "3. Creating tables (this may take a minute)..."
-docker exec milo_postgres psql -U postgres -d milo -c "CREATE TABLE IF NOT EXISTS users (\"Id\" SERIAL PRIMARY KEY, \"Name\" VARCHAR(100) NOT NULL, \"Email\" VARCHAR(255) NOT NULL, \"PasswordHash\" VARCHAR(255) NOT NULL, \"RequiresPasswordChange\" BOOLEAN NOT NULL DEFAULT FALSE, \"CreatedAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW(), \"IsActive\" BOOLEAN NOT NULL DEFAULT TRUE);" 2>&1
-docker exec milo_postgres psql -U postgres -d milo -c "CREATE UNIQUE INDEX IF NOT EXISTS \"IX_users_email\" ON users (\"Email\");" 2>&1
+docker exec milo_postgres psql -U postgres -d milo -c "CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL, email VARCHAR(255) NOT NULL, password_hash VARCHAR(255) NOT NULL, requires_password_change BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), is_active BOOLEAN NOT NULL DEFAULT TRUE);" 2>&1
+docker exec milo_postgres psql -U postgres -d milo -c "CREATE UNIQUE INDEX IF NOT EXISTS ix_users_email ON users (email);" 2>&1
 
-docker exec milo_postgres psql -U postgres -d milo -c "CREATE TABLE IF NOT EXISTS products (\"Id\" SERIAL PRIMARY KEY, \"Name\" VARCHAR(100) NOT NULL, \"Description\" VARCHAR(500), \"CreatedAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW());" 2>&1
+docker exec milo_postgres psql -U postgres -d milo -c "CREATE TABLE IF NOT EXISTS products (id SERIAL PRIMARY KEY, name VARCHAR(100) NOT NULL, description VARCHAR(500), created_at TIMESTAMPTZ NOT NULL DEFAULT NOW());" 2>&1
 
-docker exec milo_postgres psql -U postgres -d milo -c "CREATE TABLE IF NOT EXISTS projects (\"Id\" SERIAL PRIMARY KEY, \"Name\" VARCHAR(255) NOT NULL, \"Description\" VARCHAR(1000), \"Key\" VARCHAR(50), \"Status\" VARCHAR(50) NOT NULL, \"OwnerId\" INTEGER NOT NULL, \"CreatedAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW(), \"UpdatedAt\" TIMESTAMPTZ, CONSTRAINT \"FK_projects_users_owner_id\" FOREIGN KEY (\"OwnerId\") REFERENCES users (\"Id\") ON DELETE RESTRICT);" 2>&1
-docker exec milo_postgres psql -U postgres -d milo -c "CREATE INDEX IF NOT EXISTS \"IX_projects_key\" ON projects (\"Key\");" 2>&1
-docker exec milo_postgres psql -U postgres -d milo -c "CREATE INDEX IF NOT EXISTS \"IX_projects_name\" ON projects (\"Name\");" 2>&1
+docker exec milo_postgres psql -U postgres -d milo -c "CREATE TABLE IF NOT EXISTS projects (id SERIAL PRIMARY KEY, name VARCHAR(255) NOT NULL, description VARCHAR(1000), key VARCHAR(50), status VARCHAR(50) NOT NULL, owner_id INTEGER NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(), updated_at TIMESTAMPTZ, CONSTRAINT fk_projects_users_owner_id FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE RESTRICT);" 2>&1
+docker exec milo_postgres psql -U postgres -d milo -c "CREATE INDEX IF NOT EXISTS ix_projects_key ON projects (key);" 2>&1
+docker exec milo_postgres psql -U postgres -d milo -c "CREATE INDEX IF NOT EXISTS ix_projects_name ON projects (name);" 2>&1
 
 docker exec milo_postgres psql -U postgres -d milo -c "CREATE TABLE IF NOT EXISTS project_invitations (\"Id\" SERIAL PRIMARY KEY, \"ProjectId\" INTEGER NOT NULL, \"Email\" VARCHAR(255) NOT NULL, \"Name\" VARCHAR(255), \"Status\" VARCHAR(50) NOT NULL, \"Token\" VARCHAR(100) NOT NULL, \"InvitedById\" INTEGER NOT NULL, \"CreatedAt\" TIMESTAMPTZ NOT NULL DEFAULT NOW(), \"AcceptedAt\" TIMESTAMPTZ, \"ExpiresAt\" TIMESTAMPTZ, CONSTRAINT \"FK_project_invitations_projects_project_id\" FOREIGN KEY (\"ProjectId\") REFERENCES projects (\"Id\") ON DELETE CASCADE, CONSTRAINT \"FK_project_invitations_users_invited_by_id\" FOREIGN KEY (\"InvitedById\") REFERENCES users (\"Id\") ON DELETE RESTRICT);" 2>&1
 

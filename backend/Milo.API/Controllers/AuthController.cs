@@ -71,6 +71,9 @@ public class AuthController : ControllerBase
                 {
                     var token = Guid.NewGuid().ToString();
                     
+                    // Check if this is first successful login after signup (RequiresPasswordChange = true)
+                    var isFirstLogin = user.RequiresPasswordChange;
+                    
                     // Get user's projects (owned or member of) - simplified query
                     var ownedProjects = await _context.Projects
                         .AsNoTracking()
@@ -105,6 +108,24 @@ public class AuthController : ControllerBase
                     var userProjects = ownedProjects
                         .Concat(memberProjects.Where(mp => !ownedProjects.Any(op => op.id == mp.id)))
                         .ToList();
+                    
+                    // Send notification email to admin if this is first successful login after signup
+                    if (isFirstLogin)
+                    {
+                        _ = System.Threading.Tasks.Task.Run(async () =>
+                        {
+                            try
+                            {
+                                _logger.LogInformation($"Sending new user notification email for {user.Email}");
+                                await _emailService.SendNewUserNotificationEmailAsync(user.Email, user.Name, user.CreatedAt);
+                                _logger.LogInformation($"✓ New user notification email sent successfully for {user.Email}");
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, $"✗ FAILED to send new user notification email for {user.Email}. Error: {ex.Message}");
+                            }
+                        });
+                    }
                     
                     return Ok(new
                     {

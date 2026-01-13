@@ -117,9 +117,20 @@ public class MiloDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // Project configuration
+        // Project configuration - explicit column mappings for lowercase columns
         modelBuilder.Entity<Project>(entity =>
         {
+            entity.ToTable("projects");
+            // Map all columns to lowercase (snake_case) to match database
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Name).HasColumnName("name");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.Key).HasColumnName("key");
+            entity.Property(e => e.Status).HasColumnName("status");
+            entity.Property(e => e.OwnerId).HasColumnName("owner_id");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            
             // Single column indexes
             entity.HasIndex(e => e.Name);
             entity.HasIndex(e => e.Key);
