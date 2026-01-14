@@ -146,10 +146,11 @@ Write-Host ""
 $nginxModifyingScripts = Get-ChildItem -Path . -Filter "*.json" -Recurse -ErrorAction SilentlyContinue | 
     Where-Object { 
         # Skip diagnostic/check scripts (read-only)
-        $_.Name -notmatch "check-|find-|test-|verify-" -and
+        if ($_.Name -match "check-|find-|test-|verify-") { return $false }
         $content = Get-Content $_.FullName -Raw -ErrorAction SilentlyContinue
-        $content -match "nginx|milo-api\.conf|00-summit-api\.conf" -and 
-        ($content -match "(sed|tee).*nginx|sudo.*nginx.*conf" -or $content -match "systemctl.*reload.*nginx")
+        if ($null -eq $content) { return $false }
+        ($content -match "nginx|milo-api\.conf|00-summit-api\.conf") -and 
+        (($content -match "(sed|tee).*nginx|sudo.*nginx.*conf") -or ($content -match "systemctl.*reload.*nginx"))
     }
 
 if ($nginxModifyingScripts) {
