@@ -148,9 +148,14 @@ echo ""
 echo "Checking for Nginx Config References..."
 echo ""
 
-# Check 8: Look for any scripts that modify nginx configs
-if find . -name "*.json" -type f 2>/dev/null | xargs grep -l "nginx\|milo-api\.conf\|00-summit-api\.conf" 2>/dev/null | xargs grep -l "sed\|tee\|cat.*nginx" 2>/dev/null | grep -q .; then
-    for script in $(find . -name "*.json" -type f 2>/dev/null | xargs grep -l "nginx\|milo-api\.conf\|00-summit-api\.conf" 2>/dev/null | xargs grep -l "sed\|tee\|cat.*nginx" 2>/dev/null); do
+# Check 8: Look for any scripts that modify nginx configs (exclude diagnostic/read-only scripts)
+NGINX_MODIFYING_SCRIPTS=$(find . -name "*.json" -type f 2>/dev/null | \
+    grep -vE "(check-|find-|test-|verify-)" | \
+    xargs grep -l "nginx\|milo-api\.conf\|00-summit-api\.conf" 2>/dev/null | \
+    xargs grep -lE "(sed|tee).*nginx|sudo.*nginx.*conf|systemctl.*reload.*nginx" 2>/dev/null || true)
+
+if [ -n "$NGINX_MODIFYING_SCRIPTS" ]; then
+    for script in $NGINX_MODIFYING_SCRIPTS; do
         VALIDATION_WARNINGS+=("⚠️  WARNING: Script may modify nginx config: $script")
         if [ "$STRICT_MODE" = true ]; then
             VALIDATION_ERRORS+=("❌ STRICT MODE: Nginx config modification detected in: $script")

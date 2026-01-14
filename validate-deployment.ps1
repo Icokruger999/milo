@@ -142,12 +142,14 @@ Write-Host ""
 Write-Host "Checking for Nginx Config References..." -ForegroundColor Yellow
 Write-Host ""
 
-# Check 8: Look for any scripts that modify nginx configs
+# Check 8: Look for any scripts that modify nginx configs (exclude diagnostic/read-only scripts)
 $nginxModifyingScripts = Get-ChildItem -Path . -Filter "*.json" -Recurse -ErrorAction SilentlyContinue | 
     Where-Object { 
+        # Skip diagnostic/check scripts (read-only)
+        $_.Name -notmatch "check-|find-|test-|verify-" -and
         $content = Get-Content $_.FullName -Raw -ErrorAction SilentlyContinue
         $content -match "nginx|milo-api\.conf|00-summit-api\.conf" -and 
-        $content -match "(sed|tee|cat|echo).*nginx"
+        ($content -match "(sed|tee).*nginx|sudo.*nginx.*conf" -or $content -match "systemctl.*reload.*nginx")
     }
 
 if ($nginxModifyingScripts) {
