@@ -145,6 +145,8 @@
   2. **DO NOT** touch configuration files (appsettings.json, nginx configs, service files)
   3. **DO NOT** change ports, connection strings, or infrastructure settings
   4. Build and deploy the code only
+  5. **NEVER DELETE EXISTING FILES** - Always copy new files over existing ones, never use `rm -rf` or delete commands on production directories
+  6. **PRESERVE ALL FILES** - When deploying DLLs, copy new files without deleting the directory contents first
 
 ### Rule 5: Diagnostic Commands
 - **AVOID** running multiple diagnostic commands with sleep delays
@@ -182,6 +184,8 @@
 4. ❌ **DO NOT** assume a configuration is wrong just because it's different
 5. ❌ **DO NOT** make infrastructure changes when deploying code features
 6. ❌ **DO NOT** use nested command substitutions that fail in PowerShell
+7. ❌ **DO NOT DELETE EXISTING FILES** - Never use `rm -rf`, `rm -f`, or any delete commands on production directories like `/home/ec2-user/milo-backend-publish/`
+8. ❌ **DO NOT** clear or empty production directories before copying new files
 
 ## ✅ WHAT TO DO
 
