@@ -1,0 +1,16 @@
+﻿aws : 
+At C:\Users\Ico\AppData\Local\Temp\ps-script-ef8761d9-98d8-445c-aff0-94c78e6efbcf.ps1:76 char:190
++ ... tput text); aws ssm get-command-invocation --instance-id i-06bc5b2218 ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+usage: aws [options] <command> <subcommand> [<subcommand> ...] [parameters]
+To see help text, you can run:
+
+  aws help
+  aws <command> help
+  aws <command> <subcommand> help
+
+Unknown options: None
+

@@ -1,0 +1,5 @@
+{
+  "commands": [
+    "sudo tail -n 100 /home/ec2-user/milo-backend-error.log | grep -A 10 -B 5 'error\\|Error\\|Exception\\|Failed' | head -n 50"
+  ]
+}

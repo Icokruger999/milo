@@ -1,0 +1,11 @@
+﻿total 60
+drwxr-xr-x.  3 root     root       124 Jan 13 19:52 .
+drwx------. 15 ec2-user ec2-user 16384 Jan 13 20:10 ..
+-rw-r--r--.  1 root     root     28766 Jan 13 20:10 Milo.API.deps.json
+-rw-r--r--.  1 root     root       537 Jan 13 20:10 Milo.API.runtimeconfig.json
+-rw-r--r--.  1 root     root       813 Jan 13 20:10 appsettings.json
+drwxr-xr-x.  3 root     root       124 Jan 13 19:52 publish
+-rw-r--r--.  1 root     root       541 Jan 13 20:10 web.config
+---
+/home/ec2-user/milo-backend-publish/Milo.API.dll: cannot open `/home/ec2-user/milo-backend-publish/Milo.API.dll' (No such file or directory)
+

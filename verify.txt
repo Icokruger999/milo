@@ -1,0 +1,16 @@
+﻿aws : 
+At C:\Users\Ico\AppData\Local\Temp\ps-script-e9eca9db-fd55-4ca0-bbf5-a13665474761.ps1:76 char:46
++ ... o_new\milo; aws ssm get-command-invocation --instance-id i-06bc5b2218 ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+usage: aws [options] <command> <subcommand> [<subcommand> ...] [parameters]
+To see help text, you can run:
+
+  aws help
+  aws <command> help
+  aws <command> <subcommand> help
+
+Unknown options: None
+

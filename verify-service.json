@@ -1,0 +1,9 @@
+{
+  "commands": [
+    "sudo systemctl status milo-backend.service --no-pager | head -n 15",
+    "echo '---'",
+    "ls -la /home/ec2-user/milo-backend-publish/Milo.API.dll",
+    "echo '---'",
+    "sudo tail -n 20 /home/ec2-user/milo-backend.log"
+  ]
+}

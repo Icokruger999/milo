@@ -1,0 +1,8 @@
+﻿aws : 
+At C:\Users\Ico\AppData\Local\Temp\ps-script-40d1d446-f313-4038-8c79-cfd448cfd1ea.ps1:77 char:22
++ ... o_new\milo; aws ssm get-command-invocation --instance-id i-06bc5b2218 ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+'charmap' codec can't encode character '\u25cf' in position 0: character maps to <undefined>

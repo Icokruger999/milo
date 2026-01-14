@@ -1,0 +1,8 @@
+{
+  "commands": [
+    "cd /home/ec2-user/milo-backend-publish",
+    "dotnet --version",
+    "ls -la Milo.API.dll",
+    "dotnet Milo.API.dll --urls http://localhost:8080 2>&1 | head -n 20"
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "commands": [
+    "sudo systemctl status milo-backend.service --no-pager -l | head -n 30"
+  ]
+}

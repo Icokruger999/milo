@@ -1,0 +1,29 @@
+{
+  "commands": [
+    "echo '=== Finding nginx config for api.codingeverest.com ==='",
+    "NGINX_CONF=$(sudo find /etc/nginx -name '*.conf' -type f 2>/dev/null | xargs sudo grep -l 'api.codingeverest' 2>/dev/null | head -n 1)",
+    "if [ -z \"$NGINX_CONF\" ]; then",
+    "  echo 'No nginx config found. Checking default locations:'",
+    "  sudo ls -la /etc/nginx/sites-enabled/ 2>/dev/null || echo 'sites-enabled not found'",
+    "  sudo ls -la /etc/nginx/conf.d/ 2>/dev/null || echo 'conf.d not found'",
+    "else",
+    "  echo \"Found config: $NGINX_CONF\"",
+    "  echo ''",
+    "  echo '=== Current config ==='",
+    "  sudo cat \"$NGINX_CONF\"",
+    "  echo ''",
+    "  echo '=== Updating to port 8080 ==='",
+    "  sudo sed -i.bak 's/localhost:5001/localhost:8080/g' \"$NGINX_CONF\"",
+    "  echo 'Config updated. Backup saved as .bak'",
+    "  echo ''",
+    "  echo '=== Updated config ==='",
+    "  sudo cat \"$NGINX_CONF\"",
+    "  echo ''",
+    "  echo '=== Testing nginx config ==='",
+    "  sudo nginx -t",
+    "  echo ''",
+    "  echo '=== Reloading nginx ==='",
+    "  sudo systemctl reload nginx",
+    "fi"
+  ]
+}

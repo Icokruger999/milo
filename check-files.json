@@ -1,0 +1,7 @@
+{
+  "commands": [
+    "ls -la /home/ec2-user/milo-backend-publish/ | head -n 20",
+    "echo '---'",
+    "file /home/ec2-user/milo-backend-publish/Milo.API.dll 2>&1 || echo 'DLL not found'"
+  ]
+}
