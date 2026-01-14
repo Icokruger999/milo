@@ -1,5 +1,21 @@
 # 🚨 CRITICAL DEPLOYMENT RULES - DO NOT VIOLATE
 
+## ⚠️ QUICK REFERENCE - PROTECTED FILES
+
+**When making frontend or backend page changes, NEVER overwrite or modify:**
+- `docker-compose.yml`
+- `backend/Milo.API/Services/milo-backend.service`
+- `backend/Milo.API/appsettings.json`
+- `backend/Milo.API/publish/appsettings.json`
+- `frontend/js/config.js`
+- `backend/Milo.API/Data/MiloDbContext.cs`
+- Migration files (`backend/Milo.API/Migrations/*.cs`)
+- Nginx configuration files (on server)
+
+**See "PROTECTED FILES" section below for complete list and details.**
+
+---
+
 ## ⚠️ PORT CONFIGURATION - NEVER CHANGE THESE PORTS
 
 **THESE PORTS ARE FIXED AND MUST NEVER BE CHANGED:**
@@ -23,7 +39,89 @@
    - Files: `/etc/nginx/conf.d/milo-api.conf` (HTTPS) and `/etc/nginx/conf.d/00-summit-api.conf` (HTTP)
    - **DO NOT CHANGE proxy_pass TO ANY OTHER PORT**
 
+## 🚫 PROTECTED FILES - NEVER OVERWRITE
+
+**THESE FILES MUST NEVER BE MODIFIED OR OVERWRITTEN when making frontend or backend page changes:**
+
+### Infrastructure Files (NEVER TOUCH)
+1. **`docker-compose.yml`**
+   - Contains Docker service configurations
+   - Port mappings (5432, 6432)
+   - Environment variables
+   - Network and volume configurations
+   - **DO NOT MODIFY** - Only change if explicitly requested for infrastructure updates
+
+2. **`backend/Milo.API/Services/milo-backend.service`**
+   - Systemd service file
+   - Port configuration (8080)
+   - Working directory paths
+   - Service startup commands
+   - **DO NOT MODIFY** - Only change if explicitly requested for service configuration
+
+3. **Nginx Configuration Files** (on EC2 server)
+   - `/etc/nginx/conf.d/milo-api.conf`
+   - `/etc/nginx/conf.d/00-summit-api.conf`
+   - Proxy configurations
+   - SSL settings
+   - **DO NOT MODIFY** - Only change if explicitly requested for nginx updates
+
+### Configuration Files (NEVER OVERWRITE)
+4. **`backend/Milo.API/appsettings.json`**
+   - Database connection strings
+   - API configuration
+   - Environment settings
+   - **DO NOT OVERWRITE** - Only modify specific values if explicitly requested
+
+5. **`backend/Milo.API/publish/appsettings.json`**
+   - Production configuration
+   - Deployment-specific settings
+   - **DO NOT OVERWRITE** - Only modify specific values if explicitly requested
+
+6. **`frontend/js/config.js`**
+   - API endpoint URLs
+   - Frontend configuration
+   - **DO NOT OVERWRITE** - Only modify specific values if explicitly requested
+
+### Database Files (NEVER MODIFY)
+7. **Migration Files** (`backend/Milo.API/Migrations/*.cs`)
+   - Database schema definitions
+   - Historical migration records
+   - **DO NOT MODIFY** - Only create new migrations when adding schema changes
+
+8. **`backend/Milo.API/Data/MiloDbContext.cs`**
+   - Database context configuration
+   - Table and column naming conventions
+   - Relationship mappings
+   - **DO NOT MODIFY** - Only change if explicitly requested for schema updates
+
+### Build and Deployment Files (NEVER OVERWRITE)
+9. **`.csproj` files** (unless adding new packages)
+   - Project dependencies
+   - Build configurations
+   - **DO NOT OVERWRITE** - Only add new package references if needed
+
+10. **`DEPLOYMENT_RULES.md`** (this file)
+    - Deployment guidelines
+    - Configuration rules
+    - **DO NOT MODIFY** - Only update when rules change
+
+### What IS Safe to Modify
+✅ **Safe to modify when making page changes:**
+- Controller files (`backend/Milo.API/Controllers/*.cs`)
+- Service files (`backend/Milo.API/Services/*.cs`)
+- Model files (`backend/Milo.API/Models/*.cs`)
+- Frontend HTML files (`frontend/*.html`)
+- Frontend JavaScript files (`frontend/js/*.js`) - except `config.js`
+- Frontend CSS files (`frontend/css/*.css`)
+- View files (if using Razor views)
+
 ## 🔒 RULES FOR AGENTS/AUTOMATION
+
+### Rule 0: Protected Files Are OFF-LIMITS
+- **NEVER** overwrite or modify files listed in the "PROTECTED FILES" section above
+- **NEVER** "update" or "fix" configuration files during frontend/backend page changes
+- **NEVER** regenerate or overwrite infrastructure files
+- If a protected file needs changes, **STOP and ASK the user first**
 
 ### Rule 1: Port Changes Are FORBIDDEN
 - **NEVER** change port numbers in any configuration file
@@ -105,11 +203,23 @@ Before changing ANY port or infrastructure configuration:
 ## 🎯 Deployment Checklist
 
 When deploying new features:
-- [ ] Only code files changed (Controllers, Services, Models)
+- [ ] Only code files changed (Controllers, Services, Models, HTML, JS, CSS)
+- [ ] **NO protected files modified** (docker-compose.yml, service files, appsettings.json, config.js, etc.)
 - [ ] No port numbers changed
 - [ ] No nginx configs changed
 - [ ] No service files changed
 - [ ] No connection strings changed
+- [ ] No infrastructure files touched
 - [ ] Build succeeds
 - [ ] Deploy to EC2
 - [ ] Test the new feature only
+
+### Protected Files Verification
+Before deploying, verify these files were NOT modified:
+- [ ] `docker-compose.yml` - unchanged
+- [ ] `backend/Milo.API/Services/milo-backend.service` - unchanged
+- [ ] `backend/Milo.API/appsettings.json` - unchanged (or only specific requested values)
+- [ ] `backend/Milo.API/publish/appsettings.json` - unchanged (or only specific requested values)
+- [ ] `frontend/js/config.js` - unchanged (or only specific requested values)
+- [ ] `backend/Milo.API/Data/MiloDbContext.cs` - unchanged (unless schema changes requested)
+- [ ] Migration files - unchanged (unless new migration created)

@@ -497,17 +497,19 @@ public class TasksController : ControllerBase
         {
             task.Status = request.Status;
         }
+        // Handle Label: update if provided (including empty string to clear)
         if (request.Label != null)
         {
-            task.Label = request.Label;
+            // If empty string, set to null to clear the label
+            task.Label = string.IsNullOrWhiteSpace(request.Label) ? null : request.Label;
         }
-        if (request.AssigneeId.HasValue)
-        {
-            var oldAssigneeId = task.AssigneeId;
-            task.AssigneeId = request.AssigneeId;
-            
-            // Send email if assignee changed
-            if (oldAssigneeId != request.AssigneeId && request.AssigneeId.HasValue)
+        // Handle AssigneeId: always update (including null to clear)
+        // Frontend always sends assigneeId (null if unassigned), so we always update
+        var oldAssigneeId = task.AssigneeId;
+        task.AssigneeId = request.AssigneeId; // This will be null if unassigned, or the ID if assigned
+        
+        // Send email if assignee changed and new assignee is not null
+        if (oldAssigneeId != task.AssigneeId && task.AssigneeId.HasValue)
             {
                 await _context.Entry(task).Reference(t => t.Assignee).LoadAsync();
                 await _context.Entry(task).Reference(t => t.Project).LoadAsync();
@@ -589,8 +591,9 @@ public class TasksController : ControllerBase
         {
             task.Priority = request.Priority.Value;
         }
-        // Handle DueDate: update if provided (including null to clear)
-        // The frontend now always sends dueDate (null if empty, or value if set)
+        // Handle DueDate: always update (including null to clear)
+        // Frontend always sends dueDate (null if empty, or ISO string if set)
+        // System.Text.Json automatically parses ISO strings to DateTime
         if (request.DueDate.HasValue)
         {
             // Ensure DueDate is UTC for PostgreSQL
@@ -610,16 +613,18 @@ public class TasksController : ControllerBase
                 // Already UTC
                 task.DueDate = dueDate;
             }
+            _logger.LogInformation($"[UPDATE TASK {id}] DueDate set to: {task.DueDate} (UTC)");
         }
         else
         {
-            // If DueDate is explicitly null in request, clear it
-            // This allows users to remove the due date
+            // Frontend sent null explicitly to clear the due date
             task.DueDate = null;
+            _logger.LogInformation($"[UPDATE TASK {id}] DueDate cleared (set to null)");
         }
         
-        // Handle StartDate: update if provided (including null to clear)
-        // The frontend now always sends startDate (null if empty, or value if set)
+        // Handle StartDate: always update (including null to clear)
+        // Frontend always sends startDate (null if empty, or ISO string if set)
+        // System.Text.Json automatically parses ISO strings to DateTime
         if (request.StartDate.HasValue)
         {
             var startDate = request.StartDate.Value;
@@ -635,12 +640,13 @@ public class TasksController : ControllerBase
             {
                 task.StartDate = startDate;
             }
+            _logger.LogInformation($"[UPDATE TASK {id}] StartDate set to: {task.StartDate} (UTC)");
         }
         else
         {
-            // If StartDate is explicitly null in request, clear it
-            // This allows users to remove the start date
+            // Frontend sent null explicitly to clear the start date
             task.StartDate = null;
+            _logger.LogInformation($"[UPDATE TASK {id}] StartDate cleared (set to null)");
         }
         if (request.ParentTaskId.HasValue)
         {

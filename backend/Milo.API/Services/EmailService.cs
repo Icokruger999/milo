@@ -629,57 +629,33 @@ If you didn't request this, please ignore this email.";
             
             _logger.LogInformation($"Sending project invitation email to {email} for project {projectName} with token {invitationToken.Substring(0, Math.Min(8, invitationToken.Length))}...");
             
+            // Simple plain text email with just the link
+            var plainTextBody = $@"Hello {escapedName},
+
+You have been invited to join the project: {escapedProjectName} (Project Key: {escapedProjectKey}).
+
+To accept the invitation, please click this link:
+{invitationLink}
+
+This is an automated invitation from Milo. If you didn't expect this invitation, you can safely ignore this email.";
+
+            // Simple HTML email with just the link (no complex styling)
             var htmlBody = $@"
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset='utf-8'>
-    <style>
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 20px; }}
-        .container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; }}
-        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 32px 24px; text-align: center; }}
-        .content {{ padding: 32px 24px; }}
-        .project-box {{ background: #F4F5F7; border-left: 4px solid #0052CC; padding: 20px; margin: 24px 0; border-radius: 4px; }}
-        .project-name {{ font-size: 20px; font-weight: 700; color: #172B4D; }}
-        .project-key {{ font-size: 14px; color: #6B778C; margin-top: 4px; }}
-        .cta-button {{ display: inline-block; background: #0052CC; color: #FFFFFF; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 24px 0; }}
-        .footer {{ background: #F4F5F7; padding: 24px; text-align: center; font-size: 12px; color: #6B778C; }}
-        .token {{ font-size: 11px; color: #6B778C; margin-top: 16px; word-break: break-all; }}
-    </style>
 </head>
-<body>
-    <div class='container'>
-        <div class='header'>
-            <h1>Project Invitation</h1>
-        </div>
-        <div class='content'>
-            <p>Hello {escapedName},</p>
-            <p>You have been invited to join a project:</p>
-            <div class='project-box'>
-                <div class='project-name'>{escapedProjectName}</div>
-                <div class='project-key'>Project Key: {escapedProjectKey}</div>
-            </div>
-            <p>Click the button below to accept the invitation and join the project:</p>
-            <p style='text-align: center;'>
-                <a href='{invitationLink}' class='cta-button'>Accept Invitation</a>
-            </p>
-            <div class='token'>
-                <p>Or use this invitation token: <code>{escapedToken}</code></p>
-            </div>
-            <p style='margin-top: 24px; font-size: 12px; color: #6B778C;'>
-                If the button doesn't work, copy and paste this link into your browser:<br/>
-                <a href='{invitationLink}' style='color: #0052CC; word-break: break-all;'>{invitationLink}</a>
-            </p>
-        </div>
-        <div class='footer'>
-            <p>This is an automated invitation from Milo</p>
-            <p>If you didn't expect this invitation, you can safely ignore this email.</p>
-        </div>
-    </div>
+<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
+    <p>Hello {escapedName},</p>
+    <p>You have been invited to join the project: <strong>{escapedProjectName}</strong> (Project Key: {escapedProjectKey}).</p>
+    <p>To accept the invitation, please click this link:</p>
+    <p><a href='{invitationLink}' style='color: #0052CC; text-decoration: underline;'>{invitationLink}</a></p>
+    <p style='font-size: 12px; color: #666;'>This is an automated invitation from Milo. If you didn't expect this invitation, you can safely ignore this email.</p>
 </body>
 </html>";
 
-            return await SendEmailAsync(email, subject, htmlBody);
+            return await SendEmailWithPlainTextAsync(email, subject, htmlBody, plainTextBody);
         }
         catch (Exception ex)
         {

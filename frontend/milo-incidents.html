@@ -585,7 +585,7 @@
             </div>
         </div>
         <div class="global-nav-right">
-            <button class="global-nav-create" id="createIncidentBtn" onclick="showCreateIncidentModal(); return false;">Create Incident</button>
+            <button class="global-nav-create" id="createIncidentBtn">Create Incident</button>
             <div class="global-nav-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8"></circle>
@@ -1090,42 +1090,35 @@
     <script src="js/incidents.js"></script>
     <script src="js/reports.js"></script>
     <script>
-        // CRITICAL: Ensure Create Incident button works - test immediately
+        // Ensure Create Incident button works
         (function() {
-            console.log('=== CREATE INCIDENT BUTTON INITIALIZATION ===');
-            function testCreateButton() {
-                const btn = document.getElementById('createIncidentBtn') || document.querySelector('.global-nav-create');
-                if (btn) {
-                    console.log('Create Incident button found:', btn);
-                    // Remove existing onclick to avoid conflicts
-                    btn.removeAttribute('onclick');
+            function setupCreateButton() {
+                const btn = document.getElementById('createIncidentBtn');
+                if (btn && !btn.hasAttribute('data-listener-attached')) {
+                    btn.setAttribute('data-listener-attached', 'true');
                     btn.addEventListener('click', function(e) {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('Create Incident button CLICKED!');
-                        if (typeof window.showCreateIncidentModal === 'function') {
-                            console.log('Calling showCreateIncidentModal...');
+                        if (typeof showCreateIncidentModal === 'function') {
+                            showCreateIncidentModal();
+                        } else if (typeof window.showCreateIncidentModal === 'function') {
                             window.showCreateIncidentModal();
                         } else {
-                            console.error('showCreateIncidentModal is not a function! Type:', typeof window.showCreateIncidentModal);
-                            console.error('Available on window:', Object.keys(window).filter(k => k.includes('Incident')));
+                            console.error('showCreateIncidentModal function not found');
                         }
                         return false;
                     });
-                    console.log('Event listener attached to Create Incident button');
-                } else {
-                    console.error('Create Incident button NOT FOUND!');
                 }
             }
             
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', testCreateButton);
+                document.addEventListener('DOMContentLoaded', setupCreateButton);
             } else {
-                testCreateButton();
+                setupCreateButton();
             }
-            // Also try again after a short delay to catch any late-loading elements
-            setTimeout(testCreateButton, 500);
-            setTimeout(testCreateButton, 1000);
+            // Try again after scripts load
+            setTimeout(setupCreateButton, 100);
+            setTimeout(setupCreateButton, 500);
         })();
     </script>
 </body>

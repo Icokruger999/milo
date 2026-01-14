@@ -416,16 +416,26 @@ async function showTaskModal(column, task = null) {
             statusSelect.value = task.status || column || 'todo';
         }
         
-        // Set assignee
+        // Set assignee - explicitly set to empty/unassigned if no assignee
         const assigneeSelect = document.getElementById('taskAssignee');
-        if (assigneeSelect && task.assigneeId) {
-            assigneeSelect.value = task.assigneeId;
+        if (assigneeSelect) {
+            if (task.assigneeId) {
+                assigneeSelect.value = task.assigneeId;
+            } else {
+                // Explicitly set to empty or "unassigned" option if it exists
+                assigneeSelect.value = '';
+            }
         }
         
-        // Set label
+        // Set label - explicitly set to empty/no label if no label
         const labelSelect = document.getElementById('taskLabel');
-        if (labelSelect && task.label) {
-            labelSelect.value = task.label.toLowerCase();
+        if (labelSelect) {
+            if (task.label && task.label.trim() !== '') {
+                labelSelect.value = task.label.toLowerCase();
+            } else {
+                // Explicitly set to empty or "no label" option if it exists
+                labelSelect.value = '';
+            }
         }
         
         // Set product
@@ -962,11 +972,17 @@ async function loadUsersAndProducts() {
             // Use cached data
             if (assigneeSelect) {
                 assigneeSelect.innerHTML = '<option value="">Unassigned</option>';
-                usersProductsCache.users.forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.id;
-                    option.textContent = user.name;
-                    assigneeSelect.appendChild(option);
+                // Remove duplicates from cache as well
+                const uniqueUsers = Array.from(new Map(usersProductsCache.users.map(user => [user.id, user])).values());
+                uniqueUsers.forEach(user => {
+                    // Check if option already exists to prevent duplicates
+                    const existingOption = assigneeSelect.querySelector(`option[value="${user.id}"]`);
+                    if (!existingOption) {
+                        const option = document.createElement('option');
+                        option.value = user.id;
+                        option.textContent = user.name;
+                        assigneeSelect.appendChild(option);
+                    }
                 });
             }
             if (productSelect) {
@@ -989,14 +1005,20 @@ async function loadUsersAndProducts() {
         
         if (usersResponse.ok) {
             const users = await usersResponse.json();
-            usersProductsCache.users = users; // Cache users
+            // Remove duplicates by ID (in case API returns duplicates)
+            const uniqueUsers = Array.from(new Map(users.map(user => [user.id, user])).values());
+            usersProductsCache.users = uniqueUsers; // Cache unique users
             if (assigneeSelect) {
                 assigneeSelect.innerHTML = '<option value="">Unassigned</option>';
-                users.forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.id;
-                    option.textContent = user.name;
-                    assigneeSelect.appendChild(option);
+                uniqueUsers.forEach(user => {
+                    // Check if option already exists to prevent duplicates
+                    const existingOption = assigneeSelect.querySelector(`option[value="${user.id}"]`);
+                    if (!existingOption) {
+                        const option = document.createElement('option');
+                        option.value = user.id;
+                        option.textContent = user.name;
+                        assigneeSelect.appendChild(option);
+                    }
                 });
             }
         }
@@ -1174,21 +1196,39 @@ async function handleTaskSubmit(event) {
     
     // Convert dates to ISO 8601 format with UTC timezone
     let startDate = null;
-    const startDateInput = document.getElementById('taskStartDate').value;
-    if (startDateInput) {
+    const startDateInput = document.getElementById('taskStartDate');
+    if (startDateInput && startDateInput.value) {
         // HTML date input gives YYYY-MM-DD format
         // Convert to ISO 8601 with UTC timezone (midnight UTC)
-        const date = new Date(startDateInput + 'T00:00:00Z');
-        startDate = date.toISOString();
+        try {
+            const date = new Date(startDateInput.value + 'T00:00:00Z');
+            if (!isNaN(date.getTime())) {
+                startDate = date.toISOString();
+                console.log('Start date converted:', startDateInput.value, '->', startDate);
+            } else {
+                console.warn('Invalid start date:', startDateInput.value);
+            }
+        } catch (e) {
+            console.error('Error parsing start date:', e);
+        }
     }
     
     let dueDate = null;
-    const dueDateInput = document.getElementById('taskDueDate').value;
-    if (dueDateInput) {
+    const dueDateInput = document.getElementById('taskDueDate');
+    if (dueDateInput && dueDateInput.value) {
         // HTML date input gives YYYY-MM-DD format
         // Convert to ISO 8601 with UTC timezone (midnight UTC)
-        const date = new Date(dueDateInput + 'T00:00:00Z');
-        dueDate = date.toISOString();
+        try {
+            const date = new Date(dueDateInput.value + 'T00:00:00Z');
+            if (!isNaN(date.getTime())) {
+                dueDate = date.toISOString();
+                console.log('Due date converted:', dueDateInput.value, '->', dueDate);
+            } else {
+                console.warn('Invalid due date:', dueDateInput.value);
+            }
+        } catch (e) {
+            console.error('Error parsing due date:', e);
+        }
     }
     
     // Collect checklist items - improved selector to catch all checklist items
@@ -1214,13 +1254,34 @@ async function handleTaskSubmit(event) {
     const statusSelect = document.getElementById('taskStatus');
     const selectedStatus = statusSelect ? statusSelect.value : column;
     
+    // Get assignee - handle "Unassigned" or empty value
+    const assigneeSelect = document.getElementById('taskAssignee');
+    let assigneeId = null;
+    if (assigneeSelect && assigneeSelect.value && assigneeSelect.value !== '' && assigneeSelect.value !== 'unassigned') {
+        assigneeId = parseInt(assigneeSelect.value);
+    }
+    
+    // Get label - handle "No Label" or empty value
+    const labelSelect = document.getElementById('taskLabel');
+    let label = null;
+    if (labelSelect && labelSelect.value && labelSelect.value !== '' && labelSelect.value !== 'no label') {
+        label = labelSelect.value;
+    }
+    
+    // Get product - handle empty value
+    const productSelect = document.getElementById('taskProduct');
+    let productId = null;
+    if (productSelect && productSelect.value && productSelect.value !== '') {
+        productId = parseInt(productSelect.value);
+    }
+    
     const taskData = {
         title: document.getElementById('taskTitle').value,
         description: document.getElementById('taskDescription').value,
         status: selectedStatus, // Use status from dropdown
-        label: document.getElementById('taskLabel').value,
-        assigneeId: document.getElementById('taskAssignee').value ? parseInt(document.getElementById('taskAssignee').value) : null,
-        productId: document.getElementById('taskProduct').value ? parseInt(document.getElementById('taskProduct').value) : null,
+        label: label, // null if "No Label" or empty, otherwise the label value
+        assigneeId: assigneeId, // null if "Unassigned" or empty, otherwise the assignee ID
+        productId: productId, // null if empty, otherwise the product ID
         priority: parseInt(document.getElementById('taskPriority').value),
         // Always send dates - send null if empty to allow clearing, or the date value if set
         startDate: startDate, // Will be null if empty, or ISO string if set
