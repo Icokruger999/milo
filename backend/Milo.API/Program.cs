@@ -53,6 +53,10 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// CORS must be FIRST in the pipeline - before any other middleware
+// This ensures preflight OPTIONS requests are handled correctly
+app.UseCors("AllowFrontend");
+
 // Run database migrations on startup (only if tables don't exist)
 _ = Task.Run(async () =>
 {
@@ -99,11 +103,8 @@ _ = Task.Run(async () =>
     }
 });
 
-// Add error handling middleware
+// Add error handling middleware (after CORS to allow preflight requests through)
 app.UseExceptionHandler("/api/error");
-
-// CORS must be early in the pipeline
-app.UseCors("AllowFrontend");
 
 app.Use(async (context, next) =>
 {
