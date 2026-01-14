@@ -1,3 +1,9 @@
+# PORT CONFIGURATION - DO NOT CHANGE
+# API Port: 8080 (FIXED - Docker recommended)
+# PostgreSQL: 5432 (FIXED - Standard)
+# PgBouncer: 6432 (FIXED - Standard)
+# See DEPLOYMENT_RULES.md for details
+
 version: '3.8'
 
 services:
