@@ -663,7 +663,13 @@ public class TasksController : ControllerBase
         }
 
             task.UpdatedAt = DateTime.UtcNow;
+            
+            // Log what we're about to save
+            _logger.LogInformation($"[UPDATE TASK {id}] Saving to DB - StartDate: {task.StartDate?.ToString() ?? "null"}, DueDate: {task.DueDate?.ToString() ?? "null"}, AssigneeId: {task.AssigneeId?.ToString() ?? "null"}, Label: {task.Label ?? "null"}");
+            
             await _context.SaveChangesAsync();
+            
+            _logger.LogInformation($"[UPDATE TASK {id}] Successfully saved to DB");
 
             // Reload task with related data for response
             await _context.Entry(task).Reference(t => t.Assignee).LoadAsync();
