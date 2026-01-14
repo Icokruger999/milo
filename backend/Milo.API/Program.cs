@@ -116,6 +116,6 @@ app.Use(async (context, next) =>
 
 app.UseAuthorization();
 app.MapControllers().RequireCors("AllowFrontend");
-app.MapGet("/api/health", () => new { status = "ok", message = "Milo API is running" });
+app.MapGet("/api/health", () => new { status = "ok", message = "Milo API is running" }).RequireCors("AllowFrontend");
 
 app.Run();
