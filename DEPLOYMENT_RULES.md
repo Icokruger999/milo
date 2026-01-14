@@ -147,6 +147,8 @@
   4. Build and deploy the code only
   5. **NEVER DELETE EXISTING FILES** - Always copy new files over existing ones, never use `rm -rf` or delete commands on production directories
   6. **PRESERVE ALL FILES** - When deploying DLLs, copy new files without deleting the directory contents first
+  7. **PROTECT DLL FILES** - The `Milo.API.dll` and related files in `/home/ec2-user/milo-backend-publish/` are production files. Only rebuild and copy new DLLs when code changes are made. Do NOT delete or edit DLL files directly - always rebuild from source code.
+  8. **ONLY REBUILD WHEN NEEDED** - Only rebuild the DLL when there are actual code changes. Do not rebuild unnecessarily.
 
 ### Rule 5: Diagnostic Commands
 - **AVOID** running multiple diagnostic commands with sleep delays
@@ -186,6 +188,8 @@
 6. ❌ **DO NOT** use nested command substitutions that fail in PowerShell
 7. ❌ **DO NOT DELETE EXISTING FILES** - Never use `rm -rf`, `rm -f`, or any delete commands on production directories like `/home/ec2-user/milo-backend-publish/`
 8. ❌ **DO NOT** clear or empty production directories before copying new files
+9. ❌ **DO NOT EDIT DLL FILES** - Never edit, delete, or modify DLL files directly. Always rebuild from source code when changes are needed.
+10. ❌ **DO NOT REBUILD UNNECESSARILY** - Only rebuild the DLL when there are actual code changes that require it.
 
 ## ✅ WHAT TO DO
 
