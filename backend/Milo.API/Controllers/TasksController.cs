@@ -582,7 +582,7 @@ public class TasksController : ControllerBase
                     }, System.Threading.Tasks.TaskContinuationOptions.OnlyOnFaulted);
                 }
             }
-        }
+        
         if (request.ProductId.HasValue)
         {
             task.ProductId = request.ProductId;

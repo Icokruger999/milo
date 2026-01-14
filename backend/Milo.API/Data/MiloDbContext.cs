@@ -292,6 +292,38 @@ public class MiloDbContext : DbContext
             entity.ToTable("incidents"); // Map to lowercase table name
             entity.HasIndex(e => e.IncidentNumber).IsUnique();
             
+            // Explicit column mappings for key properties to ensure PostgreSQL compatibility
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.IncidentNumber).HasColumnName("incident_number");
+            entity.Property(e => e.Subject).HasColumnName("subject");
+            entity.Property(e => e.Description).HasColumnName("description");
+            entity.Property(e => e.RequesterId).HasColumnName("requester_id");
+            entity.Property(e => e.AgentId).HasColumnName("agent_id");
+            entity.Property(e => e.GroupId).HasColumnName("group_id");
+            entity.Property(e => e.Department).HasColumnName("department");
+            entity.Property(e => e.Status).HasColumnName("status");
+            entity.Property(e => e.Priority).HasColumnName("priority");
+            entity.Property(e => e.Urgency).HasColumnName("urgency");
+            entity.Property(e => e.Impact).HasColumnName("impact");
+            entity.Property(e => e.Source).HasColumnName("source");
+            entity.Property(e => e.Category).HasColumnName("category");
+            entity.Property(e => e.SubCategory).HasColumnName("sub_category");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.ResolvedAt).HasColumnName("resolved_at");
+            entity.Property(e => e.ClosedAt).HasColumnName("closed_at");
+            entity.Property(e => e.PlannedStartDate).HasColumnName("planned_start_date");
+            entity.Property(e => e.PlannedEndDate).HasColumnName("planned_end_date");
+            entity.Property(e => e.PlannedEffort).HasColumnName("planned_effort");
+            entity.Property(e => e.FirstResponseDue).HasColumnName("first_response_due");
+            entity.Property(e => e.ResolutionDue).HasColumnName("resolution_due");
+            entity.Property(e => e.FirstResponseAt).HasColumnName("first_response_at");
+            entity.Property(e => e.Tags).HasColumnName("tags");
+            entity.Property(e => e.AssociatedAssets).HasColumnName("associated_assets");
+            entity.Property(e => e.ProjectId).HasColumnName("project_id");
+            entity.Property(e => e.Attachments).HasColumnName("attachments");
+            entity.Property(e => e.Resolution).HasColumnName("resolution");
+            
             // Single column indexes for common filters
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.Priority);

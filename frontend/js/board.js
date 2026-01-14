@@ -367,37 +367,26 @@ async function showTaskModal(column, task = null) {
     // Show modal immediately for better UX (don't wait for API calls)
     modal.style.display = 'flex';
     
-    // Load dropdowns in parallel (non-blocking)
-    const loadPromise = Promise.all([
+    // Load dropdowns first, THEN populate form to prevent resets
+    await Promise.all([
         loadUsersAndProducts(),
         loadLabels()
     ]);
     
-    // If editing an existing task, fetch fresh data from API in background
-    // But populate form immediately with cached data for better UX
+    // If editing an existing task, fetch fresh data from API
     if (task && task.id) {
-        // Populate form immediately with cached task data
-        populateTaskForm(task);
-        
-        // Then fetch fresh data in background and update if different
-        loadPromise.then(async () => {
-            try {
-                const response = await apiClient.get(`/tasks/${task.id}`);
-                if (response.ok) {
-                    const freshTask = await response.json();
-                    console.log('Loaded fresh task data:', freshTask);
-                    // Only update if dates are different (to avoid flickering)
-                    if (freshTask.startDate !== task.startDate || freshTask.dueDate !== task.dueDate) {
-                        populateTaskForm(freshTask);
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading fresh task data:', error);
+        try {
+            const response = await apiClient.get(`/tasks/${task.id}`);
+            if (response.ok) {
+                const freshTask = await response.json();
+                console.log('Loaded fresh task data:', freshTask);
+                // Use fresh task data instead of cached
+                task = freshTask;
             }
-        });
-    } else {
-        // For new tasks, just wait for dropdowns
-        await loadPromise;
+        } catch (error) {
+            console.error('Error loading fresh task data:', error);
+            // Continue with cached task if API call fails
+        }
     }
     
     if (task) {
@@ -960,40 +949,86 @@ let usersProductsCache = {
     ttl: 5 * 60 * 1000 // 5 minutes
 };
 
+// Flag to prevent concurrent loading
+let isLoadingUsersAndProducts = false;
+
 async function loadUsersAndProducts() {
+    // Prevent concurrent calls
+    if (isLoadingUsersAndProducts) {
+        console.log('loadUsersAndProducts already in progress, skipping...');
+        return;
+    }
     try {
+        isLoadingUsersAndProducts = true;
         const now = Date.now();
         const assigneeSelect = document.getElementById('taskAssignee');
         const productSelect = document.getElementById('taskProduct');
+        
+        // Helper function to deduplicate users by both ID and email
+        const deduplicateUsers = (users) => {
+            if (!Array.isArray(users)) return [];
+            // First deduplicate by ID (primary key)
+            const byId = new Map();
+            users.forEach(user => {
+                if (user && user.id) {
+                    // Only keep the first occurrence of each ID
+                    if (!byId.has(user.id)) {
+                        byId.set(user.id, user);
+                    }
+                }
+            });
+            // Then deduplicate by email (in case same email has different IDs somehow)
+            const byEmail = new Map();
+            Array.from(byId.values()).forEach(user => {
+                const email = (user.email || '').toLowerCase().trim();
+                if (email && !byEmail.has(email)) {
+                    byEmail.set(email, user);
+                } else if (!email) {
+                    // If no email, keep by ID only
+                    byEmail.set(`no-email-${user.id}`, user);
+                }
+            });
+            // Sort by name for consistent display
+            return Array.from(byEmail.values()).sort((a, b) => {
+                const nameA = (a.name || a.email || '').toLowerCase();
+                const nameB = (b.name || b.email || '').toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+        };
+        
+        // Helper function to populate assignee dropdown
+        const populateAssigneeDropdown = (users) => {
+            if (!assigneeSelect) return;
+            // Clear dropdown completely
+            assigneeSelect.innerHTML = '<option value="">Unassigned</option>';
+            // Add unique users
+            const uniqueUsers = deduplicateUsers(users);
+            uniqueUsers.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = user.name || user.email || 'Unknown';
+                assigneeSelect.appendChild(option);
+            });
+            console.log(`Populated assignee dropdown with ${uniqueUsers.length} unique users`);
+        };
         
         // Check cache first
         if (usersProductsCache.users && usersProductsCache.timestamp && 
             (now - usersProductsCache.timestamp) < usersProductsCache.ttl) {
             // Use cached data
-            if (assigneeSelect) {
-                assigneeSelect.innerHTML = '<option value="">Unassigned</option>';
-                // Remove duplicates from cache as well
-                const uniqueUsers = Array.from(new Map(usersProductsCache.users.map(user => [user.id, user])).values());
-                uniqueUsers.forEach(user => {
-                    // Check if option already exists to prevent duplicates
-                    const existingOption = assigneeSelect.querySelector(`option[value="${user.id}"]`);
-                    if (!existingOption) {
-                        const option = document.createElement('option');
-                        option.value = user.id;
-                        option.textContent = user.name;
-                        assigneeSelect.appendChild(option);
-                    }
-                });
-            }
+            populateAssigneeDropdown(usersProductsCache.users);
             if (productSelect) {
                 productSelect.innerHTML = '<option value="">General</option>';
-                usersProductsCache.products.forEach(product => {
-                    const option = document.createElement('option');
-                    option.value = product.id;
-                    option.textContent = product.name;
-                    productSelect.appendChild(option);
-                });
+                if (usersProductsCache.products && Array.isArray(usersProductsCache.products)) {
+                    usersProductsCache.products.forEach(product => {
+                        const option = document.createElement('option');
+                        option.value = product.id;
+                        option.textContent = product.name;
+                        productSelect.appendChild(option);
+                    });
+                }
             }
+            isLoadingUsersAndProducts = false;
             return;
         }
         
@@ -1005,27 +1040,17 @@ async function loadUsersAndProducts() {
         
         if (usersResponse.ok) {
             const users = await usersResponse.json();
-            // Remove duplicates by ID (in case API returns duplicates)
-            const uniqueUsers = Array.from(new Map(users.map(user => [user.id, user])).values());
-            usersProductsCache.users = uniqueUsers; // Cache unique users
-            if (assigneeSelect) {
-                assigneeSelect.innerHTML = '<option value="">Unassigned</option>';
-                uniqueUsers.forEach(user => {
-                    // Check if option already exists to prevent duplicates
-                    const existingOption = assigneeSelect.querySelector(`option[value="${user.id}"]`);
-                    if (!existingOption) {
-                        const option = document.createElement('option');
-                        option.value = user.id;
-                        option.textContent = user.name;
-                        assigneeSelect.appendChild(option);
-                    }
-                });
-            }
+            // Deduplicate and cache
+            const uniqueUsers = deduplicateUsers(users);
+            usersProductsCache.users = uniqueUsers;
+            populateAssigneeDropdown(uniqueUsers);
+        } else {
+            console.error('Failed to load users:', usersResponse.status);
         }
         
         if (productsResponse.ok) {
             const products = await productsResponse.json();
-            usersProductsCache.products = products; // Cache products
+            usersProductsCache.products = Array.isArray(products) ? products : []; // Cache products
             if (productSelect) {
                 productSelect.innerHTML = '<option value="">General</option>';
                 products.forEach(product => {
@@ -1042,6 +1067,8 @@ async function loadUsersAndProducts() {
         
     } catch (error) {
         console.error('Failed to load users/products:', error);
+    } finally {
+        isLoadingUsersAndProducts = false;
     }
 }
 
@@ -1058,6 +1085,9 @@ async function loadLabels() {
             const labels = await response.json();
             const labelSelect = document.getElementById('taskLabel');
             if (labelSelect) {
+                // Preserve the currently selected value before clearing
+                const currentValue = labelSelect.value || '';
+                
                 // Keep "No Label" option
                 const noLabelOption = labelSelect.querySelector('option[value=""]');
                 labelSelect.innerHTML = noLabelOption ? noLabelOption.outerHTML : '<option value="">No Label</option>';
@@ -1070,6 +1100,11 @@ async function loadLabels() {
                     option.dataset.labelColor = label.color || '#6B778C';
                     labelSelect.appendChild(option);
                 });
+                
+                // Restore the selected value if it still exists
+                if (currentValue && labelSelect.querySelector(`option[value="${currentValue}"]`)) {
+                    labelSelect.value = currentValue;
+                }
             }
         }
     } catch (error) {
