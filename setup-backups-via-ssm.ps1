@@ -101,7 +101,7 @@ Write-Host "  • Organization: By project folders" -ForegroundColor White
 Write-Host "  • Schedule: Daily at 2:00 AM" -ForegroundColor White
 Write-Host "  • Retention: 7 days local, 30 days S3" -ForegroundColor White
 Write-Host ""
-Write-Host "💰 Estimated Cost:" -ForegroundColor Yellow
+Write-Host "Estimated Cost:" -ForegroundColor Yellow
 Write-Host "  • 1-3 projects: FREE (within free tier)" -ForegroundColor White
 Write-Host "  • 5-10 projects: ~$0.58/month" -ForegroundColor White
 Write-Host "  • 20+ projects: ~$1.96/month" -ForegroundColor White
