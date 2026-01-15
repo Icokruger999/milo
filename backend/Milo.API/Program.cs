@@ -13,6 +13,8 @@ builder.Services.AddControllers()
     {
         // Configure JSON options for date handling
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        // Use camelCase for JSON property names to match frontend
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         // Dates are handled automatically by System.Text.Json - ISO 8601 strings are parsed to DateTime
     });
 builder.Services.AddEndpointsApiExplorer();
