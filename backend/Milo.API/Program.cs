@@ -131,6 +131,15 @@ app.Use(async (context, next) =>
 });
 
 app.UseAuthorization();
+
+// CRITICAL: Explicitly handle OPTIONS requests for CORS preflight
+// This ensures browsers can check CORS permissions before sending actual requests
+app.MapMethods("/api/{**path}", new[] { "OPTIONS" }, async (HttpContext context) =>
+{
+    context.Response.StatusCode = 200;
+    await context.Response.WriteAsync("");
+}).RequireCors("AllowFrontend");
+
 app.MapControllers().RequireCors("AllowFrontend");
 app.MapGet("/api/health", () => new { status = "ok", message = "Milo API is running" }).RequireCors("AllowFrontend");
 
