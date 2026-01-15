@@ -212,13 +212,12 @@ async function addRecipient() {
             const errorData = await response.json().catch(() => ({ message: 'Failed to add recipient' }));
             console.error('Failed to add recipient:', response.status, errorData);
             
-            // Show user-friendly error message
+            // Show user-friendly error message (no alert popup)
             const errorMsg = errorData.message || `Failed to add recipient (${response.status})`;
             if (typeof showToast === 'function') {
                 showToast(errorMsg, 'error');
-            } else {
-                alert(errorMsg);
             }
+            // Removed alert() - only use console.error
             return;
         }
         

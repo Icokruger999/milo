@@ -416,8 +416,8 @@
                 });
 
                 if (response.ok) {
-                    // Redirect silently without popup
-                    window.location.href = `milo-flake-view.html?id=${currentFlakeId}`;
+                    // Redirect to flakes main board after saving
+                    window.location.href = 'milo-flakes.html';
                 } else {
                     const error = await response.json();
                     console.error(error.message || 'Failed to update flake');
