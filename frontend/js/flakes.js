@@ -162,7 +162,37 @@ async function loadFlakes() {
     }
 }
 
-// Render flakes list
+// Helper function to format date for grouping
+function getDateGroupKey(date) {
+    const d = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const weekAgo = new Date(today);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    
+    d.setHours(0, 0, 0, 0);
+    
+    if (d.getTime() === today.getTime()) {
+        return { key: 'today', label: 'Today', sort: 0 };
+    } else if (d.getTime() === yesterday.getTime()) {
+        return { key: 'yesterday', label: 'Yesterday', sort: 1 };
+    } else if (d >= weekAgo) {
+        return { key: 'this-week', label: 'This Week', sort: 2 };
+    } else {
+        // Format as "Month Day, Year"
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                       'July', 'August', 'September', 'October', 'November', 'December'];
+        return { 
+            key: `date-${d.getTime()}`, 
+            label: `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`,
+            sort: 3 + d.getTime()
+        };
+    }
+}
+
+// Render flakes list with date grouping
 function renderFlakes() {
     const container = document.getElementById('flakesContent');
     if (!container) return;
@@ -179,36 +209,96 @@ function renderFlakes() {
         return;
     }
 
+    // Group flakes by creation date
+    const grouped = {};
+    flakes.forEach(flake => {
+        const createdAt = flake.createdAt || flake.updatedAt;
+        const dateGroup = getDateGroupKey(createdAt);
+        if (!grouped[dateGroup.key]) {
+            grouped[dateGroup.key] = {
+                label: dateGroup.label,
+                sort: dateGroup.sort,
+                flakes: []
+            };
+        }
+        grouped[dateGroup.key].flakes.push(flake);
+    });
+
+    // Sort groups by sort order (today first, then yesterday, then this week, then dates)
+    const sortedGroups = Object.values(grouped).sort((a, b) => a.sort - b.sort);
+
     container.innerHTML = `
         <div class="flakes-list">
-            ${flakes.map(flake => `
-                <div class="flake-card">
-                    <div onclick="openFlake(${flake.id})" style="cursor: pointer;">
-                        <div class="flake-card-title">${flake.title || 'Untitled'}</div>
-                        <div class="flake-card-meta">
-                            Updated ${new Date(flake.updatedAt || flake.createdAt).toLocaleDateString()} by ${flake.authorName || 'Unknown'}
-                        </div>
-                        <div class="flake-card-preview">${(flake.content || '').substring(0, 150)}${(flake.content || '').length > 150 ? '...' : ''}</div>
+            ${sortedGroups.map(group => `
+                <div class="flakes-date-group">
+                    <div class="flakes-date-header">
+                        <div class="flakes-date-line"></div>
+                        <span class="flakes-date-label">${group.label}</span>
+                        <div class="flakes-date-line"></div>
                     </div>
-                    <div class="flake-card-actions">
-                        <button onclick="event.stopPropagation(); shareFlakeByEmail(${flake.id})" title="Email" class="flake-action-btn">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                                <polyline points="22,6 12,13 2,6"></polyline>
-                            </svg>
-                        </button>
-                        <button onclick="event.stopPropagation(); shareFlakeToBoard(${flake.id})" title="Share to Board" class="flake-action-btn">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                <line x1="3" y1="9" x2="21" y2="9"></line>
-                                <line x1="9" y1="21" x2="9" y2="9"></line>
-                            </svg>
-                        </button>
+                    <div class="flakes-group-content">
+                        ${group.flakes.map(flake => `
+                            <div class="flake-card">
+                                <div onclick="openFlake(${flake.id})" style="cursor: pointer;">
+                                    <div class="flake-card-title">${escapeHtml(flake.title || 'Untitled')}</div>
+                                    <div class="flake-card-meta">
+                                        <span class="flake-meta-date">Created ${formatDate(flake.createdAt)}</span>
+                                        ${flake.updatedAt && flake.updatedAt !== flake.createdAt ? 
+                                            `<span class="flake-meta-separator">•</span>
+                                             <span class="flake-meta-updated">Updated ${formatDate(flake.updatedAt)}</span>` : ''}
+                                        <span class="flake-meta-separator">•</span>
+                                        <span class="flake-meta-author">by ${escapeHtml(flake.authorName || 'Unknown')}</span>
+                                    </div>
+                                    <div class="flake-card-preview">${escapeHtml((flake.content || '').substring(0, 150))}${(flake.content || '').length > 150 ? '...' : ''}</div>
+                                </div>
+                                <div class="flake-card-actions">
+                                    <button onclick="event.stopPropagation(); shareFlakeByEmail(${flake.id})" title="Email" class="flake-action-btn">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                            <polyline points="22,6 12,13 2,6"></polyline>
+                                        </svg>
+                                    </button>
+                                    <button onclick="event.stopPropagation(); shareFlakeToBoard(${flake.id})" title="Share to Board" class="flake-action-btn">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="3" y1="9" x2="21" y2="9"></line>
+                                            <line x1="9" y1="21" x2="9" y2="9"></line>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
                     </div>
                 </div>
             `).join('')}
         </div>
     `;
+}
+
+// Helper function to format date nicely
+function formatDate(dateString) {
+    if (!dateString) return 'Unknown date';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+        return 'today';
+    } else if (diffDays === 1) {
+        return 'yesterday';
+    } else if (diffDays < 7) {
+        return `${diffDays} days ago`;
+    } else {
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+    }
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 // Show create flake modal

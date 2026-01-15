@@ -311,6 +311,40 @@
         }
 
         .flakes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .flakes-date-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .flakes-date-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .flakes-date-line {
+            flex: 1;
+            height: 1px;
+            background: #DFE1E6;
+        }
+
+        .flakes-date-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6B778C;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+        }
+
+        .flakes-group-content {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 16px;
@@ -375,6 +409,21 @@
             font-size: 12px;
             color: #6B778C;
             margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .flake-meta-date,
+        .flake-meta-updated,
+        .flake-meta-author {
+            color: #6B778C;
+        }
+
+        .flake-meta-separator {
+            color: #DFE1E6;
+            margin: 0 2px;
         }
 
         .flake-card-preview {

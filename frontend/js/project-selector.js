@@ -4,14 +4,34 @@ class ProjectSelectorService {
         this.currentProject = null;
         this.projects = [];
         this.storageKey = 'milo_current_project';
+        this.projectsCache = {
+            data: null,
+            timestamp: null,
+            ttl: 5 * 60 * 1000 // 5 minutes cache
+        };
     }
 
     /**
-     * Load projects from API
+     * Load projects from API with caching
      * @param {number} userId - Optional user ID to filter projects
+     * @param {boolean} forceRefresh - Force refresh cache
      */
-    async loadProjects(userId = null) {
+    async loadProjects(userId = null, forceRefresh = false) {
         try {
+            // Check cache first (unless forced refresh)
+            if (!forceRefresh && this.projectsCache.data && this.projectsCache.timestamp) {
+                const cacheAge = Date.now() - this.projectsCache.timestamp;
+                if (cacheAge < this.projectsCache.ttl) {
+                    // Check if cache is for the same user
+                    const cachedUserId = this.projectsCache.userId;
+                    if (cachedUserId === userId) {
+                        console.log('Using cached projects (age:', Math.round(cacheAge / 1000), 's)');
+                        this.projects = this.projectsCache.data;
+                        return this.projects;
+                    }
+                }
+            }
+
             let url = '/projects';
             if (userId) {
                 url += `?userId=${userId}`;
@@ -27,12 +47,37 @@ class ProjectSelectorService {
                         role: p.role || (p.ownerId === currentUser.id ? 'owner' : 'member')
                     }));
                 }
+                
+                // Update cache
+                this.projectsCache = {
+                    data: this.projects,
+                    timestamp: Date.now(),
+                    userId: userId
+                };
+                
                 return this.projects;
             }
         } catch (error) {
             console.error('Failed to load projects:', error);
+            // Return cached data if available, even if expired
+            if (this.projectsCache.data) {
+                console.log('API failed, using stale cache');
+                this.projects = this.projectsCache.data;
+                return this.projects;
+            }
         }
         return [];
+    }
+    
+    /**
+     * Clear projects cache
+     */
+    clearCache() {
+        this.projectsCache = {
+            data: null,
+            timestamp: null,
+            userId: null
+        };
     }
 
     /**

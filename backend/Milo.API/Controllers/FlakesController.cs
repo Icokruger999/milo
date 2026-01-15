@@ -27,8 +27,7 @@ public class FlakesController : ControllerBase
             var query = _context.Flakes
                 .AsNoTracking() // Performance: Read-only query
                 .Where(f => !f.IsDeleted)
-                .Include(f => f.Author)
-                .Include(f => f.Project)
+                .Include(f => f.Author) // Need Author for Name
                 .AsQueryable();
 
             if (projectId.HasValue)
@@ -36,7 +35,30 @@ public class FlakesController : ControllerBase
                 query = query.Where(f => f.ProjectId == projectId);
             }
 
-            var flakes = await query.OrderByDescending(f => f.UpdatedAt ?? f.CreatedAt).ToListAsync();
+            // PERFORMANCE: Only select needed fields, don't include full Project entity
+            var flakes = await query
+                .OrderByDescending(f => f.UpdatedAt ?? f.CreatedAt)
+                .Select(f => new
+                {
+                    f.Id,
+                    f.Title,
+                    f.Content,
+                    f.ProjectId,
+                    f.AuthorId,
+                    AuthorName = f.Author != null ? f.Author.Name : "Unknown",
+                    f.CreatedAt,
+                    f.UpdatedAt
+                })
+                .ToListAsync();
+
+            // Get project info in one query if needed
+            var projectIds = flakes.Select(f => f.ProjectId).Distinct().Where(id => id.HasValue).Cast<int>().ToList();
+            var projects = await _context.Projects
+                .Where(p => projectIds.Contains(p.Id))
+                .Select(p => new { p.Id, p.Name })
+                .ToListAsync();
+            
+            var projectDict = projects.ToDictionary(p => p.Id, p => new { id = p.Id, name = p.Name });
 
             return Ok(flakes.Select(f => new
             {
@@ -44,9 +66,9 @@ public class FlakesController : ControllerBase
                 title = f.Title,
                 content = f.Content,
                 projectId = f.ProjectId,
-                project = f.Project != null ? new { id = f.Project.Id, name = f.Project.Name } : null,
+                project = f.ProjectId.HasValue && projectDict.TryGetValue(f.ProjectId.Value, out var proj) ? proj : null,
                 authorId = f.AuthorId,
-                authorName = f.Author != null ? f.Author.Name : "Unknown",
+                authorName = f.AuthorName,
                 createdAt = f.CreatedAt,
                 updatedAt = f.UpdatedAt
             }));

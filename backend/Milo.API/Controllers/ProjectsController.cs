@@ -44,9 +44,56 @@ public class ProjectsController : ControllerBase
 
         var projects = await query.OrderBy(p => p.Name).ToListAsync();
 
+        // PERFORMANCE: Batch load all member data in one query instead of N+1 queries
+        Dictionary<int, string?> userRoles = new();
+        Dictionary<int, int> memberCounts = new();
+        
+        if (userId.HasValue)
+        {
+            // Batch load all project memberships for this user
+            var projectIds = projects.Select(p => p.Id).ToList();
+            var memberships = await _context.ProjectMembers
+                .Where(pm => pm.UserId == userId.Value && projectIds.Contains(pm.ProjectId))
+                .Select(pm => new { pm.ProjectId, pm.Role })
+                .ToListAsync();
+            
+            // Build role dictionary
+            foreach (var membership in memberships)
+            {
+                userRoles[membership.ProjectId] = membership.Role;
+            }
+            
+            // Batch load member counts for all projects
+            var counts = await _context.ProjectMembers
+                .Where(pm => projectIds.Contains(pm.ProjectId))
+                .GroupBy(pm => pm.ProjectId)
+                .Select(g => new { ProjectId = g.Key, Count = g.Count() })
+                .ToListAsync();
+            
+            foreach (var count in counts)
+            {
+                memberCounts[count.ProjectId] = count.Count + 1; // +1 for owner
+            }
+        }
+        else
+        {
+            // Batch load member counts for all projects (even without userId filter)
+            var projectIds = projects.Select(p => p.Id).ToList();
+            var counts = await _context.ProjectMembers
+                .Where(pm => projectIds.Contains(pm.ProjectId))
+                .GroupBy(pm => pm.ProjectId)
+                .Select(g => new { ProjectId = g.Key, Count = g.Count() })
+                .ToListAsync();
+            
+            foreach (var count in counts)
+            {
+                memberCounts[count.ProjectId] = count.Count + 1; // +1 for owner
+            }
+        }
+
         return Ok(projects.Select(p =>
         {
-            // Determine user's role in the project
+            // Determine user's role in the project (from pre-loaded dictionary)
             string? userRole = null;
             if (userId.HasValue)
             {
@@ -54,21 +101,9 @@ public class ProjectsController : ControllerBase
                 {
                     userRole = "owner";
                 }
-                else
+                else if (userRoles.TryGetValue(p.Id, out var role))
                 {
-                    // Check project members (simplified - just check if user is member, skip team access for performance)
-                    var isMember = _context.ProjectMembers
-                        .Any(pm => pm.ProjectId == p.Id && pm.UserId == userId.Value);
-                    
-                    if (isMember)
-                    {
-                        var member = _context.ProjectMembers
-                            .FirstOrDefault(pm => pm.ProjectId == p.Id && pm.UserId == userId.Value);
-                        if (member != null)
-                        {
-                            userRole = member.Role;
-                        }
-                    }
+                    userRole = role;
                 }
             }
 
@@ -82,7 +117,7 @@ public class ProjectsController : ControllerBase
                 owner = new { id = p.Owner.Id, name = p.Owner.Name, email = p.Owner.Email },
                 ownerId = p.OwnerId,
                 role = userRole,
-                memberCount = _context.ProjectMembers.Count(pm => pm.ProjectId == p.Id) + 1, // +1 for owner
+                memberCount = memberCounts.TryGetValue(p.Id, out var count) ? count : 1, // Default to 1 (owner only)
                 createdAt = p.CreatedAt
             };
         }));
