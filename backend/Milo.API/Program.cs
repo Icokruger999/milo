@@ -32,6 +32,12 @@ builder.Services.AddDbContext<MiloDbContext>(options =>
     options.UseNpgsql(connectionString, npgsqlOptions =>
     {
         npgsqlOptions.CommandTimeout(30);
+        // CRITICAL: Connection pooling settings for PgBouncer
+        // PgBouncer handles pooling, so we use minimal pooling here
+        npgsqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 3,
+            maxRetryDelay: TimeSpan.FromSeconds(5),
+            errorCodesToAdd: null);
     })
     .EnableSensitiveDataLogging(false));
 
@@ -43,6 +49,7 @@ builder.Services.AddHostedService<Milo.API.Services.DailyUsersReportService>();
 
 // Configure CORS for frontend
 // CRITICAL: Must include both www and non-www versions for all domains
+// CRITICAL: Must handle OPTIONS preflight requests explicitly
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -54,9 +61,9 @@ builder.Services.AddCors(options =>
                 "http://www.codingeverest.com"
             )
             .AllowAnyHeader()
-            .AllowAnyMethod()
+            .AllowAnyMethod() // This includes OPTIONS
             .AllowCredentials()
-            .SetPreflightMaxAge(TimeSpan.FromSeconds(86400));
+            .SetPreflightMaxAge(TimeSpan.FromSeconds(86400)); // Cache preflight for 24 hours
     });
 });
 

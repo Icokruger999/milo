@@ -21,7 +21,13 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - milo_network
-    restart: unless-stopped
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -44,6 +50,15 @@ services:
       RESERVE_POOL_SIZE: 5
       RESERVE_POOL_TIMEOUT: 3
       MAX_DB_CONNECTIONS: 100
+      # CRITICAL: Prevent connection timeouts
+      SERVER_IDLE_TIMEOUT: 600
+      SERVER_LIFETIME: 3600
+      SERVER_CONNECT_TIMEOUT: 15
+      SERVER_LOGIN_RETRY: 15
+      TCP_KEEPALIVE: 1
+      TCP_KEEPIDLE: 600
+      TCP_KEEPINTVL: 10
+      TCP_KEEPCNT: 3
     ports:
       - "6432:6432"
     depends_on:
@@ -51,7 +66,13 @@ services:
         condition: service_healthy
     networks:
       - milo_network
-    restart: unless-stopped
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "psql -h localhost -p 6432 -U postgres -d milo -c 'SELECT 1;' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 volumes:
   postgres_data:
