@@ -377,10 +377,6 @@
                             errorMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
                         } else {
                             errorMessage = error.message || 'Login failed. Please try again.';
-                        } else if (error.message.includes('timeout')) {
-                            errorMessage = 'The request took too long. Please try again.';
-                        } else {
-                            errorMessage = error.message;
                         }
                     }
                     errorDiv.textContent = errorMessage;
