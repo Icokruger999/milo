@@ -362,11 +362,28 @@
                 
                 if (result.success) {
                     const hasInvitation = localStorage.getItem('milo_pending_invitation');
-                    if (hasInvitation) {
-                        showSuccess('Account created! Please check your email for your temporary password. After logging in, you\'ll be automatically added to the project.');
-                    } else {
-                        showSuccess('Account created! Please check your email for your temporary password. You will be redirected to login...');
-                    }
+                    // Show prominent success message that stays visible
+                    const successMessage = hasInvitation 
+                        ? 'Account created successfully! 📧 Check your email for your temporary password. After logging in, you\'ll be automatically added to the project.'
+                        : 'Account created successfully! 📧 Check your email for your temporary password. You will be redirected to login in 8 seconds...';
+                    
+                    // Make message more prominent and visible
+                    const successDiv = document.getElementById('successMessage');
+                    successDiv.innerHTML = `
+                        <div style="display: flex; align-items: start; gap: 12px;">
+                            <div style="font-size: 24px;">📧</div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; margin-bottom: 8px; font-size: 16px;">Important: Check Your Email</div>
+                                <div style="font-size: 14px; line-height: 1.5;">${successMessage}</div>
+                            </div>
+                        </div>
+                    `;
+                    successDiv.style.cssText = 'background: #E3FCEF; border: 2px solid #36B37E; color: #006644; padding: 20px; border-radius: 6px; font-size: 14px; margin-bottom: 20px; display: block;';
+                    successDiv.classList.add('show');
+                    
+                    // Scroll to message to ensure visibility
+                    successDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
                     // IMPORTANT: Signup does NOT authenticate the user
                     // User must login with temporary password first
                     // Preserve invitation token if present
@@ -378,8 +395,10 @@
                     if (inviteToken) {
                         localStorage.setItem('milo_pending_invitation', inviteToken);
                     }
-                    // Redirect to login page only
-                    window.location.href = 'milo-login.html';
+                    // Delay redirect to give user time to read message (8 seconds)
+                    setTimeout(() => {
+                        window.location.href = 'milo-login.html';
+                    }, 8000);
                 } else {
                     showError(result.message || 'Signup failed. Please try again.');
                     submitButton.disabled = false;

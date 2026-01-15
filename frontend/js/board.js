@@ -371,32 +371,42 @@ async function showTaskModal(column, task = null) {
     const originalStartDate = task?.startDate ? (task.startDate instanceof Date ? task.startDate : new Date(task.startDate)) : null;
     const originalDueDate = task?.dueDate ? (task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate)) : null;
     
-    // Load dropdowns first, THEN populate form to prevent resets
-    await Promise.all([
-        loadUsersAndProducts(),
-        loadLabels()
+    // OPTIMIZATION: Load task data first (critical), then dropdowns in parallel
+    // This makes the modal appear faster with task data, then dropdowns populate
+    let taskDataPromise = Promise.resolve(task);
+    if (task && task.id) {
+        // Fetch fresh task data immediately (critical path)
+        taskDataPromise = apiClient.get(`/tasks/${task.id}`)
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                return task; // Fallback to cached task
+            })
+            .catch(error => {
+                console.error('Error loading fresh task data:', error);
+                return task; // Fallback to cached task
+            });
+    }
+    
+    // Load dropdowns in parallel with task fetch (non-blocking)
+    const [freshTask, _] = await Promise.all([
+        taskDataPromise,
+        Promise.all([
+            loadUsersAndProducts(),
+            loadLabels()
+        ])
     ]);
     
-    // If editing an existing task, fetch fresh data from API
-    if (task && task.id) {
-        try {
-            const response = await apiClient.get(`/tasks/${task.id}`);
-            if (response.ok) {
-                const freshTask = await response.json();
-                console.log('Loaded fresh task data:', freshTask);
-                // Use fresh task data instead of cached
-                task = freshTask;
-                // Preserve original dates if fresh task doesn't have them
-                if (originalStartDate && !task.startDate) {
-                    task.startDate = originalStartDate;
-                }
-                if (originalDueDate && !task.dueDate) {
-                    task.dueDate = originalDueDate;
-                }
-            }
-        } catch (error) {
-            console.error('Error loading fresh task data:', error);
-            // Continue with cached task if API call fails
+    // Use fresh task data if available
+    if (freshTask) {
+        task = freshTask;
+        // Preserve original dates if fresh task doesn't have them
+        if (originalStartDate && !task.startDate) {
+            task.startDate = originalStartDate;
+        }
+        if (originalDueDate && !task.dueDate) {
+            task.dueDate = originalDueDate;
         }
     }
     
