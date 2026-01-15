@@ -38,13 +38,40 @@ if [ $? -eq 0 ] && [ -f $BACKUP_FILE ] && [ -s $BACKUP_FILE ]; then
         log "Deleted $DELETED_COUNT old backup(s)"
     fi
     
-    # Optional: Sync to S3 (uncomment and configure if needed)
-    # aws s3 sync $BACKUP_DIR s3://your-backup-bucket/milo-db-backups/ --delete --quiet
-    # if [ $? -eq 0 ]; then
-    #     log "Backup synced to S3 successfully"
-    # else
-    #     log "WARNING: S3 sync failed"
-    # fi
+    # Sync to S3 for off-site backup (FREE tier: 5GB storage, 20,000 GET requests, 2,000 PUT requests)
+    # S3 bucket: milo-db-backups (create if doesn't exist)
+    S3_BUCKET="milo-db-backups"
+    if command -v aws &> /dev/null; then
+        # Check if bucket exists, create if not
+        if ! aws s3 ls "s3://$S3_BUCKET" 2>&1 | grep -q "NoSuchBucket"; then
+            # Bucket exists, sync backup
+            aws s3 cp "$BACKUP_FILE" "s3://$S3_BUCKET/daily/$DATE.sql.gz" --quiet
+            if [ $? -eq 0 ]; then
+                log "Backup synced to S3 successfully (s3://$S3_BUCKET/daily/$DATE.sql.gz)"
+                
+                # Keep only last 7 days in S3 (delete older)
+                aws s3 ls "s3://$S3_BUCKET/daily/" | while read -r line; do
+                    BACKUP_DATE=$(echo "$line" | awk '{print $1" "$2}')
+                    BACKUP_FILE_S3=$(echo "$line" | awk '{print $4}')
+                    if [ -n "$BACKUP_FILE_S3" ]; then
+                        BACKUP_TIMESTAMP=$(date -d "$BACKUP_DATE" +%s 2>/dev/null || echo "0")
+                        CURRENT_TIMESTAMP=$(date +%s)
+                        DAYS_OLD=$(( (CURRENT_TIMESTAMP - BACKUP_TIMESTAMP) / 86400 ))
+                        if [ $DAYS_OLD -gt $RETENTION_DAYS ]; then
+                            aws s3 rm "s3://$S3_BUCKET/daily/$BACKUP_FILE_S3" --quiet
+                            log "Deleted old S3 backup: $BACKUP_FILE_S3 (${DAYS_OLD} days old)"
+                        fi
+                    fi
+                done
+            else
+                log "WARNING: S3 sync failed (backup still saved locally)"
+            fi
+        else
+            log "INFO: S3 bucket $S3_BUCKET does not exist. Run: aws s3 mb s3://$S3_BUCKET"
+        fi
+    else
+        log "INFO: AWS CLI not installed. Install with: sudo yum install aws-cli"
+    fi
     
     log "Backup completed successfully"
     exit 0
