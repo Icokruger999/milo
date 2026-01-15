@@ -646,8 +646,18 @@ If you didn't request this, please ignore this email.";
 
     public async Task<bool> SendCustomEmailAsync(string to, string subject, string htmlBody, string? textBody = null)
     {
-        // Simple wrapper for SendEmailAsync - textBody is ignored since SendEmailAsync only uses HTML
-        return await SendEmailAsync(to, subject, htmlBody);
+        // Use SendEmailWithPlainTextAsync to ensure both HTML and plain text are sent correctly
+        // If textBody is not provided, generate it from HTML
+        var plainTextBody = textBody ?? System.Text.RegularExpressions.Regex.Replace(htmlBody, "<[^>]*>", "")
+            .Replace("&nbsp;", " ")
+            .Replace("&amp;", "&")
+            .Replace("&lt;", "<")
+            .Replace("&gt;", ">")
+            .Replace("&quot;", "\"")
+            .Replace("&apos;", "'")
+            .Trim();
+        
+        return await SendEmailWithPlainTextAsync(to, subject, htmlBody, plainTextBody);
     }
 
     public async Task<bool> SendProjectInvitationEmailAsync(string email, string name, string projectName, string projectKey, string invitationToken)

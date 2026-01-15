@@ -10,20 +10,22 @@ Write-Host "  DEPLOYING BACKEND TO EC2" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
-# Step 1: Stop the service
-Write-Host "Step 1: Stopping milo-backend service..." -ForegroundColor Yellow
-$stopCmd = @(
-    "sudo systemctl stop milo-backend"
+# Step 1: Stop the service and kill any processes on port 8080
+Write-Host "Step 1: Stopping milo-backend service and ensuring port 8080 is free..." -ForegroundColor Yellow
+$stopAndCleanCmd = @(
+    "sudo systemctl stop milo-backend || true", # Stop service, ignore if already stopped
+    "sudo fuser -k 8080/tcp || true",          # Kill processes on port 8080, ignore if none
+    "sleep 5"                                  # Give time for processes to terminate
 )
-$stopCmdJson = ($stopCmd | ConvertTo-Json -Compress)
-$stopCmdId = aws ssm send-command --instance-ids $instanceId --document-name "AWS-RunShellScript" --parameters "commands=$stopCmdJson" --region $region --query "Command.CommandId" --output text
-Write-Host "  Command ID: $stopCmdId" -ForegroundColor Gray
-Start-Sleep -Seconds 5
+$stopAndCleanCmdJson = ($stopAndCleanCmd | ConvertTo-Json -Compress)
+$stopAndCleanCmdId = aws ssm send-command --instance-ids $instanceId --document-name "AWS-RunShellScript" --parameters "commands=$stopAndCleanCmdJson" --region $region --query "Command.CommandId" --output text
+Write-Host "  Command ID: $stopAndCleanCmdId" -ForegroundColor Gray
+Start-Sleep -Seconds 10 # Give SSM time to execute stop and kill commands
 
 # Step 2: Wait for previous command and check status
-Write-Host "Step 2: Waiting for service to stop..." -ForegroundColor Yellow
+Write-Host "Step 2: Waiting for service to stop and port to clear..." -ForegroundColor Yellow
 Start-Sleep -Seconds 5
-$stopStatus = aws ssm get-command-invocation --command-id $stopCmdId --instance-id $instanceId --region $region --query "Status" --output text
+$stopStatus = aws ssm get-command-invocation --command-id $stopAndCleanCmdId --instance-id $instanceId --region $region --query "Status" --output text
 Write-Host "  Status: $stopStatus" -ForegroundColor Gray
 
 # Step 3: Copy files using a deployment script on EC2
@@ -41,10 +43,9 @@ $deployCmd = @(
     "export DOTNET_CLI_HOME=/home/ec2-user/.dotnet",
     "dotnet restore",
     "dotnet publish -c Release -o /home/ec2-user/milo-backend-publish",
-    "echo '=== Preventing port conflicts ==='",
-    "sudo lsof -ti:8080 | xargs -r sudo kill -9 2>/dev/null || sudo fuser -k 8080/tcp 2>/dev/null || echo 'Port 8080 is free'",
-    "sleep 2",
-    "sudo systemctl start milo-backend",
+    "sudo systemctl daemon-reload", # Reload systemd units
+    "sudo systemctl enable milo-backend", # Ensure service is enabled
+    "sudo systemctl restart milo-backend",
     "sleep 3",
     "sudo systemctl status milo-backend --no-pager | head -15"
 )
