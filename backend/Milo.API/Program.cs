@@ -143,11 +143,38 @@ app.UseAuthorization();
 
 // CRITICAL: Explicitly handle OPTIONS requests for CORS preflight
 // This ensures browsers can check CORS permissions before sending actual requests
+// CRITICAL: Set the EXACT origin from the request to fix www/non-www matching
 app.MapMethods("/api/{**path}", new[] { "OPTIONS" }, async (HttpContext context) =>
 {
+    // Get the exact origin from the request
+    var origin = context.Request.Headers["Origin"].ToString();
+    
+    // Validate and set the exact origin (preserve the exact value from request)
+    if (!string.IsNullOrEmpty(origin))
+    {
+        var normalizedOrigin = origin.TrimEnd('/').ToLowerInvariant();
+        var allowedOrigins = new[]
+        {
+            "https://codingeverest.com",
+            "https://www.codingeverest.com",
+            "http://codingeverest.com",
+            "http://www.codingeverest.com"
+        };
+        
+        if (allowedOrigins.Any(a => normalizedOrigin == a.ToLowerInvariant()))
+        {
+            // Set the EXACT origin from the request (preserve original case/format)
+            context.Response.Headers["Access-Control-Allow-Origin"] = origin;
+            context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
+            context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH";
+            context.Response.Headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, Accept, X-Requested-With";
+            context.Response.Headers["Access-Control-Max-Age"] = "86400";
+        }
+    }
+    
     context.Response.StatusCode = 200;
     await context.Response.WriteAsync("");
-}).RequireCors("AllowFrontend");
+});
 
 app.MapControllers().RequireCors("AllowFrontend");
 app.MapGet("/api/health", () => new { status = "ok", message = "Milo API is running" }).RequireCors("AllowFrontend");
