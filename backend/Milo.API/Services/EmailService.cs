@@ -2,6 +2,9 @@ using System.Net;
 using System.Net.Mail;
 using System.Text;
 using Milo.API.Models;
+using Amazon.SimpleEmail;
+using Amazon.SimpleEmail.Model;
+using Amazon;
 
 namespace Milo.API.Services;
 
@@ -24,11 +27,36 @@ public class EmailService : IEmailService
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<EmailService> _logger;
+    private readonly IAmazonSimpleEmailService? _sesClient;
+    private readonly bool _useSes;
 
     public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
     {
         _configuration = configuration;
         _logger = logger;
+        
+        // Check if SES is enabled
+        _useSes = _configuration.GetValue<bool>("Email:UseSes", false);
+        
+        if (_useSes)
+        {
+            try
+            {
+                var region = _configuration["Email:SesRegion"] ?? "eu-west-1";
+                var regionEndpoint = RegionEndpoint.GetBySystemName(region);
+                _sesClient = new AmazonSimpleEmailServiceClient(regionEndpoint);
+                _logger.LogInformation("EmailService initialized with AWS SES (Region: {Region})", region);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to initialize SES client. Falling back to SMTP.");
+                _useSes = false;
+            }
+        }
+        else
+        {
+            _logger.LogInformation("EmailService initialized with SMTP");
+        }
     }
 
     public async Task<bool> SendDailyIncidentReportAsync(string recipientEmail, string recipientName, DailyReportData reportData)
@@ -49,53 +77,41 @@ public class EmailService : IEmailService
 
     public async Task<bool> SendEmailAsync(string to, string subject, string htmlBody)
     {
+        // Create plain text version from HTML (simple strip)
+        var plainTextBody = System.Text.RegularExpressions.Regex.Replace(htmlBody, "<[^>]*>", "")
+            .Replace("&nbsp;", " ")
+            .Replace("&amp;", "&")
+            .Replace("&lt;", "<")
+            .Replace("&gt;", ">")
+            .Replace("&quot;", "\"")
+            .Trim();
+
+        return await SendEmailWithPlainTextAsync(to, subject, htmlBody, plainTextBody);
+    }
+
+    public async Task<bool> SendEmailWithPlainTextAsync(string to, string subject, string htmlBody, string plainTextBody)
+    {
         try
         {
-            var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
-            var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
-            var smtpUsername = _configuration["Email:SmtpUser"] ?? _configuration["Email:Username"] ?? "";
-            var smtpPassword = _configuration["Email:SmtpPassword"] ?? _configuration["Email:Password"] ?? "";
-            var fromEmail = _configuration["Email:FromEmail"] ?? smtpUsername;
+            var fromEmail = _configuration["Email:FromEmail"] ?? "";
             var fromName = _configuration["Email:FromName"] ?? "Milo - Incident Management";
 
-            if (string.IsNullOrEmpty(smtpUsername) || string.IsNullOrEmpty(smtpPassword))
+            if (string.IsNullOrEmpty(fromEmail))
             {
-                _logger.LogWarning("Email configuration not set. Skipping email send.");
+                _logger.LogWarning("Email FromEmail not configured. Skipping email send.");
                 return false;
             }
 
-            using var client = new SmtpClient(smtpHost, smtpPort)
+            if (_useSes && _sesClient != null)
             {
-                EnableSsl = true,
-                Credentials = new NetworkCredential(smtpUsername, smtpPassword)
-            };
-
-            // Create plain text version from HTML (simple strip)
-            var plainTextBody = System.Text.RegularExpressions.Regex.Replace(htmlBody, "<[^>]*>", "")
-                .Replace("&nbsp;", " ")
-                .Replace("&amp;", "&")
-                .Replace("&lt;", "<")
-                .Replace("&gt;", ">")
-                .Replace("&quot;", "\"")
-                .Trim();
-
-            var message = new MailMessage
+                // Use AWS SES
+                return await SendEmailViaSesAsync(to, subject, htmlBody, plainTextBody, fromEmail, fromName);
+            }
+            else
             {
-                From = new MailAddress(fromEmail, fromName),
-                Subject = subject,
-                Body = htmlBody,
-                IsBodyHtml = true
-            };
-            
-            // Add plain text alternative
-            var plainTextView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(plainTextBody, null, System.Net.Mime.MediaTypeNames.Text.Plain);
-            message.AlternateViews.Add(plainTextView);
-
-            message.To.Add(new MailAddress(to));
-
-            await client.SendMailAsync(message);
-            _logger.LogInformation("Email sent successfully to {To}", to);
-            return true;
+                // Use SMTP (fallback)
+                return await SendEmailViaSmtpAsync(to, subject, htmlBody, plainTextBody, fromEmail, fromName);
+            }
         }
         catch (Exception ex)
         {
@@ -104,7 +120,56 @@ public class EmailService : IEmailService
         }
     }
 
-    public async Task<bool> SendEmailWithPlainTextAsync(string to, string subject, string htmlBody, string plainTextBody)
+    private async Task<bool> SendEmailViaSesAsync(string to, string subject, string htmlBody, string plainTextBody, string fromEmail, string fromName)
+    {
+        try
+        {
+            if (_sesClient == null)
+            {
+                _logger.LogError("SES client is null. Cannot send email.");
+                return false;
+            }
+
+            var request = new SendEmailRequest
+            {
+                Source = $"{fromName} <{fromEmail}>",
+                Destination = new Destination
+                {
+                    ToAddresses = new List<string> { to }
+                },
+                Message = new Message
+                {
+                    Subject = new Content(subject),
+                    Body = new Body
+                    {
+                        Html = new Content
+                        {
+                            Charset = "UTF-8",
+                            Data = htmlBody
+                        },
+                        Text = new Content
+                        {
+                            Charset = "UTF-8",
+                            Data = plainTextBody
+                        }
+                    }
+                }
+            };
+
+            var response = await _sesClient.SendEmailAsync(request);
+            _logger.LogInformation("Email sent successfully via SES to {To}. MessageId: {MessageId}", to, response.MessageId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending email via SES to {To}. Error: {Error}", to, ex.Message);
+            // Fallback to SMTP if SES fails
+            _logger.LogInformation("Falling back to SMTP for email to {To}", to);
+            return await SendEmailViaSmtpAsync(to, subject, htmlBody, plainTextBody, fromEmail, fromName);
+        }
+    }
+
+    private async Task<bool> SendEmailViaSmtpAsync(string to, string subject, string htmlBody, string plainTextBody, string fromEmail, string fromName)
     {
         try
         {
@@ -112,12 +177,10 @@ public class EmailService : IEmailService
             var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
             var smtpUsername = _configuration["Email:SmtpUser"] ?? _configuration["Email:Username"] ?? "";
             var smtpPassword = _configuration["Email:SmtpPassword"] ?? _configuration["Email:Password"] ?? "";
-            var fromEmail = _configuration["Email:FromEmail"] ?? smtpUsername;
-            var fromName = _configuration["Email:FromName"] ?? "Milo - Incident Management";
 
             if (string.IsNullOrEmpty(smtpUsername) || string.IsNullOrEmpty(smtpPassword))
             {
-                _logger.LogWarning("Email configuration not set. Skipping email send.");
+                _logger.LogWarning("SMTP credentials not set. Skipping email send.");
                 return false;
             }
 
@@ -144,12 +207,12 @@ public class EmailService : IEmailService
             message.To.Add(new MailAddress(to));
 
             await client.SendMailAsync(message);
-            _logger.LogInformation("Email with plain text alternative sent successfully to {To}", to);
+            _logger.LogInformation("Email sent successfully via SMTP to {To}", to);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending email with plain text to {To}", to);
+            _logger.LogError(ex, "Error sending email via SMTP to {To}", to);
             return false;
         }
     }
@@ -818,7 +881,7 @@ This is an automated invitation from Milo. If you didn't expect this invitation,
 </body>
 </html>";
 
-            return await SendEmailAsync(email, emailSubject, htmlBody);
+            return await SendEmailWithPlainTextAsync(email, emailSubject, htmlBody, plainTextBody);
         }
         catch (Exception ex)
         {

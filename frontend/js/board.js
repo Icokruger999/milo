@@ -367,6 +367,10 @@ async function showTaskModal(column, task = null) {
     // Show modal immediately for better UX (don't wait for API calls)
     modal.style.display = 'flex';
     
+    // Store the task's start date BEFORE any async operations that might reset it
+    const originalStartDate = task?.startDate ? (task.startDate instanceof Date ? task.startDate : new Date(task.startDate)) : null;
+    const originalDueDate = task?.dueDate ? (task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate)) : null;
+    
     // Load dropdowns first, THEN populate form to prevent resets
     await Promise.all([
         loadUsersAndProducts(),
@@ -382,6 +386,13 @@ async function showTaskModal(column, task = null) {
                 console.log('Loaded fresh task data:', freshTask);
                 // Use fresh task data instead of cached
                 task = freshTask;
+                // Preserve original dates if fresh task doesn't have them
+                if (originalStartDate && !task.startDate) {
+                    task.startDate = originalStartDate;
+                }
+                if (originalDueDate && !task.dueDate) {
+                    task.dueDate = originalDueDate;
+                }
             }
         } catch (error) {
             console.error('Error loading fresh task data:', error);
@@ -999,17 +1010,44 @@ async function loadUsersAndProducts() {
         // Helper function to populate assignee dropdown
         const populateAssigneeDropdown = (users) => {
             if (!assigneeSelect) return;
+            // Store current selection before clearing
+            const currentValue = assigneeSelect.value;
+            
             // Clear dropdown completely
             assigneeSelect.innerHTML = '<option value="">Unassigned</option>';
-            // Add unique users
+            
+            // Add unique users - ensure deduplication happens
             const uniqueUsers = deduplicateUsers(users);
+            
+            // Use a Set to track what we've already added (extra safety)
+            const addedIds = new Set();
+            const addedEmails = new Set();
+            
             uniqueUsers.forEach(user => {
+                // Skip if we've already added this user
+                if (user.id && addedIds.has(user.id)) {
+                    return;
+                }
+                const email = (user.email || '').toLowerCase().trim();
+                if (email && addedEmails.has(email)) {
+                    return;
+                }
+                
                 const option = document.createElement('option');
                 option.value = user.id;
                 option.textContent = user.name || user.email || 'Unknown';
                 assigneeSelect.appendChild(option);
+                
+                if (user.id) addedIds.add(user.id);
+                if (email) addedEmails.add(email);
             });
-            console.log(`Populated assignee dropdown with ${uniqueUsers.length} unique users`);
+            
+            // Restore selection if it still exists
+            if (currentValue && Array.from(assigneeSelect.options).some(opt => opt.value === currentValue)) {
+                assigneeSelect.value = currentValue;
+            }
+            
+            console.log(`Populated assignee dropdown with ${uniqueUsers.length} unique users (${addedIds.size} by ID, ${addedEmails.size} by email)`);
         };
         
         // Check cache first
@@ -1040,8 +1078,9 @@ async function loadUsersAndProducts() {
         
         if (usersResponse.ok) {
             const users = await usersResponse.json();
-            // Deduplicate and cache
+            // Deduplicate and cache - ensure we store deduplicated data
             const uniqueUsers = deduplicateUsers(users);
+            // Store deduplicated users in cache to prevent future duplicates
             usersProductsCache.users = uniqueUsers;
             populateAssigneeDropdown(uniqueUsers);
         } else {
