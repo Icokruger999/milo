@@ -906,46 +906,35 @@ This is an automated invitation from Milo. If you didn't expect this invitation,
         {
             var adminEmail = "ico@astutetech.co.za";
             var subject = $"New User Signed Up: {userName}";
-                
-                var htmlBody = $@"
+            
+            // Get frontend URL from configuration
+            var frontendUrl = _configuration["Frontend:Url"] ?? "https://www.codingeverest.com";
+            var link = $"{frontendUrl}/milo-board.html";
+            
+            // Simple HTML body with just a link (like project invitations)
+            var htmlBody = $@"
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset='utf-8'>
-    <style>
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 20px; }}
-        .container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; }}
-        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 32px 24px; text-align: center; }}
-        .content {{ padding: 32px 24px; }}
-        .user-box {{ background: #F4F5F7; border-left: 4px solid #0052CC; padding: 20px; margin: 24px 0; border-radius: 4px; }}
-        .user-name {{ font-size: 20px; font-weight: 700; color: #172B4D; }}
-        .user-email {{ font-size: 14px; color: #6B778C; margin-top: 4px; }}
-        .footer {{ background: #F4F5F7; padding: 24px; text-align: center; font-size: 12px; color: #6B778C; }}
-    </style>
 </head>
 <body>
-    <div class='container'>
-        <div class='header'>
-            <h1>New User Signup</h1>
-        </div>
-        <div class='content'>
-            <p>A new user has signed up and successfully logged in to Milo:</p>
-            <div class='user-box'>
-                <div class='user-name'>{System.Net.WebUtility.HtmlEncode(userName)}</div>
-                <div class='user-email'>{System.Net.WebUtility.HtmlEncode(userEmail)}</div>
-                <div style='font-size: 12px; color: #6B778C; margin-top: 8px;'>
-                    Signed up: {signupDate:yyyy-MM-dd HH:mm:ss} UTC
-                </div>
-            </div>
-        </div>
-        <div class='footer'>
-            <p>This is an automated notification from Milo</p>
-        </div>
-    </div>
+    <p>A new user has signed up and successfully logged in to Milo:</p>
+    <p><strong>{System.Net.WebUtility.HtmlEncode(userName)}</strong> ({System.Net.WebUtility.HtmlEncode(userEmail)})</p>
+    <p>Signed up: {signupDate:yyyy-MM-dd HH:mm:ss} UTC</p>
+    <p><a href='{link}'>View in Milo</a></p>
 </body>
 </html>";
 
-            return await SendEmailAsync(adminEmail, subject, htmlBody);
+            // Plain text version
+            var plainTextBody = $@"A new user has signed up and successfully logged in to Milo:
+
+{userName} ({userEmail})
+Signed up: {signupDate:yyyy-MM-dd HH:mm:ss} UTC
+
+View in Milo: {link}";
+
+            return await SendEmailWithPlainTextAsync(adminEmail, subject, htmlBody, plainTextBody);
         }
         catch (Exception ex)
         {
