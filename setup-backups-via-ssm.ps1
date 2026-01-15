@@ -32,22 +32,12 @@ Write-Host ""
 Write-Host "Step 2: Setting up S3 bucket..." -ForegroundColor Yellow
 
 $s3Commands = @(
-    "if ! command -v aws &> /dev/null; then",
-    "  echo '⚠️  AWS CLI not installed. Installing...'",
-    "  sudo yum install aws-cli -y",
-    "fi",
-    "S3_BUCKET='milo-db-backups'",
-    "REGION='eu-west-1'",
-    "if aws s3 ls `"s3://$S3_BUCKET`" 2>&1 | grep -q 'NoSuchBucket'; then",
-    "  echo 'Creating S3 bucket...'",
-    "  aws s3 mb `"s3://$S3_BUCKET`" --region `"$REGION`"",
-    "  echo '✅ S3 bucket created'",
-    "else",
-    "  echo '✅ S3 bucket already exists'",
-    "fi",
-    "echo 'Setting up S3 versioning...'",
-    "aws s3api put-bucket-versioning --bucket `"$S3_BUCKET`" --versioning-configuration Status=Enabled --region `"$REGION`" 2>&1 || echo 'Versioning already enabled'",
-    "echo '✅ S3 setup complete'"
+    "if ! command -v aws > /dev/null 2>&1; then echo 'Installing AWS CLI...'; sudo yum install aws-cli -y; fi",
+    "S3_BUCKET=milo-db-backups",
+    "REGION=eu-west-1",
+    "if aws s3 ls s3://$S3_BUCKET 2>&1 | grep -q NoSuchBucket; then aws s3 mb s3://$S3_BUCKET --region $REGION; echo 'S3 bucket created'; else echo 'S3 bucket already exists'; fi",
+    "aws s3api put-bucket-versioning --bucket $S3_BUCKET --versioning-configuration Status=Enabled --region $REGION 2>&1 || echo 'Versioning setup complete'",
+    "echo 'S3 setup complete'"
 )
 
 $s3CmdJson = ($s3Commands | ConvertTo-Json -Compress)
@@ -102,7 +92,7 @@ Write-Host "  • Schedule: Daily at 2:00 AM" -ForegroundColor White
 Write-Host "  • Retention: 7 days local, 30 days S3" -ForegroundColor White
 Write-Host ""
 Write-Host "Estimated Cost:" -ForegroundColor Yellow
-Write-Host "  • 1-3 projects: FREE (within free tier)" -ForegroundColor White
+Write-Host "  • 1-3 projects: FREE (AWS free tier)" -ForegroundColor White
 Write-Host "  • 5-10 projects: ~$0.58/month" -ForegroundColor White
 Write-Host "  • 20+ projects: ~$1.96/month" -ForegroundColor White
 Write-Host ""
