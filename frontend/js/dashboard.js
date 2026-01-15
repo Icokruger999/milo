@@ -764,11 +764,17 @@ function updateAssigneeChart() {
         // Handle different assignee data structures
         let assigneeName = 'Unassigned';
         if (task.assignee) {
-            // API returns assignee as { Id, Name, Email }
-            assigneeName = task.assignee.Name || task.assignee.name || task.assignee.Email || task.assignee.email || 'Unassigned';
+            // API returns assignee as { id, name, email } (camelCase from JSON serialization)
+            // Check both camelCase and PascalCase for compatibility
+            assigneeName = task.assignee.name || task.assignee.Name || 
+                          task.assignee.email || task.assignee.Email || 
+                          'Unassigned';
         } else if (task.assigneeName) {
             // Fallback to assigneeName if available
             assigneeName = task.assigneeName;
+        } else if (task.assigneeId) {
+            // If we have assigneeId but no assignee object, mark as assigned but unknown
+            assigneeName = 'Assigned (Unknown)';
         }
         assigneeMap[assigneeName] = (assigneeMap[assigneeName] || 0) + 1;
     });
