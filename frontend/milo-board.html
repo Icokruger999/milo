@@ -876,9 +876,18 @@
                         <option value="1">Medium</option>
                         <option value="2">High</option>
                     </select>
-                    <select class="board-filter" id="labelFilter" onchange="applyFilters()">
-                        <option value="">Label</option>
-                    </select>
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <select class="board-filter" id="labelFilter" onchange="applyFilters()">
+                            <option value="">Label</option>
+                        </select>
+                        <button onclick="showCreateLabelModal()" title="Create New Label" style="background: #0052CC; color: white; border: none; border-radius: 3px; padding: 6px 10px; cursor: pointer; font-size: 12px; font-weight: 500; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            New Label
+                        </button>
+                    </div>
                     <select class="board-filter" id="assigneeFilter" onchange="applyFilters()">
                         <option value="">Assignee</option>
                         <option value="unassigned">Unassigned</option>
