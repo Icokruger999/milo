@@ -359,10 +359,20 @@ public class MiloDbContext : DbContext
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
-        // ReportRecipient configuration
+        // ReportRecipient configuration - explicit column mappings for snake_case
         modelBuilder.Entity<ReportRecipient>(entity =>
         {
             entity.ToTable("report_recipients"); // Map to lowercase table name
+            // Explicit column mappings to ensure PostgreSQL compatibility
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Email).HasColumnName("email");
+            entity.Property(e => e.Name).HasColumnName("name");
+            entity.Property(e => e.ReportType).HasColumnName("report_type");
+            entity.Property(e => e.IsActive).HasColumnName("is_active");
+            entity.Property(e => e.CreatedAt).HasColumnName("created_at");
+            entity.Property(e => e.LastSentAt).HasColumnName("last_sent_at");
+            entity.Property(e => e.ProjectId).HasColumnName("project_id");
+            
             entity.HasIndex(e => e.Email);
             entity.HasIndex(e => e.ProjectId);
             entity.HasIndex(e => e.IsActive);

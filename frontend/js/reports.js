@@ -211,11 +211,24 @@ async function addRecipient() {
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ message: 'Failed to add recipient' }));
             console.error('Failed to add recipient:', response.status, errorData);
+            
+            // Show user-friendly error message
+            const errorMsg = errorData.message || `Failed to add recipient (${response.status})`;
+            if (typeof showToast === 'function') {
+                showToast(errorMsg, 'error');
+            } else {
+                alert(errorMsg);
+            }
             return;
         }
         
         const newRecipient = await response.json();
         console.log('Recipient added successfully:', newRecipient);
+        
+        // Show success message
+        if (typeof showToast === 'function') {
+            showToast('Recipient added successfully', 'success');
+        }
         
         await loadRecipients();
         hideAddRecipientForm();
@@ -227,6 +240,12 @@ async function addRecipient() {
         if (emailInput) emailInput.value = '';
     } catch (error) {
         console.error('Error adding recipient:', error);
+        const errorMsg = error.message || 'An error occurred while adding the recipient';
+        if (typeof showToast === 'function') {
+            showToast(errorMsg, 'error');
+        } else {
+            alert(errorMsg);
+        }
     }
 }
 
