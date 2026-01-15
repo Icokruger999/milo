@@ -2,6 +2,36 @@
 let recipients = [];
 let reportData = null;
 
+// Toast notification function (if not already defined)
+if (typeof showToast === 'undefined') {
+    window.showToast = function(message, type = 'info') {
+        console.log(`[TOAST - ${type.toUpperCase()}]: ${message}`);
+        // Create a simple visual toast notification
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background: ${type === 'error' ? '#DE350B' : type === 'success' ? '#36B37E' : '#0052CC'};
+            color: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000;
+            font-size: 14px;
+            font-weight: 500;
+            max-width: 400px;
+            animation: slideIn 0.3s ease;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    };
+}
+
 // Show report management modal
 function showReportManagement() {
     try {

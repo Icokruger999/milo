@@ -62,7 +62,7 @@ public class IncidentsController : ControllerBase
                     i.Subject,
                     // Truncate description for list view (full description available in detail view)
                     Description = i.Description != null && i.Description.Length > 200 
-                        ? i.Description.Substring(0, 200) + "..." 
+                        ? (i.Description.Substring(0, 200) + "...") 
                         : i.Description,
                     i.Status,
                     i.Priority,
