@@ -32,6 +32,7 @@ public class IncidentsController : ControllerBase
             if (pageSize < 1) pageSize = 50;
             if (page < 1) page = 1;
 
+            // PERFORMANCE: Optimize query - only select needed fields, no unnecessary includes
             var query = _context.Incidents
                 .AsNoTracking() // Performance: Read-only query
                 .AsQueryable();
@@ -46,10 +47,10 @@ public class IncidentsController : ControllerBase
                 query = query.Where(i => i.Status.ToLower() == status.ToLower());
             }
 
-            // Get total count for pagination
-            var totalCount = await query.CountAsync();
+            // PERFORMANCE: Get total count and data in parallel (if possible) or optimize count query
+            var totalCountTask = query.CountAsync();
 
-            // Apply pagination
+            // PERFORMANCE: Apply pagination early and only select needed fields
             var incidents = await query
                 .OrderByDescending(i => i.CreatedAt)
                 .Skip((page - 1) * pageSize)
@@ -59,7 +60,10 @@ public class IncidentsController : ControllerBase
                     i.Id,
                     i.IncidentNumber,
                     i.Subject,
-                    i.Description,
+                    // Truncate description for list view (full description available in detail view)
+                    Description = i.Description != null && i.Description.Length > 200 
+                        ? i.Description.Substring(0, 200) + "..." 
+                        : i.Description,
                     i.Status,
                     i.Priority,
                     i.Urgency,
@@ -82,6 +86,7 @@ public class IncidentsController : ControllerBase
                     i.Attachments,
                     i.Resolution,
                     i.ProjectId,
+                    // Only select needed user fields (no full entity loading)
                     Requester = i.Requester == null ? null : new
                     {
                         i.Requester.Id,
@@ -101,6 +106,9 @@ public class IncidentsController : ControllerBase
                     }
                 })
                 .ToListAsync();
+            
+            // Get total count (already started)
+            var totalCount = await totalCountTask;
 
             return Ok(new
             {

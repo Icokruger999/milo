@@ -48,11 +48,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         projectNameEl.textContent = currentProject.name || 'Project';
     }
 
-    // Load initial data
-    await loadAssignees();
-    await loadGroups();
-    await loadRequesters();
-    await loadIncidents();
+    // PERFORMANCE: Load initial data in parallel (not sequential)
+    // This makes the page load much faster
+    await Promise.all([
+        loadAssignees(),
+        loadGroups(),
+        loadRequesters(),
+        loadIncidents()
+    ]);
     
     // Close modal when clicking outside
     const createModal = document.getElementById('createIncidentModal');

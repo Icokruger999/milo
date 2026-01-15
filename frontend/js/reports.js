@@ -166,33 +166,73 @@ function hideAddRecipientForm() {
 // Add recipient
 async function addRecipient() {
     try {
-        const name = document.getElementById('recipientName')?.value?.trim();
-        const email = document.getElementById('recipientEmail')?.value?.trim();
+        const nameInput = document.getElementById('recipientName');
+        const emailInput = document.getElementById('recipientEmail');
+        
+        if (!nameInput || !emailInput) {
+            console.error('Recipient form fields not found');
+            if (typeof showToast === 'function') {
+                showToast('Form fields not found. Please refresh the page.', 'error');
+            }
+            return;
+        }
+        
+        const name = nameInput.value?.trim();
+        const email = emailInput.value?.trim();
 
         if (!name || !email) {
-            console.error('Please fill in all fields');
+            const errorMsg = 'Please fill in all required fields';
+            console.error(errorMsg);
+            if (typeof showToast === 'function') {
+                showToast(errorMsg, 'error');
+            } else {
+                alert(errorMsg);
+            }
             return;
         }
 
         if (!isValidEmail(email)) {
-            console.error('Please enter a valid email address');
+            const errorMsg = 'Please enter a valid email address';
+            console.error(errorMsg);
+            if (typeof showToast === 'function') {
+                showToast(errorMsg, 'error');
+            } else {
+                alert(errorMsg);
+            }
             return;
         }
 
-        // Get currentProject from projectSelector (same way incidents.js does it)
+        // Get currentProject - try multiple sources
         let currentProject = null;
-        if (typeof projectSelector !== 'undefined' && projectSelector.getCurrentProject) {
-            currentProject = projectSelector.getCurrentProject();
-        } else if (typeof projectSelector !== 'undefined' && projectSelector.currentProject) {
-            currentProject = projectSelector.currentProject;
-        } else {
-            // Fallback to localStorage
-            const projectData = localStorage.getItem('currentProject');
-            if (projectData) {
+        
+        // Try projectSelector first
+        if (typeof projectSelector !== 'undefined') {
+            if (projectSelector.getCurrentProject) {
+                currentProject = projectSelector.getCurrentProject();
+            } else if (projectSelector.currentProject) {
+                currentProject = projectSelector.currentProject;
+            }
+        }
+        
+        // Fallback to localStorage (check both keys)
+        if (!currentProject) {
+            const stored = localStorage.getItem('milo_current_project');
+            if (stored) {
                 try {
-                    currentProject = JSON.parse(projectData);
+                    currentProject = JSON.parse(stored);
                 } catch (e) {
-                    console.error('Failed to parse project data', e);
+                    console.error('Failed to parse stored project:', e);
+                }
+            }
+        }
+        
+        if (!currentProject) {
+            const storedAlt = localStorage.getItem('currentProject');
+            if (storedAlt) {
+                try {
+                    currentProject = JSON.parse(storedAlt);
+                } catch (e) {
+                    console.error('Failed to parse project data:', e);
                 }
             }
         }
@@ -206,18 +246,33 @@ async function addRecipient() {
         };
 
         console.log('Adding recipient:', data);
+        
+        // Disable button to prevent double submission
+        const addButton = document.querySelector('#addRecipientForm button[onclick*="addRecipient"]');
+        if (addButton) {
+            addButton.disabled = true;
+            addButton.textContent = 'Adding...';
+        }
+        
         const response = await apiClient.post('/reports/recipients', data);
         
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ message: 'Failed to add recipient' }));
             console.error('Failed to add recipient:', response.status, errorData);
             
-            // Show user-friendly error message (no alert popup)
+            // Re-enable button
+            if (addButton) {
+                addButton.disabled = false;
+                addButton.textContent = 'Add';
+            }
+            
+            // Show user-friendly error message
             const errorMsg = errorData.message || `Failed to add recipient (${response.status})`;
             if (typeof showToast === 'function') {
                 showToast(errorMsg, 'error');
+            } else {
+                alert(errorMsg);
             }
-            // Removed alert() - only use console.error
             return;
         }
         
@@ -229,16 +284,29 @@ async function addRecipient() {
             showToast('Recipient added successfully', 'success');
         }
         
+        // Reload recipients and hide form
         await loadRecipients();
         hideAddRecipientForm();
         
         // Clear form fields
-        const nameInput = document.getElementById('recipientName');
-        const emailInput = document.getElementById('recipientEmail');
         if (nameInput) nameInput.value = '';
         if (emailInput) emailInput.value = '';
+        
+        // Re-enable button
+        if (addButton) {
+            addButton.disabled = false;
+            addButton.textContent = 'Add';
+        }
     } catch (error) {
         console.error('Error adding recipient:', error);
+        
+        // Re-enable button
+        const addButton = document.querySelector('#addRecipientForm button[onclick*="addRecipient"]');
+        if (addButton) {
+            addButton.disabled = false;
+            addButton.textContent = 'Add';
+        }
+        
         const errorMsg = error.message || 'An error occurred while adding the recipient';
         if (typeof showToast === 'function') {
             showToast(errorMsg, 'error');
