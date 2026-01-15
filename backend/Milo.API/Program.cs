@@ -42,6 +42,7 @@ builder.Services.AddScoped<Milo.API.Services.IEmailService, Milo.API.Services.Em
 builder.Services.AddHostedService<Milo.API.Services.DailyUsersReportService>();
 
 // Configure CORS for frontend
+// CRITICAL: Must include both www and non-www versions for all domains
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
