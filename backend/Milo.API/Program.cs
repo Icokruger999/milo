@@ -50,20 +50,29 @@ builder.Services.AddHostedService<Milo.API.Services.DailyUsersReportService>();
 // Configure CORS for frontend
 // CRITICAL: Must include both www and non-www versions for all domains
 // CRITICAL: Must handle OPTIONS preflight requests explicitly
+// CRITICAL: Using SetIsOriginAllowed to ensure exact origin matching
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                "https://codingeverest.com",
-                "https://www.codingeverest.com",
-                "http://codingeverest.com",
-                "http://www.codingeverest.com"
-            )
-            .AllowAnyHeader()
-            .AllowAnyMethod() // This includes OPTIONS
-            .AllowCredentials()
-            .SetPreflightMaxAge(TimeSpan.FromSeconds(86400)); // Cache preflight for 24 hours
+        // Use SetIsOriginAllowed for flexible matching that returns the EXACT origin requested
+        policy.SetIsOriginAllowed(origin =>
+        {
+            if (string.IsNullOrEmpty(origin)) return false;
+            
+            // Normalize origin for comparison (remove trailing slash)
+            var normalizedOrigin = origin.TrimEnd('/');
+            
+            // Allow exact matches for both www and non-www
+            return normalizedOrigin == "https://codingeverest.com" ||
+                   normalizedOrigin == "https://www.codingeverest.com" ||
+                   normalizedOrigin == "http://codingeverest.com" ||
+                   normalizedOrigin == "http://www.codingeverest.com";
+        })
+        .AllowAnyHeader()
+        .AllowAnyMethod() // This includes OPTIONS
+        .AllowCredentials()
+        .SetPreflightMaxAge(TimeSpan.FromSeconds(86400)); // Cache preflight for 24 hours
     });
 });
 
