@@ -48,10 +48,10 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins(
-                "https://www.codingeverest.com",
                 "https://codingeverest.com",
-                "http://www.codingeverest.com",
-                "http://codingeverest.com"
+                "https://www.codingeverest.com",
+                "http://codingeverest.com",
+                "http://www.codingeverest.com"
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
