@@ -29,19 +29,30 @@ log "Starting database backup by project..."
 # Export password for psql
 export PGPASSWORD="$DB_PASSWORD"
 
-# Get list of all projects
-PROJECTS=$(psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -t -c "SELECT id, name FROM projects WHERE status != 'archived' ORDER BY id;" 2>/dev/null)
+# Get list of all projects (dynamically queries database each time - automatically includes new projects)
+log "Querying database for all active projects..."
+PROJECTS=$(psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME -t -A -F'|' -c "SELECT id, name FROM projects WHERE status != 'archived' ORDER BY id;" 2>/dev/null)
+
+if [ $? -ne 0 ]; then
+    log "ERROR: Failed to connect to database or query failed"
+    exit 1
+fi
 
 if [ -z "$PROJECTS" ]; then
-    log "ERROR: Failed to get projects list or no projects found"
-    exit 1
+    log "WARNING: No active projects found in database"
+    # Still create full backup even if no projects
+    log "Creating full database backup only..."
+else
+    PROJECT_COUNT=$(echo "$PROJECTS" | grep -v '^$' | wc -l)
+    log "Found $PROJECT_COUNT active project(s) to backup"
 fi
 
 BACKUP_COUNT=0
 FAILED_COUNT=0
 
-# Backup each project separately
-echo "$PROJECTS" | while IFS='|' read -r PROJECT_ID PROJECT_NAME; do
+# Backup each project separately (automatically includes any new projects created since last backup)
+if [ -n "$PROJECTS" ]; then
+    echo "$PROJECTS" | while IFS='|' read -r PROJECT_ID PROJECT_NAME; do
     # Clean up project name for filename (remove spaces, special chars)
     PROJECT_NAME_CLEAN=$(echo "$PROJECT_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-\|-$//g')
     
@@ -105,7 +116,8 @@ echo "$PROJECTS" | while IFS='|' read -r PROJECT_ID PROJECT_NAME; do
         log "❌ Failed to backup project '$PROJECT_NAME'"
         FAILED_COUNT=$((FAILED_COUNT + 1))
     fi
-done
+    done
+fi
 
 # Also create a full database backup (for complete restore)
 log "Creating full database backup..."

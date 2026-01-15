@@ -96,43 +96,105 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Setup user menu
     setupUserMenu();
 
-    // Check if project is selected - try multiple sources
-    let currentProject = projectSelector.getCurrentProject();
+    // ROBUST PROJECT LOADING with validation and retry logic
+    let currentProject = null;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
     
-    // If not in memory, try loading from storage
-    if (!currentProject) {
-        const stored = localStorage.getItem('milo_current_project');
-        if (stored) {
-            try {
-                currentProject = JSON.parse(stored);
-                projectSelector.setCurrentProject(currentProject);
-            } catch (e) {
-                console.error('Failed to parse stored project:', e);
-            }
-        }
-    }
-    
-    // If still no project, try loading from API
-    if (!currentProject) {
+    async function loadAndValidateProject() {
+        // Step 1: Always load fresh projects from API first (force refresh on page load)
         try {
-            await projectSelector.loadProjects(user.id);
-            currentProject = projectSelector.getCurrentProject();
+            console.log('🔄 Loading projects from API...');
+            await projectSelector.loadProjects(user.id, true); // Force refresh
             
-            // If still no project but we have projects, use the first one
+            // Step 2: Try to get stored project
+            const stored = localStorage.getItem('milo_current_project');
+            if (stored) {
+                try {
+                    const storedProject = JSON.parse(stored);
+                    // Validate stored project still exists in user's projects
+                    const isValidProject = projectSelector.projects.some(p => p.id === storedProject.id);
+                    if (isValidProject) {
+                        // Find the fresh project data (in case it was updated)
+                        const freshProject = projectSelector.projects.find(p => p.id === storedProject.id);
+                        currentProject = freshProject || storedProject;
+                        projectSelector.setCurrentProject(currentProject);
+                        console.log('✅ Using stored project:', currentProject.name);
+                        return true;
+                    } else {
+                        console.warn('⚠️ Stored project no longer exists, clearing...');
+                        localStorage.removeItem('milo_current_project');
+                    }
+                } catch (e) {
+                    console.error('Failed to parse stored project:', e);
+                    localStorage.removeItem('milo_current_project');
+                }
+            }
+            
+            // Step 3: If no stored project or invalid, use first available project
             if (!currentProject && projectSelector.projects && projectSelector.projects.length > 0) {
                 currentProject = projectSelector.projects[0];
                 projectSelector.setCurrentProject(currentProject);
+                console.log('✅ Using first available project:', currentProject.name);
+                return true;
             }
+            
+            // Step 4: No projects available
+            if (!currentProject || projectSelector.projects.length === 0) {
+                console.error('❌ No projects available for user');
+                return false;
+            }
+            
+            return true;
         } catch (error) {
             console.error('Failed to load projects:', error);
+            retryCount++;
+            
+            // Retry with exponential backoff
+            if (retryCount < MAX_RETRIES) {
+                console.log(`Retrying project load (${retryCount}/${MAX_RETRIES})...`);
+                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+                return await loadAndValidateProject();
+            }
+            
+            // Last resort: try using cached projects
+            if (projectSelector.projectsCache.data && projectSelector.projectsCache.data.length > 0) {
+                console.warn('Using stale cache as fallback');
+                projectSelector.projects = projectSelector.projectsCache.data;
+                const stored = localStorage.getItem('milo_current_project');
+                if (stored) {
+                    try {
+                        currentProject = JSON.parse(stored);
+                        const isValid = projectSelector.projects.some(p => p.id === currentProject.id);
+                        if (isValid) {
+                            projectSelector.setCurrentProject(currentProject);
+                            return true;
+                        }
+                    } catch (e) {
+                        // Ignore
+                    }
+                }
+                if (!currentProject && projectSelector.projects.length > 0) {
+                    currentProject = projectSelector.projects[0];
+                    projectSelector.setCurrentProject(currentProject);
+                    return true;
+                }
+            }
+            
+            return false;
         }
     }
     
-    // If still no project, redirect to selector
-    if (!currentProject) {
+    // Load and validate project
+    const projectLoaded = await loadAndValidateProject();
+    
+    if (!projectLoaded || !currentProject) {
+        console.error('❌ Failed to load project after retries, redirecting to project selector');
         window.location.href = 'milo-select-project.html';
         return;
     }
+    
+    console.log('✅ Project loaded successfully:', currentProject.name, 'ID:', currentProject.id);
 
     // Render board immediately with empty state
     renderBoard();

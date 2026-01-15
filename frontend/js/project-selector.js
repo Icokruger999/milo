@@ -91,10 +91,21 @@ class ProjectSelectorService {
      * Get current project from storage
      */
     getCurrentProject() {
+        // First check in-memory cache
+        if (this.currentProject) {
+            return this.currentProject;
+        }
+        
+        // Then check localStorage
         const stored = localStorage.getItem(this.storageKey);
         if (stored) {
-            this.currentProject = JSON.parse(stored);
-            return this.currentProject;
+            try {
+                this.currentProject = JSON.parse(stored);
+                return this.currentProject;
+            } catch (e) {
+                console.error('Failed to parse stored project:', e);
+                localStorage.removeItem(this.storageKey);
+            }
         }
         return null;
     }
