@@ -104,7 +104,25 @@ class AuthService {
             }
         } catch (error) {
             console.error('Login error:', error);
-            return { success: false, message: error.message || 'Network error. Please try again.' };
+            
+            // Provide more specific error messages
+            let errorMessage = 'Login failed. Please try again.';
+            
+            if (error.name === 'ApiError') {
+                errorMessage = error.message || 'Unable to connect to the server. Please check your internet connection.';
+            } else if (error.message) {
+                if (error.message.includes('timeout') || error.message.includes('AbortError')) {
+                    errorMessage = 'Request timeout. The server took too long to respond. Please try again.';
+                } else if (error.message.includes('CORS') || error.message.includes('cors')) {
+                    errorMessage = 'Connection error. Please refresh the page and try again.';
+                } else if (error.message.includes('fetch') || error.message.includes('network')) {
+                    errorMessage = 'Unable to connect to the server. Please check your internet connection.';
+                } else {
+                    errorMessage = error.message;
+                }
+            }
+            
+            return { success: false, message: errorMessage };
         }
     }
 

@@ -109,13 +109,19 @@ class ApiClient {
                 }
                 
                 // Network errors - retry
-                if (error instanceof TypeError && error.message.includes('fetch')) {
+                if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
                     if (attempt < this.retryAttempts - 1) {
                         await this.delay(this.retryDelay * Math.pow(2, attempt));
                         continue;
                     }
+                    // Provide more helpful error message
+                    const errorMsg = error.message.includes('CORS') 
+                        ? 'CORS error - please check your browser settings or contact support'
+                        : error.message.includes('timeout') || error.name === 'AbortError'
+                        ? 'Request timeout - the server took too long to respond. Please try again.'
+                        : 'Unable to connect to the server. Please check your internet connection and try again.';
                     throw new ApiError(
-                        'Network error - unable to connect to the server',
+                        errorMsg,
                         0,
                         error.message
                     );
