@@ -244,27 +244,35 @@ async function addRecipient() {
             }
         }
         
-        // Fallback to localStorage (check both keys)
+        // Fallback to localStorage (check correct key first)
         if (!currentProject) {
+            // Try the correct key used by projectSelector
             const stored = localStorage.getItem('milo_current_project');
             if (stored) {
                 try {
                     currentProject = JSON.parse(stored);
+                    console.log('Found project from milo_current_project:', currentProject);
                 } catch (e) {
                     console.error('Failed to parse stored project:', e);
                 }
             }
         }
         
+        // Also check alternative key for backward compatibility
         if (!currentProject) {
             const storedAlt = localStorage.getItem('currentProject');
             if (storedAlt) {
                 try {
                     currentProject = JSON.parse(storedAlt);
+                    console.log('Found project from currentProject:', currentProject);
                 } catch (e) {
                     console.error('Failed to parse project data:', e);
                 }
             }
+        }
+        
+        if (!currentProject) {
+            console.warn('No project found. Recipient will be added without project association.');
         }
 
         const data = {
