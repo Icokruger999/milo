@@ -2,6 +2,27 @@
 
 let flakes = [];
 let currentFlake = null;
+let collapsedGroups = new Set(); // Track collapsed date groups
+
+// Toggle date group visibility
+function toggleDateGroup(index) {
+    const content = document.getElementById(`content-${index}`);
+    const toggle = document.getElementById(`toggle-${index}`);
+    
+    if (!content || !toggle) return;
+    
+    if (collapsedGroups.has(index)) {
+        // Expand
+        content.classList.remove('collapsed');
+        toggle.classList.remove('collapsed');
+        collapsedGroups.delete(index);
+    } else {
+        // Collapse
+        content.classList.add('collapsed');
+        toggle.classList.add('collapsed');
+        collapsedGroups.add(index);
+    }
+}
 
 // Toast notification function
 function showToast(message, type = 'info') {
@@ -229,14 +250,18 @@ function renderFlakes() {
 
     container.innerHTML = `
         <div class="flakes-list">
-            ${sortedGroups.map(group => `
-                <div class="flakes-date-group">
-                    <div class="flakes-date-header">
-                        <div class="flakes-date-line"></div>
-                        <span class="flakes-date-label">${group.label}</span>
+            ${sortedGroups.map((group, index) => `
+                <div class="flakes-date-group" data-group-index="${index}">
+                    <div class="flakes-date-header" onclick="toggleDateGroup(${index})">
+                        <div class="flakes-date-toggle" id="toggle-${index}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                        <span class="flakes-date-label">${group.label} (${group.flakes.length})</span>
                         <div class="flakes-date-line"></div>
                     </div>
-                    <div class="flakes-group-content">
+                    <div class="flakes-group-content" id="content-${index}">
                         ${group.flakes.map(flake => `
                             <div class="flake-card">
                                 <div onclick="openFlake(${flake.id})" style="cursor: pointer;">
@@ -631,3 +656,54 @@ window.searchTasks = searchTasks;
 window.linkFlakeToTask = linkFlakeToTask;
 window.createNewTaskFromFlake = createNewTaskFromFlake;
 
+
+
+// Image upload functions
+function insertImageToFlake() {
+    document.getElementById('flakeImageInput').click();
+}
+
+function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Check file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+        showToast('Image too large. Maximum size is 2MB.', 'error');
+        return;
+    }
+    
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+        showToast('Please select an image file.', 'error');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const base64Image = e.target.result;
+        const textarea = document.getElementById('flakeContent');
+        const cursorPos = textarea.selectionStart;
+        const textBefore = textarea.value.substring(0, cursorPos);
+        const textAfter = textarea.value.substring(cursorPos);
+        
+        // Insert markdown image syntax with base64
+        const imageMarkdown = `\n![Image](${base64Image})\n`;
+        textarea.value = textBefore + imageMarkdown + textAfter;
+        
+        // Move cursor after inserted image
+        textarea.selectionStart = textarea.selectionEnd = cursorPos + imageMarkdown.length;
+        textarea.focus();
+        
+        showToast('Image inserted successfully!', 'success');
+    };
+    
+    reader.onerror = function() {
+        showToast('Failed to read image file.', 'error');
+    };
+    
+    reader.readAsDataURL(file);
+    
+    // Reset input so same file can be selected again
+    event.target.value = '';
+}
