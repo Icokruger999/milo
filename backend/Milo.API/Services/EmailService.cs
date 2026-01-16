@@ -234,38 +234,14 @@ public class EmailService : IEmailService
 
             if (!isPlainTextOnly)
             {
-                // Create multipart/alternative message with both HTML and plain text
-                // This ensures maximum compatibility across email clients
-                
-                // Create plain text view
-                var plainView = AlternateView.CreateAlternateViewFromString(
-                    plainTextBody, 
-                    System.Text.Encoding.UTF8, 
-                    "text/plain");
-                plainView.ContentType.CharSet = "UTF-8";
-                
-                // Create HTML view with explicit content type
-                var htmlView = AlternateView.CreateAlternateViewFromString(
-                    htmlBody, 
-                    System.Text.Encoding.UTF8, 
-                    "text/html");
-                htmlView.ContentType.CharSet = "UTF-8";
-                htmlView.ContentType.MediaType = "text/html";
-                
-                // Add views in order: plain text first, HTML second
-                // Email clients prefer the last alternative (HTML)
-                message.AlternateViews.Add(plainView);
-                message.AlternateViews.Add(htmlView);
-                
-                // Set body to plain text as fallback
-                message.Body = plainTextBody;
-                message.IsBodyHtml = false;
-                
-                _logger.LogInformation("Email configured as multipart/alternative with HTML and plain text");
+                // Simple approach: Set HTML body directly
+                message.Body = htmlBody;
+                message.IsBodyHtml = true;
+                _logger.LogInformation("Email configured as HTML");
             }
             else
             {
-                // Plain text only - no HTML
+                // Plain text only
                 message.Body = plainTextBody;
                 message.IsBodyHtml = false;
                 _logger.LogInformation("Email configured as plain text only");
