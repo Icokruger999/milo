@@ -1660,10 +1660,23 @@
             if (!currentProject) return;
 
             try {
-                const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
-                if (response.ok) {
-                    const tasks = await response.json();
-                    renderDashboard(tasks);
+                // Check if tasks are already loaded from the board
+                if (window.tasks && (window.tasks.todo || window.tasks.progress || window.tasks.review || window.tasks.done)) {
+                    // Use existing tasks from board
+                    const allTasks = [
+                        ...(window.tasks.todo || []),
+                        ...(window.tasks.progress || []),
+                        ...(window.tasks.review || []),
+                        ...(window.tasks.done || [])
+                    ];
+                    renderDashboard(allTasks);
+                } else {
+                    // Load tasks from API
+                    const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
+                    if (response.ok) {
+                        const tasks = await response.json();
+                        renderDashboard(tasks);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to load dashboard:', error);
@@ -1671,11 +1684,15 @@
         }
 
         function renderDashboard(tasks) {
+            console.log('renderDashboard called with tasks:', tasks);
+            
             // Update stats
             const totalTasks = tasks.length;
             const inProgress = tasks.filter(t => (t.status || '').toLowerCase().includes('progress')).length;
             const completed = tasks.filter(t => (t.status || '').toLowerCase() === 'done').length;
             const completionRate = totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : 0;
+
+            console.log('Dashboard stats:', { totalTasks, inProgress, completed, completionRate });
 
             document.getElementById('dashTotalTasks').textContent = totalTasks;
             document.getElementById('dashInProgress').textContent = inProgress;
@@ -1687,10 +1704,14 @@
         }
 
         function renderDashboardCharts(tasks) {
+            console.log('renderDashboardCharts called with', tasks.length, 'tasks');
+            
             if (typeof Chart === 'undefined') {
                 console.error('Chart.js not loaded');
                 return;
             }
+
+            console.log('Chart.js is loaded, rendering charts...');
 
             // Status Chart
             const statusCtx = document.getElementById('dashStatusChart');
