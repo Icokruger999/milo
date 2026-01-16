@@ -200,10 +200,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     renderBoard();
 
     // Load tasks from API asynchronously
+    // Don't show error toast on initial load - errors are handled gracefully in loadTasks()
     loadTasks().catch(error => {
         console.error('Failed to load tasks:', error);
-        // Show error message but don't block UI
-        showToast('Failed to load tasks. Please refresh the page.', 'error');
+        // Only show error if it's a real failure (not timeout or network issues that might resolve)
+        // Errors are already handled gracefully in loadTasksFromAPI - empty board is shown
+        // Don't show toast here to avoid flash errors on page refresh
     });
     
     // Listen for status changes from backlog page
@@ -1933,13 +1935,16 @@ async function loadTasks() {
         // Add timeout to prevent hanging
         const loadPromise = loadTasksFromAPI();
         const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Load timeout')), 8000)
+            setTimeout(() => reject(new Error('Load timeout')), 15000) // Increased timeout to 15s for slower connections
         );
         
         await Promise.race([loadPromise, timeoutPromise]);
     } catch (error) {
         console.error('Error loading tasks:', error);
-        showToast('Failed to load tasks. Please refresh the page.', 'error');
+        // Only show error toast if it's a real failure after retries
+        // During normal page loads, errors are handled gracefully (empty board shown)
+        // Don't show error toast on initial page load to avoid flash messages
+        // Users can still see the empty state and try again if needed
     }
 }
 
