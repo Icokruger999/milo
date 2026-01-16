@@ -67,22 +67,23 @@ public class ReportsController : ControllerBase
             }
 
             // Check if recipient already exists with same email and project
-            // Handle null ProjectId correctly - use projection to avoid entity mapping issues
+            // Use raw SQL to avoid EF Core column mapping issues with PostgreSQL
             var emailToCheck = request.Email.Trim().ToLower();
             var projectIdToCheck = request.ProjectId;
             
-            // Use projection to avoid entity mapping issues with column names
-            // Just check if any exists - we don't need the full entity
+            // Use raw SQL query to avoid column mapping issues
             bool recipientExists;
             if (projectIdToCheck.HasValue)
             {
-                recipientExists = await _context.ReportRecipients
-                    .AnyAsync(r => r.Email.ToLower() == emailToCheck && r.ProjectId == projectIdToCheck.Value);
+                var sql = @"SELECT COUNT(*) FROM report_recipients WHERE LOWER(email) = LOWER({0}) AND project_id = {1}";
+                var count = await _context.Database.SqlQueryRaw<int>(sql, emailToCheck, projectIdToCheck.Value).FirstOrDefaultAsync();
+                recipientExists = count > 0;
             }
             else
             {
-                recipientExists = await _context.ReportRecipients
-                    .AnyAsync(r => r.Email.ToLower() == emailToCheck && r.ProjectId == null);
+                var sql = @"SELECT COUNT(*) FROM report_recipients WHERE LOWER(email) = LOWER({0}) AND project_id IS NULL";
+                var count = await _context.Database.SqlQueryRaw<int>(sql, emailToCheck).FirstOrDefaultAsync();
+                recipientExists = count > 0;
             }
             
             if (recipientExists)

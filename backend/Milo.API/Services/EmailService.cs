@@ -195,28 +195,31 @@ public class EmailService : IEmailService
                 Credentials = new NetworkCredential(smtpUsername, smtpPassword)
             };
 
-            // Best practice: Set plain text as body, HTML as AlternateView
-            // This ensures maximum compatibility - HTML-capable clients use the AlternateView,
-            // while plain text clients show the body
+            // If htmlBody is the same as plainTextBody, send plain text only (no HTML)
+            // Otherwise, use standard multipart format with HTML as AlternateView
+            var isPlainTextOnly = htmlBody == plainTextBody || htmlBody.Trim() == plainTextBody.Trim();
+            
             var message = new MailMessage
             {
                 From = new MailAddress(fromEmail, fromName),
                 Subject = subject,
-                Body = plainTextBody, // Plain text as body (fallback for clients that don't support HTML)
+                Body = plainTextBody, // Plain text as body
                 IsBodyHtml = false, // Body is plain text
                 BodyEncoding = System.Text.Encoding.UTF8
             };
 
-            // Add HTML as AlternateView - email clients that support HTML will prefer this
-            // ContentType must be explicitly set to text/html with UTF-8 charset
-            var htmlView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(
-                htmlBody, 
-                System.Text.Encoding.UTF8, 
-                System.Net.Mime.MediaTypeNames.Text.Html);
-            htmlView.ContentType.CharSet = "UTF-8";
-            // Set TransferEncoding to ensure proper transmission
-            htmlView.TransferEncoding = System.Net.Mime.TransferEncoding.Base64;
-            message.AlternateViews.Add(htmlView);
+            // Only add HTML AlternateView if htmlBody is different from plainTextBody
+            // This allows sending plain text only emails when htmlBody equals plainTextBody
+            if (!isPlainTextOnly)
+            {
+                var htmlView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(
+                    htmlBody, 
+                    System.Text.Encoding.UTF8, 
+                    System.Net.Mime.MediaTypeNames.Text.Html);
+                htmlView.ContentType.CharSet = "UTF-8";
+                htmlView.TransferEncoding = System.Net.Mime.TransferEncoding.Base64;
+                message.AlternateViews.Add(htmlView);
+            }
 
             message.To.Add(new MailAddress(to));
 
