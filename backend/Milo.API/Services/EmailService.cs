@@ -200,16 +200,20 @@ public class EmailService : IEmailService
                 From = new MailAddress(fromEmail, fromName),
                 Subject = subject,
                 Body = htmlBody, // Set HTML as the main body so email clients render it properly
-                IsBodyHtml = true // Explicitly set to true for HTML body
+                IsBodyHtml = true, // Explicitly set to true for HTML body
+                BodyEncoding = System.Text.Encoding.UTF8 // Set encoding for HTML body
             };
+
+            // Add HTML as AlternateView with explicit ContentType to ensure proper rendering
+            // Some email clients require this even when IsBodyHtml is true
+            var htmlView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(htmlBody, null, System.Net.Mime.MediaTypeNames.Text.Html);
+            htmlView.ContentType.CharSet = "UTF-8";
+            message.AlternateViews.Add(htmlView);
 
             // Add plain text version as alternate view (for email clients that don't support HTML)
             var plainTextView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(plainTextBody, null, System.Net.Mime.MediaTypeNames.Text.Plain);
             plainTextView.ContentType.CharSet = "UTF-8";
             message.AlternateViews.Add(plainTextView);
-            
-            // Set HTML content type and encoding explicitly
-            message.BodyEncoding = System.Text.Encoding.UTF8;
 
             message.To.Add(new MailAddress(to));
 
