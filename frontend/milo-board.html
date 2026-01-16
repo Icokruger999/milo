@@ -1116,7 +1116,7 @@
                 </div>
 
                 <!-- Timeline View (Hidden by default) -->
-                <div class="timeline-view" id="timelineView" style="display: none;">
+                <div class="timeline-view" id="timelineView" style="display: none; flex: 1; flex-direction: column; overflow: hidden;">
                     <div class="timeline-container-board">
                         <div class="timeline-task-list">
                             <div class="timeline-task-list-header">Tasks</div>
@@ -1486,7 +1486,9 @@
         function showTimelineView() {
             currentBoardView = 'timeline';
             document.querySelector('.board-content').style.display = 'none';
-            document.getElementById('timelineView').style.display = 'flex';
+            const timelineView = document.getElementById('timelineView');
+            timelineView.style.display = 'flex';
+            timelineView.style.flexDirection = 'column';
             document.getElementById('roadmapView').style.display = 'none';
             document.getElementById('dashboardView').style.display = 'none';
             document.getElementById('boardLink').classList.remove('active');
@@ -1904,6 +1906,13 @@
 
         function renderTimelineTaskList() {
             const container = document.getElementById('timelineTaskList');
+            
+            if (!timelineTasks || timelineTasks.length === 0) {
+                container.innerHTML = '<div style="padding: 24px; text-align: center; color: #6B778C;">No tasks to display in timeline. Create some tasks first.</div>';
+                document.getElementById('timelineBars').innerHTML = '';
+                return;
+            }
+            
             container.innerHTML = timelineTasks.map(task => `
                 <div class="timeline-task-item">
                     <div class="timeline-task-checkbox ${task.status === 'Done' ? 'checked' : ''}"></div>
