@@ -32,14 +32,24 @@ builder.Services.AddDbContext<MiloDbContext>(options =>
     options.UseNpgsql(connectionString, npgsqlOptions =>
     {
         npgsqlOptions.CommandTimeout(30);
-        // CRITICAL: Connection pooling settings for PgBouncer
-        // PgBouncer handles pooling, so we use minimal pooling here
+        // Connection pooling optimization
         npgsqlOptions.EnableRetryOnFailure(
             maxRetryCount: 3,
             maxRetryDelay: TimeSpan.FromSeconds(5),
             errorCodesToAdd: null);
     })
-    .EnableSensitiveDataLogging(false));
+    .EnableSensitiveDataLogging(false)
+    // Add query caching for better performance
+    .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking));
+
+// Configure connection pooling at the Npgsql level
+var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+dataSourceBuilder.ConnectionStringBuilder.MinPoolSize = 5; // Keep minimum connections warm
+dataSourceBuilder.ConnectionStringBuilder.MaxPoolSize = 20;
+dataSourceBuilder.ConnectionStringBuilder.ConnectionIdleLifetime = 300; // 5 minutes
+dataSourceBuilder.ConnectionStringBuilder.ConnectionPruningInterval = 10;
+var dataSource = dataSourceBuilder.Build();
+builder.Services.AddSingleton(dataSource);
 
 // Add email service
 builder.Services.AddScoped<Milo.API.Services.IEmailService, Milo.API.Services.EmailService>();
