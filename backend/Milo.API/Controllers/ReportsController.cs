@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Milo.API.Data;
 using Milo.API.Models;
 using Milo.API.Services;
+using System.Data;
 using System.Text;
 
 namespace Milo.API.Controllers;
@@ -67,25 +68,59 @@ public class ReportsController : ControllerBase
             }
 
             // Check if recipient already exists with same email and project
-            // Use raw SQL to avoid EF Core column mapping issues with PostgreSQL
+            // Use raw SQL with direct connection to avoid EF Core column mapping issues
             var emailToCheck = request.Email.Trim().ToLower();
             var projectIdToCheck = request.ProjectId;
             
-            // Use raw SQL query with FormattableString for proper parameterization
-            // This avoids EF Core entity mapping issues with column names
-            int count;
-            if (projectIdToCheck.HasValue)
+            // Use direct SQL execution to avoid any EF Core entity mapping
+            // This completely bypasses entity mapping by using ADO.NET directly
+            bool recipientExists;
+            var connection = _context.Database.GetDbConnection();
+            
+            var wasOpen = connection.State == ConnectionState.Open;
+            if (!wasOpen)
             {
-                FormattableString sql = $@"SELECT COUNT(*) FROM report_recipients WHERE LOWER(email) = LOWER({emailToCheck}) AND project_id = {projectIdToCheck.Value}";
-                count = await _context.Database.SqlQuery<int>(sql).FirstOrDefaultAsync();
-            }
-            else
-            {
-                FormattableString sql = $@"SELECT COUNT(*) FROM report_recipients WHERE LOWER(email) = LOWER({emailToCheck}) AND project_id IS NULL";
-                count = await _context.Database.SqlQuery<int>(sql).FirstOrDefaultAsync();
+                await connection.OpenAsync();
             }
             
-            bool recipientExists = count > 0;
+            try
+            {
+                using var command = connection.CreateCommand();
+                if (projectIdToCheck.HasValue)
+                {
+                    command.CommandText = "SELECT COUNT(*) FROM report_recipients WHERE LOWER(email) = LOWER(@email) AND project_id = @project_id";
+                    var emailParam = command.CreateParameter();
+                    emailParam.ParameterName = "@email";
+                    emailParam.Value = emailToCheck;
+                    command.Parameters.Add(emailParam);
+                    
+                    var projectParam = command.CreateParameter();
+                    projectParam.ParameterName = "@project_id";
+                    projectParam.Value = projectIdToCheck.Value;
+                    command.Parameters.Add(projectParam);
+                }
+                else
+                {
+                    command.CommandText = "SELECT COUNT(*) FROM report_recipients WHERE LOWER(email) = LOWER(@email) AND project_id IS NULL";
+                    var emailParam = command.CreateParameter();
+                    emailParam.ParameterName = "@email";
+                    emailParam.Value = emailToCheck;
+                    command.Parameters.Add(emailParam);
+                }
+                
+                var result = await command.ExecuteScalarAsync();
+                var count = result != null ? Convert.ToInt32(result) : 0;
+                recipientExists = count > 0;
+            }
+            finally
+            {
+                // Don't close connection if EF Core opened it - let EF Core manage it
+                // Only close if we opened it ourselves
+                if (!wasOpen && connection.State == ConnectionState.Open)
+                {
+                    await connection.CloseAsync();
+                }
+            }
             
             if (recipientExists)
             {
