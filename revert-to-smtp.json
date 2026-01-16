@@ -1,0 +1,11 @@
+{
+  "commands": [
+    "cd /home/ec2-user/milo/backend/Milo.API",
+    "sudo python3 -c 'import json; f=open(\"appsettings.json\",\"r\"); c=json.load(f); f.close(); c[\"Email\"][\"UseSes\"]=False; del c[\"Email\"][\"SesRegion\"]; c[\"Email\"][\"FromEmail\"]=\"info@streamyo.net\"; f=open(\"appsettings.json\",\"w\"); json.dump(c,f,indent=2); f.close(); print(\"Reverted source to SMTP\")'",
+    "cd /home/ec2-user/milo-backend-publish",
+    "sudo python3 -c 'import json; f=open(\"appsettings.json\",\"r\"); c=json.load(f); f.close(); c[\"Email\"][\"UseSes\"]=False; del c[\"Email\"][\"SesRegion\"]; c[\"Email\"][\"FromEmail\"]=\"info@streamyo.net\"; f=open(\"appsettings.json\",\"w\"); json.dump(c,f,indent=2); f.close(); print(\"Reverted publish to SMTP\")'",
+    "sudo systemctl restart milo-backend",
+    "sleep 3",
+    "cat /home/ec2-user/milo-backend-publish/appsettings.json | grep -A 10 Email"
+  ]
+}

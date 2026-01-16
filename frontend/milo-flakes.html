@@ -713,24 +713,24 @@
 
     <!-- Create Flake Modal -->
     <div id="createFlakeModal">
-        <div style="background: white; border-radius: 8px; padding: 24px; width: 90%; max-width: 800px; max-height: 90vh; overflow-y: auto;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Create Flake</h2>
-                <button onclick="closeCreateFlakeModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6B778C;">&times;</button>
+        <div style="background: white; border-radius: 3px; padding: 40px 60px; width: 95%; max-width: 1400px; max-height: 95vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.12);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+                <h2 style="margin: 0; font-size: 24px; font-weight: 600; color: #172B4D;">Create Flake</h2>
+                <button onclick="closeCreateFlakeModal()" style="background: none; border: none; font-size: 28px; cursor: pointer; color: #6B778C; line-height: 1;">&times;</button>
             </div>
             <form id="createFlakeForm" onsubmit="handleCreateFlake(event)">
-                <div style="margin-bottom: 16px;">
-                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Title *</label>
-                    <input type="text" id="flakeTitle" name="title" required style="width: 100%; padding: 8px 12px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px; box-sizing: border-box;">
+                <div style="margin-bottom: 24px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 15px; color: #172B4D;">Title *</label>
+                    <input type="text" id="flakeTitle" name="title" required style="width: 100%; padding: 12px 16px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 16px; box-sizing: border-box;">
                 </div>
-                <div style="margin-bottom: 16px;">
-                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Content</label>
-                    <textarea id="flakeContent" name="content" rows="15" style="width: 100%; padding: 12px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px; box-sizing: border-box; resize: vertical; font-family: 'Inter', sans-serif; line-height: 1.6;"></textarea>
-                    <div style="font-size: 12px; color: #6B778C; margin-top: 4px;">Supports Markdown formatting</div>
+                <div style="margin-bottom: 24px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 15px; color: #172B4D;">Content</label>
+                    <textarea id="flakeContent" name="content" rows="25" style="width: 100%; padding: 16px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 15px; box-sizing: border-box; resize: vertical; font-family: 'Inter', sans-serif; line-height: 1.8; min-height: 500px;"></textarea>
+                    <div style="font-size: 13px; color: #6B778C; margin-top: 8px;">Supports Markdown formatting</div>
                 </div>
-                <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                    <button type="button" onclick="closeCreateFlakeModal()" style="padding: 8px 16px; border: 1px solid #DFE1E6; background: white; border-radius: 3px; cursor: pointer; font-size: 14px;">Cancel</button>
-                    <button type="submit" class="btn-primary">Create Flake</button>
+                <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 24px; border-top: 1px solid #F4F5F7;">
+                    <button type="button" onclick="closeCreateFlakeModal()" style="padding: 10px 20px; border: 1px solid #DFE1E6; background: white; border-radius: 3px; cursor: pointer; font-size: 14px; font-weight: 500;">Cancel</button>
+                    <button type="submit" class="btn-primary" style="padding: 10px 24px;">Create Flake</button>
                 </div>
             </form>
         </div>

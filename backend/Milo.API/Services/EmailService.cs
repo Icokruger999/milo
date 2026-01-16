@@ -549,73 +549,24 @@ If you didn't request this, please ignore this email.";
 
     public async Task<bool> SendTaskAssignmentEmailAsync(string email, string assigneeName, string taskTitle, string taskId, string projectName, string? taskLink = null)
     {
-        try
-        {
+        try {
             var subject = $"New Task Assigned: {taskId} - {taskTitle}";
             var link = taskLink ?? $"https://www.codingeverest.com/milo-board.html?task={taskId}";
             
-            var htmlBody = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #172B4D; background: linear-gradient(135deg, #F4F5F7 0%, #EBECF0 100%); margin: 0; padding: 20px; -webkit-font-smoothing: antialiased; }}
-        .email-wrapper {{ max-width: 600px; margin: 0 auto; }}
-        .container {{ background-color: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(9, 30, 66, 0.15), 0 0 1px rgba(9, 30, 66, 0.1); }}
-        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 40px 32px; text-align: center; position: relative; }}
-        .header::after {{ content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%); }}
-        .header h1 {{ font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }}
-        .content {{ padding: 40px 32px; }}
-        .greeting {{ font-size: 16px; color: #172B4D; margin-bottom: 16px; }}
-        .intro-text {{ font-size: 15px; color: #42526E; margin-bottom: 24px; line-height: 1.6; }}
-        .task-box {{ background: linear-gradient(to bottom, #F8F9FA 0%, #F4F5F7 100%); border-left: 5px solid #0052CC; padding: 24px; margin: 24px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(9, 30, 66, 0.08); }}
-        .task-id {{ font-size: 16px; font-weight: 700; color: #0052CC; margin-bottom: 12px; letter-spacing: 0.5px; }}
-        .task-title {{ font-size: 22px; font-weight: 700; color: #172B4D; margin-bottom: 16px; line-height: 1.4; }}
-        .project {{ font-size: 15px; color: #6B778C; margin-top: 12px; padding-top: 16px; border-top: 1px solid rgba(223, 225, 230, 0.6); }}
-        .project-label {{ font-weight: 600; color: #42526E; }}
-        .cta-container {{ text-align: center; margin: 32px 0; }}
-        .cta-button {{ display: inline-block; background: linear-gradient(135deg, #0052CC 0%, #0065FF 100%); color: #FFFFFF; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(0, 82, 204, 0.3); transition: all 0.2s ease; border: none; }}
-        .cta-button:hover {{ box-shadow: 0 6px 16px rgba(0, 82, 204, 0.4); transform: translateY(-1px); }}
-        .footer {{ background: #F4F5F7; padding: 32px; text-align: center; border-top: 1px solid #DFE1E6; }}
-        .footer p {{ font-size: 13px; color: #6B778C; margin: 8px 0; line-height: 1.5; }}
-        .footer p:first-child {{ font-weight: 600; color: #42526E; }}
-        @media only screen and (max-width: 600px) {{
-            .content {{ padding: 32px 24px; }}
-            .header {{ padding: 32px 24px; }}
-            .header h1 {{ font-size: 24px; }}
-        }}
-    </style>
-</head>
-<body>
-    <div class='email-wrapper'>
-        <div class='container'>
-            <div class='header'>
-                <h1>New Task Assigned</h1>
-            </div>
-            <div class='content'>
-                <p class='greeting'>Hello {assigneeName},</p>
-                <p class='intro-text'>A new task has been assigned to you:</p>
-                <div class='task-box'>
-                    <div class='task-id'>{taskId}</div>
-                    <div class='task-title'>{taskTitle}</div>
-                    <div class='project'><span class='project-label'>Project:</span> {projectName}</div>
-                </div>
-                <div class='cta-container'>
-                    <a href='{link}' class='cta-button'>View Task Details</a>
-                </div>
-            </div>
-            <div class='footer'>
-                <p>This is an automated notification from Milo</p>
-            </div>
-        </div>
-    </div>
-</body>
-</html>";
+            // Send as plain text with link - simpler and more reliable
+            var plainTextBody = $@"Hello {assigneeName},
 
-            return await SendEmailAsync(email, subject, htmlBody);
+A new task has been assigned to you:
+
+Task: {taskId} - {taskTitle}
+Project: {projectName}
+
+View task details: {link}
+
+This is an automated notification from Milo";
+
+            // For plain text emails, set both htmlBody and plainTextBody to the same content
+            return await SendEmailWithPlainTextAsync(email, subject, plainTextBody, plainTextBody);
         }
         catch (Exception ex)
         {
