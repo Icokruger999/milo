@@ -263,7 +263,7 @@ function renderFlakes() {
                     </div>
                     <div class="flakes-group-content" id="content-${index}">
                         ${group.flakes.map(flake => `
-                            <div class="flake-card">
+                            <div class="flake-card day-${index % 7}">
                                 <div onclick="openFlake(${flake.id})" style="cursor: pointer;">
                                     <div class="flake-card-title">${escapeHtml(flake.title || 'Untitled')}</div>
                                     <div class="flake-card-meta">

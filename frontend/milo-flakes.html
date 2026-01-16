@@ -389,6 +389,15 @@
             flex-direction: column;
         }
 
+        /* Day-based color themes */
+        .flake-card.day-0 { background: linear-gradient(135deg, #FFF5F5 0%, #FFFFFF 100%); border-left: 3px solid #FF5630; }
+        .flake-card.day-1 { background: linear-gradient(135deg, #FFF8E1 0%, #FFFFFF 100%); border-left: 3px solid #FFAB00; }
+        .flake-card.day-2 { background: linear-gradient(135deg, #E3FCEF 0%, #FFFFFF 100%); border-left: 3px solid #36B37E; }
+        .flake-card.day-3 { background: linear-gradient(135deg, #DEEBFF 0%, #FFFFFF 100%); border-left: 3px solid #0052CC; }
+        .flake-card.day-4 { background: linear-gradient(135deg, #EAE6FF 0%, #FFFFFF 100%); border-left: 3px solid #6554C0; }
+        .flake-card.day-5 { background: linear-gradient(135deg, #E6FCFF 0%, #FFFFFF 100%); border-left: 3px solid #00B8D9; }
+        .flake-card.day-6 { background: linear-gradient(135deg, #FFEBE6 0%, #FFFFFF 100%); border-left: 3px solid #FF8B00; }
+
         .flake-card:hover {
             border-color: #0052CC;
             box-shadow: 0 2px 8px rgba(0, 82, 204, 0.1);
@@ -644,7 +653,7 @@
             </div>
             <div class="sidebar-section">
                 <div class="sidebar-section-title">Planning</div>
-                <a href="milo-timeline.html" class="sidebar-item">
+                <a href="milo-board.html#timeline" class="sidebar-item">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
                         <polyline points="12 6 12 12 16 14"></polyline>

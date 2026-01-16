@@ -14,16 +14,49 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: #F4F5F7;
-            padding: 20px;
+            padding: 0;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: white;
+            border-bottom: 1px solid #DFE1E6;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 100;
+        }
+
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .container {
-            max-width: 900px;
-            margin: 0 auto;
+            flex: 1;
+            display: flex;
+            overflow: hidden;
             background: white;
-            border-radius: 8px;
-            padding: 40px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Editor Area - Full Width */
+        .editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
         .back-link {
@@ -33,55 +66,53 @@
             display: inline-flex;
             align-items: center;
             gap: 4px;
-            margin-bottom: 24px;
         }
 
         .back-link:hover {
             text-decoration: underline;
         }
 
-        h1 {
-            font-size: 28px;
-            color: #172B4D;
-            margin-bottom: 32px;
-        }
-
-        .form-group {
-            margin-bottom: 24px;
-        }
-
-        label {
-            display: block;
-            font-size: 14px;
+        /* Title Input - Larger */
+        .title-input {
+            width: 100%;
+            padding: 16px 24px;
+            border: none;
+            border-bottom: 1px solid #DFE1E6;
+            font-size: 32px;
             font-weight: 600;
             color: #172B4D;
-            margin-bottom: 8px;
+            background: white;
         }
 
-        input[type="text"] {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #DFE1E6;
-            border-radius: 3px;
-            font-size: 14px;
-            transition: border-color 0.15s;
-        }
-
-        input[type="text"]:focus {
+        .title-input:focus {
             outline: none;
-            border-color: #0052CC;
+            border-bottom-color: #0052CC;
         }
 
-        /* Formatting Toolbar */
+        .title-input::placeholder {
+            color: #C1C7D0;
+        }
+
+        /* Formatting Toolbar - Enhanced */
         .formatting-toolbar {
             display: flex;
             gap: 4px;
-            padding: 8px;
-            background: #F4F5F7;
-            border: 1px solid #DFE1E6;
-            border-bottom: none;
-            border-radius: 3px 3px 0 0;
+            padding: 12px 24px;
+            background: #FAFBFC;
+            border-bottom: 1px solid #DFE1E6;
             flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .toolbar-group {
+            display: flex;
+            gap: 4px;
+            padding-right: 12px;
+            border-right: 1px solid #DFE1E6;
+        }
+
+        .toolbar-group:last-child {
+            border-right: none;
         }
 
         .toolbar-button {
@@ -123,16 +154,17 @@
         }
 
         #flakeContent {
+            flex: 1;
             width: 100%;
-            min-height: 400px;
-            padding: 16px;
-            border: 1px solid #DFE1E6;
-            border-radius: 0 0 3px 3px;
-            font-size: 14px;
+            padding: 24px 48px;
+            border: none;
+            font-size: 16px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.6;
+            line-height: 1.8;
             overflow-y: auto;
             background: white;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         #flakeContent:focus {
@@ -229,6 +261,162 @@
 
         .btn-secondary:hover {
             background: #EBECF0;
+        }
+
+        /* Phase 2: Callout Boxes */
+        .callout {
+            padding: 16px;
+            border-radius: 3px;
+            margin: 16px 0;
+            border-left: 4px solid;
+            display: flex;
+            gap: 12px;
+        }
+
+        .callout-info { background: #DEEBFF; border-left-color: #0052CC; }
+        .callout-success { background: #E3FCEF; border-left-color: #36B37E; }
+        .callout-warning { background: #FFFAE6; border-left-color: #FFAB00; }
+        .callout-error { background: #FFEBE6; border-left-color: #DE350B; }
+
+        .callout-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .callout-content {
+            flex: 1;
+        }
+
+        /* Expandable Sections */
+        .expandable-section {
+            border: 1px solid #DFE1E6;
+            border-radius: 3px;
+            margin: 16px 0;
+        }
+
+        .expandable-header {
+            padding: 12px 16px;
+            background: #FAFBFC;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        .expandable-header:hover {
+            background: #F4F5F7;
+        }
+
+        .expandable-arrow {
+            transition: transform 0.2s;
+        }
+
+        .expandable-arrow.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .expandable-content {
+            padding: 16px;
+            border-top: 1px solid #DFE1E6;
+        }
+
+        .expandable-content.collapsed {
+            display: none;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-todo { background: #DFE1E6; color: #42526E; }
+        .status-progress { background: #DEEBFF; color: #0052CC; }
+        .status-review { background: #EAE6FF; color: #5243AA; }
+        .status-done { background: #E3FCEF; color: #006644; }
+
+        /* Columns */
+        .columns-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin: 16px 0;
+        }
+
+        .columns-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 24px;
+            margin: 16px 0;
+        }
+
+        /* Full-screen mode */
+        body.fullscreen {
+            overflow: hidden;
+        }
+
+        body.fullscreen .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        body.fullscreen .container {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 999;
+        }
+
+        /* View Mode Toggle */
+        .view-toggle {
+            display: flex;
+            background: #F4F5F7;
+            border-radius: 3px;
+            padding: 2px;
+        }
+
+        .view-toggle-btn {
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 13px;
+            border-radius: 2px;
+            color: #42526E;
+        }
+
+        .view-toggle-btn.active {
+            background: white;
+            color: #172B4D;
+            font-weight: 600;
+        }
+
+        /* Split View */
+        .split-view {
+            display: flex;
+            height: 100%;
+        }
+
+        .split-view .editor-pane,
+        .split-view .preview-pane {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .split-view .preview-pane {
+            border-left: 1px solid #DFE1E6;
+            padding: 24px 48px;
         }
     </style>
 </head>
