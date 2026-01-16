@@ -67,9 +67,13 @@ public class ReportsController : ControllerBase
             }
 
             // Check if recipient already exists with same email and project
+            // Handle null ProjectId correctly in LINQ query
+            var emailToCheck = request.Email.Trim().ToLower();
+            var projectIdToCheck = request.ProjectId;
+            
             var existingRecipient = await _context.ReportRecipients
-                .FirstOrDefaultAsync(r => r.Email.ToLower() == request.Email.Trim().ToLower() && 
-                                         r.ProjectId == request.ProjectId);
+                .FirstOrDefaultAsync(r => r.Email.ToLower() == emailToCheck && 
+                                         (r.ProjectId == projectIdToCheck));
             
             if (existingRecipient != null)
             {
