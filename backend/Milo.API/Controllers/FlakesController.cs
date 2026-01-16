@@ -316,7 +316,7 @@ This email was sent from Milo - Your Project Management Workspace";
 
             // Send email with both HTML and plain text versions
             // Don't block the operation if email fails - send in background
-            _ = Task.Run(async () =>
+            _ = System.Threading.Tasks.Task.Run(async () =>
             {
                 try
                 {
