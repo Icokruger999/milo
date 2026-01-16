@@ -2114,107 +2114,201 @@ window.loadTaskComments = loadTaskComments;
 
 
 
-// Group by functionality - Default to assignee grouping
-let collapsedGroups = {}; // Track which groups are collapsed
+// Group by functionality - Grid layout with assignee rows
+let collapsedAssignees = {}; // Track which assignees are collapsed
 
 function renderBoard() {
-    // Always render by assignee (no dropdown needed)
-    renderBoardByAssignee();
+    // Render grid layout with assignee rows
+    renderBoardGrid();
 }
 
-function renderBoardByAssignee() {
-    // Group all tasks by assignee across all statuses
-    const columns = ['todo', 'progress', 'review', 'done'];
+function renderBoardGrid() {
+    const container = document.getElementById('boardGridBody');
+    if (!container) return;
     
-    columns.forEach(columnId => {
-        const container = document.getElementById(columnId + 'Items');
-        const columnTasks = tasks[columnId] || [];
+    // Collect all tasks from all statuses
+    const allTasks = [
+        ...(tasks.todo || []),
+        ...(tasks.progress || []),
+        ...(tasks.review || []),
+        ...(tasks.done || [])
+    ];
+    
+    // Group tasks by assignee
+    const assigneeGroups = {};
+    allTasks.forEach(task => {
+        const assigneeName = task.assigneeName || 'Unassigned';
+        const assigneeId = task.assigneeId || 'unassigned';
         
-        // Group tasks by assignee
-        const grouped = {};
-        columnTasks.forEach(task => {
-            const assignee = task.assigneeName || 'Unassigned';
-            const assigneeId = task.assigneeId || 'unassigned';
-            if (!grouped[assignee]) {
-                grouped[assignee] = {
-                    tasks: [],
-                    assigneeId: assigneeId,
-                    assigneeName: assignee
-                };
-            }
-            grouped[assignee].tasks.push(task);
-        });
+        if (!assigneeGroups[assigneeName]) {
+            assigneeGroups[assigneeName] = {
+                name: assigneeName,
+                id: assigneeId,
+                tasks: { todo: [], progress: [], review: [], done: [] }
+            };
+        }
         
-        // Sort assignees alphabetically, but put Unassigned last
-        const assignees = Object.keys(grouped).sort((a, b) => {
-            if (a === 'Unassigned') return 1;
-            if (b === 'Unassigned') return -1;
-            return a.localeCompare(b);
-        });
+        // Add task to appropriate status
+        const status = (task.status || 'todo').toLowerCase();
+        if (status.includes('progress')) {
+            assigneeGroups[assigneeName].tasks.progress.push(task);
+        } else if (status.includes('review')) {
+            assigneeGroups[assigneeName].tasks.review.push(task);
+        } else if (status === 'done') {
+            assigneeGroups[assigneeName].tasks.done.push(task);
+        } else {
+            assigneeGroups[assigneeName].tasks.todo.push(task);
+        }
+    });
+    
+    // Sort assignees alphabetically, Unassigned last
+    const sortedAssignees = Object.keys(assigneeGroups).sort((a, b) => {
+        if (a === 'Unassigned') return 1;
+        if (b === 'Unassigned') return -1;
+        return a.localeCompare(b);
+    });
+    
+    // Render rows
+    container.innerHTML = '';
+    sortedAssignees.forEach(assigneeName => {
+        const group = assigneeGroups[assigneeName];
+        const totalTasks = group.tasks.todo.length + group.tasks.progress.length + 
+                          group.tasks.review.length + group.tasks.done.length;
         
-        // Render grouped tasks
-        container.innerHTML = '';
-        assignees.forEach((assignee, index) => {
-            const groupData = grouped[assignee];
-            const groupId = `${columnId}-${assignee.replace(/\s+/g, '-')}`;
-            const isCollapsed = collapsedGroups[groupId] || false;
-            
-            // Get assignee initials and color
-            const initials = assignee === 'Unassigned' ? 'UN' : 
-                            assignee.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-            const assigneeColor = getAssigneeColor(groupData.assigneeId, assignee);
-            
-            const groupDiv = document.createElement('div');
-            groupDiv.className = 'assignee-group';
-            groupDiv.innerHTML = `
-                <div class="assignee-group-header" onclick="toggleAssigneeGroup('${groupId}')">
-                    <div class="assignee-group-toggle ${isCollapsed ? 'collapsed' : ''}" id="toggle-${groupId}">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </div>
-                    <div class="assignee-group-avatar" style="background: ${assigneeColor.bg}; color: ${assigneeColor.text};">
-                        ${initials}
-                    </div>
-                    <span class="assignee-group-name">${assignee}</span>
-                    <span class="assignee-group-count">${groupData.tasks.length}</span>
+        const isCollapsed = collapsedAssignees[assigneeName] || false;
+        const initials = assigneeName === 'Unassigned' ? 'UN' : 
+                        assigneeName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        const assigneeColor = getAssigneeColor(group.id, assigneeName);
+        
+        const row = document.createElement('div');
+        row.className = `assignee-row ${isCollapsed ? 'collapsed' : ''}`;
+        row.dataset.assignee = assigneeName;
+        
+        row.innerHTML = `
+            <div class="assignee-info">
+                <div class="assignee-toggle ${isCollapsed ? 'collapsed' : ''}" onclick="toggleAssigneeRow('${assigneeName}')">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
                 </div>
-                <div class="assignee-group-tasks ${isCollapsed ? 'collapsed' : ''}" id="tasks-${groupId}">
+                <div class="assignee-avatar" style="background: ${assigneeColor.bg}; color: ${assigneeColor.text};">
+                    ${initials}
                 </div>
-            `;
-            
-            container.appendChild(groupDiv);
-            
-            // Add tasks to the group
-            const tasksContainer = groupDiv.querySelector('.assignee-group-tasks');
-            groupData.tasks.forEach(task => {
+                <div class="assignee-details">
+                    <div class="assignee-name">${assigneeName}</div>
+                    <div class="assignee-task-count">${totalTasks} task${totalTasks !== 1 ? 's' : ''}</div>
+                </div>
+            </div>
+            <div class="status-cell" data-status="todo" data-assignee="${assigneeName}"></div>
+            <div class="status-cell" data-status="progress" data-assignee="${assigneeName}"></div>
+            <div class="status-cell" data-status="review" data-assignee="${assigneeName}"></div>
+            <div class="status-cell" data-status="done" data-assignee="${assigneeName}"></div>
+        `;
+        
+        container.appendChild(row);
+        
+        // Add tasks to cells
+        ['todo', 'progress', 'review', 'done'].forEach(status => {
+            const cell = row.querySelector(`.status-cell[data-status="${status}"]`);
+            group.tasks[status].forEach(task => {
                 const card = createTaskCard(task);
-                tasksContainer.appendChild(card);
+                cell.appendChild(card);
             });
         });
     });
     
     updateCounts();
+    setupGridDragAndDrop();
 }
 
-function toggleAssigneeGroup(groupId) {
-    const toggle = document.getElementById(`toggle-${groupId}`);
-    const tasks = document.getElementById(`tasks-${groupId}`);
+function toggleAssigneeRow(assigneeName) {
+    const row = document.querySelector(`.assignee-row[data-assignee="${assigneeName}"]`);
+    const toggle = row.querySelector('.assignee-toggle');
     
-    if (toggle && tasks) {
-        const isCollapsed = tasks.classList.contains('collapsed');
-        
-        if (isCollapsed) {
-            toggle.classList.remove('collapsed');
-            tasks.classList.remove('collapsed');
-            collapsedGroups[groupId] = false;
-        } else {
-            toggle.classList.add('collapsed');
-            tasks.classList.add('collapsed');
-            collapsedGroups[groupId] = true;
-        }
+    if (row.classList.contains('collapsed')) {
+        row.classList.remove('collapsed');
+        toggle.classList.remove('collapsed');
+        collapsedAssignees[assigneeName] = false;
+    } else {
+        row.classList.add('collapsed');
+        toggle.classList.add('collapsed');
+        collapsedAssignees[assigneeName] = true;
     }
 }
 
+function setupGridDragAndDrop() {
+    // Setup drop zones for all status cells
+    document.querySelectorAll('.status-cell').forEach(cell => {
+        cell.addEventListener('dragover', handleGridDragOver);
+        cell.addEventListener('drop', handleGridDrop);
+        cell.addEventListener('dragleave', handleGridDragLeave);
+    });
+}
+
+function handleGridDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    this.classList.add('drop-target');
+}
+
+function handleGridDragLeave(e) {
+    this.classList.remove('drop-target');
+}
+
+async function handleGridDrop(e) {
+    e.preventDefault();
+    this.classList.remove('drop-target');
+    
+    if (!draggedElement) return;
+    
+    const taskId = parseInt(draggedElement.dataset.taskId);
+    const newStatus = this.dataset.status;
+    const newAssignee = this.dataset.assignee;
+    
+    // Find the task
+    let task = null;
+    for (const status in tasks) {
+        task = tasks[status].find(t => t.id === taskId);
+        if (task) break;
+    }
+    
+    if (!task) return;
+    
+    // Update task status
+    const statusMap = {
+        'todo': 'To Do',
+        'progress': 'In Progress',
+        'review': 'In Review',
+        'done': 'Done'
+    };
+    
+    try {
+        const response = await apiClient.put(`/tasks/${taskId}`, {
+            ...task,
+            status: statusMap[newStatus]
+        });
+        
+        if (response.ok) {
+            // Move task in local data
+            const oldStatus = task.status ? task.status.toLowerCase().replace(' ', '') : 'todo';
+            const oldStatusKey = oldStatus.includes('progress') ? 'progress' : 
+                                oldStatus.includes('review') ? 'review' :
+                                oldStatus === 'done' ? 'done' : 'todo';
+            
+            tasks[oldStatusKey] = tasks[oldStatusKey].filter(t => t.id !== taskId);
+            task.status = statusMap[newStatus];
+            tasks[newStatus].push(task);
+            
+            renderBoard();
+        }
+    } catch (error) {
+        console.error('Failed to update task:', error);
+        renderBoard();
+    }
+}
+
+// Make functions globally accessible
+window.toggleAssigneeRow = toggleAssigneeRow;
+
 // Make function globally accessible
-window.toggleAssigneeGroup = toggleAssigneeGroup;
+window.toggleAssigneeRow = toggleAssigneeRow;

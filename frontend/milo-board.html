@@ -420,10 +420,167 @@
         }
 
         .board-columns-wrapper {
+            display: none; /* Old layout hidden */
+        }
+
+        /* New Grid Layout */
+        .board-grid-wrapper {
             display: flex;
+            flex-direction: column;
             height: 100%;
-            padding: 16px;
-            gap: 0;
+            overflow: hidden;
+        }
+
+        .board-grid-header {
+            display: grid;
+            grid-template-columns: 250px repeat(4, 1fr);
+            background: white;
+            border-bottom: 2px solid #DFE1E6;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .board-grid-assignee-col {
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #42526E;
+            letter-spacing: 0.05em;
+            border-right: 1px solid #DFE1E6;
+            background: #FAFBFC;
+        }
+
+        .board-grid-status-col {
+            padding: 12px 16px;
+            border-right: 1px solid #DFE1E6;
+            background: white;
+        }
+
+        .board-grid-status-col:last-child {
+            border-right: none;
+        }
+
+        .board-grid-status-header {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #42526E;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .status-count {
+            background: #EBECF0;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .board-grid-body {
+            flex: 1;
+            overflow-y: auto;
+            background: #F4F5F7;
+        }
+
+        /* Assignee Row */
+        .assignee-row {
+            display: grid;
+            grid-template-columns: 250px repeat(4, 1fr);
+            border-bottom: 1px solid #DFE1E6;
+            background: white;
+            min-height: 60px;
+        }
+
+        .assignee-row.collapsed .status-cell {
+            display: none;
+        }
+
+        .assignee-info {
+            padding: 12px 16px;
+            border-right: 1px solid #DFE1E6;
+            background: #FAFBFC;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .assignee-toggle {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+            margin-top: 6px;
+        }
+
+        .assignee-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .assignee-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .assignee-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .assignee-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #172B4D;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .assignee-task-count {
+            font-size: 12px;
+            color: #6B778C;
+            margin-top: 2px;
+        }
+
+        .status-cell {
+            padding: 8px;
+            border-right: 1px solid #DFE1E6;
+            min-height: 60px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .status-cell:last-child {
+            border-right: none;
+        }
+
+        .status-cell.drop-target {
+            background: #DEEBFF;
+        }
+
+        /* Task cards in cells - keep existing styling */
+        .status-cell .task-card {
+            margin-bottom: 0;
+        }
+
+        .board-columns-wrapper {
+            display: none; /* Old layout */
         }
 
         .board-column {
@@ -1148,45 +1305,28 @@
 
                 <!-- Board Columns -->
                 <div class="board-content">
-                    <div class="board-columns-wrapper">
-                        <!-- TO DO Column -->
-                        <div class="board-column">
-                            <div class="column-header">
-                                <div class="column-title">TO DO</div>
-                                <div class="column-count" id="todoCount">0</div>
+                    <!-- New Row-Based Layout -->
+                    <div class="board-grid-wrapper">
+                        <!-- Header Row -->
+                        <div class="board-grid-header">
+                            <div class="board-grid-assignee-col">ASSIGNEE</div>
+                            <div class="board-grid-status-col">
+                                <div class="board-grid-status-header">TO DO <span class="status-count" id="todoCount">0</span></div>
                             </div>
-                            <div class="column-items" id="todoItems"></div>
-                            <button class="add-task-btn" onclick="addTask('todo')">+ Add a task</button>
+                            <div class="board-grid-status-col">
+                                <div class="board-grid-status-header">IN PROGRESS <span class="status-count" id="progressCount">0</span></div>
+                            </div>
+                            <div class="board-grid-status-col">
+                                <div class="board-grid-status-header">IN REVIEW <span class="status-count" id="reviewCount">0</span></div>
+                            </div>
+                            <div class="board-grid-status-col">
+                                <div class="board-grid-status-header">DONE <span class="status-count" id="doneCount">0</span></div>
+                            </div>
                         </div>
-
-                        <!-- IN PROGRESS Column -->
-                        <div class="board-column">
-                            <div class="column-header">
-                                <div class="column-title">IN PROGRESS</div>
-                                <div class="column-count" id="progressCount">0</div>
-                            </div>
-                            <div class="column-items" id="progressItems"></div>
-                            <button class="add-task-btn" onclick="addTask('progress')">+ Add a task</button>
-                        </div>
-
-                        <!-- IN REVIEW Column -->
-                        <div class="board-column">
-                            <div class="column-header">
-                                <div class="column-title">IN REVIEW</div>
-                                <div class="column-count" id="reviewCount">0</div>
-                            </div>
-                            <div class="column-items" id="reviewItems"></div>
-                            <button class="add-task-btn" onclick="addTask('review')">+ Add a task</button>
-                        </div>
-
-                        <!-- DONE Column -->
-                        <div class="board-column">
-                            <div class="column-header">
-                                <div class="column-title">DONE</div>
-                                <div class="column-count" id="doneCount">0</div>
-                            </div>
-                            <div class="column-items" id="doneItems"></div>
-                            <button class="add-task-btn" onclick="addTask('done')">+ Add a task</button>
+                        
+                        <!-- Assignee Rows Container -->
+                        <div class="board-grid-body" id="boardGridBody">
+                            <!-- Rows will be dynamically generated here -->
                         </div>
                     </div>
                 </div>
