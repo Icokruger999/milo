@@ -211,9 +211,6 @@ public class EmailService : IEmailService
             // Set HTML content type and encoding explicitly
             message.BodyEncoding = System.Text.Encoding.UTF8;
 
-            // Set content type explicitly
-            message.BodyEncoding = System.Text.Encoding.UTF8;
-
             message.To.Add(new MailAddress(to));
 
             await client.SendMailAsync(message);
