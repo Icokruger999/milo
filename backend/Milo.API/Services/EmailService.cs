@@ -4,9 +4,6 @@ using System.Text;
 using Milo.API.Models;
 using Milo.API.Data;
 using Microsoft.EntityFrameworkCore;
-using Amazon.SimpleEmail;
-using Amazon.SimpleEmail.Model;
-using Amazon;
 
 namespace Milo.API.Services;
 
@@ -30,8 +27,6 @@ public class EmailService : IEmailService
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<EmailService> _logger;
-    private readonly IAmazonSimpleEmailService? _sesClient;
-    private readonly bool _useSes;
     private readonly IServiceProvider _serviceProvider;
 
     public EmailService(IConfiguration configuration, ILogger<EmailService> logger, IServiceProvider serviceProvider)
@@ -39,29 +34,7 @@ public class EmailService : IEmailService
         _configuration = configuration;
         _logger = logger;
         _serviceProvider = serviceProvider;
-        
-        // Check if SES is enabled
-        _useSes = _configuration.GetValue<bool>("Email:UseSes", false);
-        
-        if (_useSes)
-        {
-            try
-            {
-                var region = _configuration["Email:SesRegion"] ?? "eu-west-1";
-                var regionEndpoint = RegionEndpoint.GetBySystemName(region);
-                _sesClient = new AmazonSimpleEmailServiceClient(regionEndpoint);
-                _logger.LogInformation("EmailService initialized with AWS SES (Region: {Region})", region);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to initialize SES client. Falling back to SMTP.");
-                _useSes = false;
-            }
-        }
-        else
-        {
-            _logger.LogInformation("EmailService initialized with SMTP");
-        }
+        _logger.LogInformation("EmailService initialized with SMTP");
     }
 
     public async Task<bool> SendDailyIncidentReportAsync(string recipientEmail, string recipientName, DailyReportData reportData)
@@ -107,83 +80,13 @@ public class EmailService : IEmailService
                 return false;
             }
 
-            if (_useSes && _sesClient != null)
-            {
-                // Use AWS SES
-                return await SendEmailViaSesAsync(to, subject, htmlBody, plainTextBody, fromEmail, fromName);
-            }
-            else
-            {
-                // Use SMTP (fallback)
-                return await SendEmailViaSmtpAsync(to, subject, htmlBody, plainTextBody, fromEmail, fromName);
-            }
+            // Use SMTP only
+            return await SendEmailViaSmtpAsync(to, subject, htmlBody, plainTextBody, fromEmail, fromName);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error sending email to {To}", to);
             return false;
-        }
-    }
-
-    private async Task<bool> SendEmailViaSesAsync(string to, string subject, string htmlBody, string plainTextBody, string fromEmail, string fromName)
-    {
-        try
-        {
-            if (_sesClient == null)
-            {
-                _logger.LogError("SES client is null. Cannot send email.");
-                return false;
-            }
-
-            // If htmlBody is the same as plainTextBody, send plain text only (no HTML)
-            // Otherwise, use standard multipart format with both HTML and text
-            var isPlainTextOnly = htmlBody == plainTextBody || htmlBody.Trim() == plainTextBody.Trim();
-
-            var body = new Body();
-
-            // Only add HTML part if htmlBody is different from plainTextBody
-            // This allows sending plain text only emails when htmlBody equals plainTextBody
-            if (!isPlainTextOnly)
-            {
-                // Set HTML first - email clients prefer HTML when both are available
-                body.Html = new Content
-                {
-                    Charset = "UTF-8",
-                    Data = htmlBody
-                };
-            }
-            
-            // Always include plain text as fallback
-            body.Text = new Content
-            {
-                Charset = "UTF-8",
-                Data = plainTextBody
-            };
-
-            var request = new SendEmailRequest
-            {
-                Source = $"{fromName} <{fromEmail}>",
-                Destination = new Destination
-                {
-                    ToAddresses = new List<string> { to }
-                },
-                Message = new Message
-                {
-                    Subject = new Content(subject),
-                    Body = body
-                }
-            };
-
-            var response = await _sesClient.SendEmailAsync(request);
-            _logger.LogInformation("Email sent successfully via SES to {To}. MessageId: {MessageId}", to, response.MessageId);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error sending email via SES to {To}. Error: {Error}", to, ex.Message);
-            // Fallback to SMTP if SES fails
-            _logger.LogInformation("Falling back to SMTP for email to {To}", to);
-            return await SendEmailViaSmtpAsync(to, subject, htmlBody, plainTextBody, fromEmail, fromName);
         }
     }
 
