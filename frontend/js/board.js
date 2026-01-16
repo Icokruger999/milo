@@ -429,9 +429,63 @@ async function showTaskModal(column, task = null) {
     // Show modal immediately for better UX (don't wait for API calls)
     modal.style.display = 'flex';
     
+    // FIX 1: Populate form immediately with cached task data for faster display
+    const startDateInput = document.getElementById('taskStartDate');
+    const dueDateInput = document.getElementById('taskDueDate');
+    let preservedStartDateInputValue = '';
+    
+    if (task) {
+        // Populate form immediately with cached data (don't wait for API)
+        document.getElementById('taskTitle').value = task.title || '';
+        document.getElementById('taskDescription').value = task.description || '';
+        if (task.description && task.description.trim()) {
+            updateDescriptionPreview();
+        }
+        
+        const statusSelect = document.getElementById('taskStatus');
+        if (statusSelect) {
+            statusSelect.value = task.status || column || 'todo';
+        }
+        
+        // Set start date immediately if available
+        if (startDateInput && task.startDate) {
+            try {
+                const startDate = task.startDate instanceof Date ? task.startDate : new Date(task.startDate);
+                if (!isNaN(startDate.getTime()) && startDate.getFullYear() > 1900) {
+                    const year = startDate.getFullYear();
+                    const month = String(startDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(startDate.getDate()).padStart(2, '0');
+                    preservedStartDateInputValue = `${year}-${month}-${day}`;
+                    startDateInput.value = preservedStartDateInputValue;
+                }
+            } catch (e) {
+                console.error('Error parsing start date:', e);
+            }
+        }
+        
+        // Set due date immediately if available
+        if (dueDateInput && task.dueDate) {
+            try {
+                const dueDate = task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate);
+                if (!isNaN(dueDate.getTime()) && dueDate.getFullYear() > 1900) {
+                    const year = dueDate.getFullYear();
+                    const month = String(dueDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(dueDate.getDate()).padStart(2, '0');
+                    dueDateInput.value = `${year}-${month}-${day}`;
+                }
+            } catch (e) {
+                console.error('Error parsing due date:', e);
+            }
+        }
+    }
+    
     // Store the task's start date BEFORE any async operations that might reset it
     const originalStartDate = task?.startDate ? (task.startDate instanceof Date ? task.startDate : new Date(task.startDate)) : null;
     const originalDueDate = task?.dueDate ? (task.dueDate instanceof Date ? task.dueDate : new Date(task.dueDate)) : null;
+    // Also preserve the actual input value
+    if (startDateInput && !preservedStartDateInputValue) {
+        preservedStartDateInputValue = startDateInput.value || '';
+    }
     
     // OPTIMIZATION: Load task data first (critical), then dropdowns in parallel
     // This makes the modal appear faster with task data, then dropdowns populate
@@ -463,12 +517,17 @@ async function showTaskModal(column, task = null) {
     // Use fresh task data if available
     if (freshTask) {
         task = freshTask;
-        // Preserve original dates if fresh task doesn't have them
+        // FIX 4: Preserve original dates AND input values if fresh task doesn't have them
         if (originalStartDate && !task.startDate) {
             task.startDate = originalStartDate;
         }
         if (originalDueDate && !task.dueDate) {
             task.dueDate = originalDueDate;
+        }
+        // Also preserve the actual input value if it was set
+        if (startDateInput && preservedStartDateInputValue && (!task.startDate || !startDateInput.value)) {
+            // Keep the input value that was already set
+            startDateInput.value = preservedStartDateInputValue;
         }
     }
     
@@ -1020,8 +1079,8 @@ function createTaskModal() {
     
     document.body.appendChild(modal);
     
-    // Load users and products
-    loadUsersAndProducts();
+    // FIX 2: Removed duplicate loadUsersAndProducts() call - it's already called in showTaskModal()
+    // This prevents duplicate assignees in the dropdown
 }
 
 // Cache for users and products (5 minute TTL)
@@ -1085,6 +1144,10 @@ async function loadUsersAndProducts() {
             // Store current selection before clearing
             const currentValue = assigneeSelect.value;
             
+            // FIX 3: Preserve start date input value when repopulating dropdown
+            const startDateInput = document.getElementById('taskStartDate');
+            const preservedStartDateValue = startDateInput ? startDateInput.value : '';
+            
             // Clear dropdown completely
             assigneeSelect.innerHTML = '<option value="">Unassigned</option>';
             
@@ -1117,6 +1180,11 @@ async function loadUsersAndProducts() {
             // Restore selection if it still exists
             if (currentValue && Array.from(assigneeSelect.options).some(opt => opt.value === currentValue)) {
                 assigneeSelect.value = currentValue;
+            }
+            
+            // FIX 3: Restore start date input value
+            if (startDateInput && preservedStartDateValue) {
+                startDateInput.value = preservedStartDateValue;
             }
             
             console.log(`Populated assignee dropdown with ${uniqueUsers.length} unique users (${addedIds.size} by ID, ${addedEmails.size} by email)`);
