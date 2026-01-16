@@ -694,6 +694,7 @@ public class TasksController : ControllerBase
                 project = task.Project != null ? new { id = task.Project.Id, name = task.Project.Name, key = task.Project.Key } : null,
                 priority = task.Priority,
                 dueDate = task.DueDate,
+                startDate = task.StartDate,
                 createdAt = task.CreatedAt,
                 updatedAt = task.UpdatedAt,
                 message = "Task updated successfully"

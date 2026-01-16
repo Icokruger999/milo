@@ -524,10 +524,26 @@ async function showTaskModal(column, task = null) {
         if (originalDueDate && !task.dueDate) {
             task.dueDate = originalDueDate;
         }
-        // Also preserve the actual input value if it was set
-        if (startDateInput && preservedStartDateInputValue && (!task.startDate || !startDateInput.value)) {
-            // Keep the input value that was already set
-            startDateInput.value = preservedStartDateInputValue;
+        
+        // CRITICAL: Restore preserved start date value AFTER async operations complete
+        // This ensures user-set values are not lost when dropdowns reload
+        if (startDateInput && preservedStartDateInputValue && preservedStartDateInputValue.trim()) {
+            // Always restore the preserved value if it exists
+            setTimeout(() => {
+                if (startDateInput && preservedStartDateInputValue) {
+                    startDateInput.value = preservedStartDateInputValue;
+                    console.log('Restored preserved start date after async operations:', preservedStartDateInputValue);
+                }
+            }, 100); // Small delay to ensure DOM is ready
+        } else if (startDateInput && startDateInput.value && startDateInput.value.trim()) {
+            // If input already has a value, preserve it
+            const existingValue = startDateInput.value;
+            setTimeout(() => {
+                if (startDateInput && !startDateInput.value && existingValue) {
+                    startDateInput.value = existingValue;
+                    console.log('Restored existing start date value:', existingValue);
+                }
+            }, 100);
         }
     }
     
@@ -578,11 +594,27 @@ async function showTaskModal(column, task = null) {
         // Set priority
         document.getElementById('taskPriority').value = task.priority !== undefined ? task.priority : 0;
         
-        // Set start date - only if task has a startDate, otherwise leave empty
-        // Don't auto-populate with current date
+        // Set start date - preserve existing value if already set, otherwise use task.startDate
+        // Don't auto-populate with current date, and don't clear if already set
         const startDateInput = document.getElementById('taskStartDate');
         if (startDateInput) {
-            if (task.startDate) {
+            // CRITICAL: Only set start date if:
+            // 1. We have a preserved value from earlier (user set it), OR
+            // 2. Task has a startDate and input is empty
+            const currentInputValue = startDateInput.value || '';
+            
+            // If we have a preserved value, use it (don't overwrite)
+            if (preservedStartDateInputValue && preservedStartDateInputValue.trim()) {
+                startDateInput.value = preservedStartDateInputValue;
+                console.log('Preserved start date input value:', preservedStartDateInputValue);
+            } 
+            // If input already has a value, don't overwrite it
+            else if (currentInputValue && currentInputValue.trim()) {
+                console.log('Start date input already has value, keeping it:', currentInputValue);
+                // Don't change it
+            }
+            // Only set from task.startDate if input is empty
+            else if (task.startDate) {
                 try {
                     // Handle both string and Date objects
                     const startDate = task.startDate instanceof Date 
@@ -590,7 +622,7 @@ async function showTaskModal(column, task = null) {
                         : new Date(task.startDate);
                     
                     // Check if date is valid
-                    if (!isNaN(startDate.getTime())) {
+                    if (!isNaN(startDate.getTime()) && startDate.getFullYear() > 1900) {
                         // Format as YYYY-MM-DD for HTML date input
                         const year = startDate.getFullYear();
                         const month = String(startDate.getMonth() + 1).padStart(2, '0');
@@ -599,16 +631,21 @@ async function showTaskModal(column, task = null) {
                         console.log('Set start date input to:', startDateInput.value, 'from task.startDate:', task.startDate);
                     } else {
                         console.warn('Invalid start date:', task.startDate);
-                        startDateInput.value = '';
+                        // Don't clear if it already has a value
+                        if (!currentInputValue) {
+                            startDateInput.value = '';
+                        }
                     }
                 } catch (e) {
                     console.error('Error parsing start date:', e, 'task.startDate:', task.startDate);
-                    startDateInput.value = '';
+                    // Don't clear if it already has a value
+                    if (!currentInputValue) {
+                        startDateInput.value = '';
+                    }
                 }
-            } else {
-                console.log('No start date in task');
-                startDateInput.value = '';
             }
+            // Don't clear if it already has a value and task has no startDate
+            // (user might have manually set it)
         }
         
         // Set due date - only if task has a dueDate, otherwise leave empty
@@ -1106,10 +1143,11 @@ async function loadUsersAndProducts() {
         const assigneeSelect = document.getElementById('taskAssignee');
         const productSelect = document.getElementById('taskProduct');
         
-        // Helper function to deduplicate users by both ID and email
+        // Helper function to deduplicate users by ID, email, and name
         const deduplicateUsers = (users) => {
             if (!Array.isArray(users)) return [];
-            // First deduplicate by ID (primary key)
+            
+            // First deduplicate by ID (primary key) - most reliable
             const byId = new Map();
             users.forEach(user => {
                 if (user && user.id) {
@@ -1119,6 +1157,7 @@ async function loadUsersAndProducts() {
                     }
                 }
             });
+            
             // Then deduplicate by email (in case same email has different IDs somehow)
             const byEmail = new Map();
             Array.from(byId.values()).forEach(user => {
@@ -1130,8 +1169,22 @@ async function loadUsersAndProducts() {
                     byEmail.set(`no-email-${user.id}`, user);
                 }
             });
+            
+            // Finally deduplicate by name+email combination to catch any remaining duplicates
+            const byNameEmail = new Map();
+            Array.from(byEmail.values()).forEach(user => {
+                const name = (user.name || '').toLowerCase().trim();
+                const email = (user.email || '').toLowerCase().trim();
+                const key = `${name}::${email}`;
+                
+                // Only add if we haven't seen this name+email combination
+                if (!byNameEmail.has(key)) {
+                    byNameEmail.set(key, user);
+                }
+            });
+            
             // Sort by name for consistent display
-            return Array.from(byEmail.values()).sort((a, b) => {
+            return Array.from(byNameEmail.values()).sort((a, b) => {
                 const nameA = (a.name || a.email || '').toLowerCase();
                 const nameB = (b.name || b.email || '').toLowerCase();
                 return nameA.localeCompare(nameB);
@@ -1141,6 +1194,7 @@ async function loadUsersAndProducts() {
         // Helper function to populate assignee dropdown
         const populateAssigneeDropdown = (users) => {
             if (!assigneeSelect) return;
+            
             // Store current selection before clearing
             const currentValue = assigneeSelect.value;
             
@@ -1148,8 +1202,16 @@ async function loadUsersAndProducts() {
             const startDateInput = document.getElementById('taskStartDate');
             const preservedStartDateValue = startDateInput ? startDateInput.value : '';
             
-            // Clear dropdown completely
-            assigneeSelect.innerHTML = '<option value="">Unassigned</option>';
+            // Clear dropdown completely - remove ALL options first
+            while (assigneeSelect.firstChild) {
+                assigneeSelect.removeChild(assigneeSelect.firstChild);
+            }
+            
+            // Add "Unassigned" option
+            const unassignedOption = document.createElement('option');
+            unassignedOption.value = '';
+            unassignedOption.textContent = 'Unassigned';
+            assigneeSelect.appendChild(unassignedOption);
             
             // Add unique users - ensure deduplication happens
             const uniqueUsers = deduplicateUsers(users);
@@ -1157,24 +1219,40 @@ async function loadUsersAndProducts() {
             // Use a Set to track what we've already added (extra safety)
             const addedIds = new Set();
             const addedEmails = new Set();
+            const addedNameEmail = new Set();
             
             uniqueUsers.forEach(user => {
-                // Skip if we've already added this user
+                // Skip if we've already added this user by ID
                 if (user.id && addedIds.has(user.id)) {
-                    return;
-                }
-                const email = (user.email || '').toLowerCase().trim();
-                if (email && addedEmails.has(email)) {
+                    console.warn('Skipping duplicate user by ID:', user.id, user.name);
                     return;
                 }
                 
+                const email = (user.email || '').toLowerCase().trim();
+                // Skip if we've already added this user by email
+                if (email && addedEmails.has(email)) {
+                    console.warn('Skipping duplicate user by email:', email, user.name);
+                    return;
+                }
+                
+                // Also check by name+email combination
+                const name = (user.name || '').toLowerCase().trim();
+                const nameEmailKey = `${name}::${email}`;
+                if (addedNameEmail.has(nameEmailKey)) {
+                    console.warn('Skipping duplicate user by name+email:', nameEmailKey);
+                    return;
+                }
+                
+                // Create and add option
                 const option = document.createElement('option');
                 option.value = user.id;
                 option.textContent = user.name || user.email || 'Unknown';
                 assigneeSelect.appendChild(option);
                 
+                // Track what we've added
                 if (user.id) addedIds.add(user.id);
                 if (email) addedEmails.add(email);
+                addedNameEmail.add(nameEmailKey);
             });
             
             // Restore selection if it still exists
@@ -1666,6 +1744,7 @@ async function loadTasksFromAPI() {
                     productId: task.productId,
                     priority: task.priority,
                     dueDate: task.dueDate,
+                    startDate: task.startDate, // Include startDate so it persists when editing
                     subtasks: Math.floor(Math.random() * 5) + 1 // Mock subtask count - replace with actual when available
                 };
                 

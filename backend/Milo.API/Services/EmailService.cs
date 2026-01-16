@@ -2,6 +2,8 @@ using System.Net;
 using System.Net.Mail;
 using System.Text;
 using Milo.API.Models;
+using Milo.API.Data;
+using Microsoft.EntityFrameworkCore;
 using Amazon.SimpleEmail;
 using Amazon.SimpleEmail.Model;
 using Amazon;
@@ -21,6 +23,7 @@ public interface IEmailService
     Task<bool> SendIncidentAssignmentEmailAsync(string email, string assigneeName, string incidentNumber, string subject, string priority, string status, string? incidentLink = null, string? description = null, string? requesterName = null, string? requesterEmail = null, DateTime? createdAt = null, string? category = null, string? source = null);
     Task<bool> SendNewUserNotificationEmailAsync(string userEmail, string userName, DateTime signupDate);
     Task<bool> SendDailyUsersReportEmailAsync(string recipientEmail, List<UserReportData> users);
+    Task<int> SendDailyIncidentReportsToAllRecipientsAsync(int? projectId = null);
 }
 
 public class EmailService : IEmailService
@@ -29,11 +32,13 @@ public class EmailService : IEmailService
     private readonly ILogger<EmailService> _logger;
     private readonly IAmazonSimpleEmailService? _sesClient;
     private readonly bool _useSes;
+    private readonly IServiceProvider _serviceProvider;
 
-    public EmailService(IConfiguration configuration, ILogger<EmailService> logger)
+    public EmailService(IConfiguration configuration, ILogger<EmailService> logger, IServiceProvider serviceProvider)
     {
         _configuration = configuration;
         _logger = logger;
+        _serviceProvider = serviceProvider;
         
         // Check if SES is enabled
         _useSes = _configuration.GetValue<bool>("Email:UseSes", false);
@@ -193,16 +198,21 @@ public class EmailService : IEmailService
             var message = new MailMessage
             {
                 From = new MailAddress(fromEmail, fromName),
-                Subject = subject
+                Subject = subject,
+                Body = htmlBody, // Set HTML as the main body so email clients render it properly
+                IsBodyHtml = true // Explicitly set to true for HTML body
             };
 
-            // Add plain text version first (some email clients prefer this)
+            // Add plain text version as alternate view (for email clients that don't support HTML)
             var plainTextView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(plainTextBody, null, System.Net.Mime.MediaTypeNames.Text.Plain);
+            plainTextView.ContentType.CharSet = "UTF-8";
             message.AlternateViews.Add(plainTextView);
+            
+            // Set HTML content type and encoding explicitly
+            message.BodyEncoding = System.Text.Encoding.UTF8;
 
-            // Add HTML version
-            var htmlView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(htmlBody, null, System.Net.Mime.MediaTypeNames.Text.Html);
-            message.AlternateViews.Add(htmlView);
+            // Set content type explicitly
+            message.BodyEncoding = System.Text.Encoding.UTF8;
 
             message.To.Add(new MailAddress(to));
 
@@ -1035,6 +1045,129 @@ View in Milo: {link}";
         {
             _logger.LogError(ex, "Error sending daily users report email");
             return false;
+        }
+    }
+
+    public async Task<int> SendDailyIncidentReportsToAllRecipientsAsync(int? projectId = null)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<MiloDbContext>();
+
+        try
+        {
+            _logger.LogInformation("Fetching active report recipients for daily incident report...");
+
+            // Get active recipients
+            var recipientsQuery = dbContext.ReportRecipients
+                .Where(r => r.IsActive && r.ReportType == "DailyIncidents");
+
+            if (projectId.HasValue)
+            {
+                recipientsQuery = recipientsQuery.Where(r => r.ProjectId == projectId.Value);
+            }
+
+            var recipients = await recipientsQuery.ToListAsync();
+
+            if (!recipients.Any())
+            {
+                _logger.LogInformation("No active recipients found for daily incident report");
+                return 0;
+            }
+
+            _logger.LogInformation($"Found {recipients.Count} active recipients. Generating daily incident report...");
+
+            // Get report data
+            var today = DateTime.UtcNow.Date;
+            var tomorrow = today.AddDays(1);
+
+            var incidentsQuery = dbContext.Incidents
+                .Include(i => i.Requester)
+                .Include(i => i.Assignee)
+                .Where(i => i.CreatedAt >= today && i.CreatedAt < tomorrow);
+
+            if (projectId.HasValue)
+            {
+                incidentsQuery = incidentsQuery.Where(i => i.ProjectId == projectId.Value);
+            }
+
+            var incidents = await incidentsQuery
+                .OrderByDescending(i => i.CreatedAt)
+                .ToListAsync();
+
+            // Prepare report data
+            var reportData = new DailyReportData
+            {
+                Date = today,
+                TotalCount = incidents.Count,
+                NewCount = incidents.Count(i => i.Status == "New"),
+                OpenCount = incidents.Count(i => i.Status == "Open"),
+                ResolvedCount = incidents.Count(i => i.Status == "Resolved"),
+                HighPriorityCount = incidents.Count(i => i.Priority == "High" || i.Priority == "Urgent"),
+                Incidents = incidents.Select(i => new IncidentSummary
+                {
+                    IncidentNumber = i.IncidentNumber,
+                    Subject = i.Subject,
+                    Status = i.Status,
+                    Priority = i.Priority,
+                    RequesterName = i.Requester?.Name ?? "Unknown",
+                    AssigneeName = i.Assignee?.Name ?? "Unassigned",
+                    ResolutionTime = i.ResolvedAt.HasValue && i.CreatedAt != default
+                        ? i.ResolvedAt.Value - i.CreatedAt
+                        : null
+                }).ToList()
+            };
+
+            // Send emails to all recipients
+            int successCount = 0;
+            var failedRecipients = new List<string>();
+
+            foreach (var recipient in recipients)
+            {
+                try
+                {
+                    var sent = await SendDailyIncidentReportAsync(
+                        recipient.Email,
+                        recipient.Name,
+                        reportData
+                    );
+
+                    if (sent)
+                    {
+                        recipient.LastSentAt = DateTime.UtcNow;
+                        successCount++;
+                        _logger.LogInformation($"✓ Daily incident report sent to {recipient.Email}");
+                    }
+                    else
+                    {
+                        failedRecipients.Add(recipient.Email);
+                        _logger.LogWarning($"✗ Failed to send daily incident report to {recipient.Email}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    failedRecipients.Add(recipient.Email);
+                    _logger.LogError(ex, $"Error sending daily incident report to {recipient.Email}");
+                }
+            }
+
+            // Update LastSentAt for successful sends
+            if (successCount > 0)
+            {
+                await dbContext.SaveChangesAsync();
+            }
+
+            _logger.LogInformation($"Daily incident report sent to {successCount} of {recipients.Count} recipients");
+            if (failedRecipients.Any())
+            {
+                _logger.LogWarning($"Failed recipients: {string.Join(", ", failedRecipients)}");
+            }
+
+            return successCount;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending daily incident reports to all recipients");
+            return 0;
         }
     }
 }
