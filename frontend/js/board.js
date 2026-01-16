@@ -2119,3 +2119,165 @@ window.addCommentToTaskModal = addCommentToTaskModal;
 window.deleteTaskFromModal = deleteTaskFromModal;
 window.loadTaskComments = loadTaskComments;
 
+
+
+// Group by functionality
+let currentGroupBy = 'status'; // 'status', 'assignee', or 'priority'
+let collapsedGroups = {}; // Track which groups are collapsed
+
+function handleGroupByChange() {
+    const select = document.getElementById('groupBySelect');
+    currentGroupBy = select.value;
+    collapsedGroups = {}; // Reset collapsed state
+    renderBoardWithGrouping();
+}
+
+function renderBoardWithGrouping() {
+    if (currentGroupBy === 'status') {
+        // Default status-based rendering
+        renderBoard();
+    } else if (currentGroupBy === 'assignee') {
+        renderBoardByAssignee();
+    } else if (currentGroupBy === 'priority') {
+        renderBoardByPriority();
+    }
+}
+
+function renderBoardByAssignee() {
+    // Group all tasks by assignee across all statuses
+    const columns = ['todo', 'progress', 'review', 'done'];
+    
+    columns.forEach(columnId => {
+        const container = document.getElementById(columnId + 'Items');
+        const columnTasks = tasks[columnId] || [];
+        
+        // Group tasks by assignee
+        const grouped = {};
+        columnTasks.forEach(task => {
+            const assignee = task.assigneeName || 'Unassigned';
+            if (!grouped[assignee]) {
+                grouped[assignee] = [];
+            }
+            grouped[assignee].push(task);
+        });
+        
+        // Sort assignees alphabetically, but put Unassigned last
+        const assignees = Object.keys(grouped).sort((a, b) => {
+            if (a === 'Unassigned') return 1;
+            if (b === 'Unassigned') return -1;
+            return a.localeCompare(b);
+        });
+        
+        // Render grouped tasks
+        container.innerHTML = '';
+        assignees.forEach((assignee, index) => {
+            const groupId = `${columnId}-${assignee.replace(/\s+/g, '-')}`;
+            const isCollapsed = collapsedGroups[groupId] || false;
+            
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'assignee-group';
+            groupDiv.innerHTML = `
+                <div class="assignee-group-header" onclick="toggleAssigneeGroup('${groupId}')">
+                    <div class="assignee-group-toggle ${isCollapsed ? 'collapsed' : ''}" id="toggle-${groupId}">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                    <span class="assignee-group-name">${assignee}</span>
+                    <span class="assignee-group-count">${grouped[assignee].length}</span>
+                </div>
+                <div class="assignee-group-tasks ${isCollapsed ? 'collapsed' : ''}" id="tasks-${groupId}">
+                </div>
+            `;
+            
+            container.appendChild(groupDiv);
+            
+            // Add tasks to the group
+            const tasksContainer = groupDiv.querySelector('.assignee-group-tasks');
+            grouped[assignee].forEach(task => {
+                const card = createTaskCard(task);
+                tasksContainer.appendChild(card);
+            });
+        });
+    });
+    
+    updateCounts();
+}
+
+function renderBoardByPriority() {
+    // Group all tasks by priority across all statuses
+    const columns = ['todo', 'progress', 'review', 'done'];
+    const priorityNames = ['Low', 'Medium', 'High'];
+    
+    columns.forEach(columnId => {
+        const container = document.getElementById(columnId + 'Items');
+        const columnTasks = tasks[columnId] || [];
+        
+        // Group tasks by priority
+        const grouped = { 0: [], 1: [], 2: [] }; // Low, Medium, High
+        columnTasks.forEach(task => {
+            const priority = task.priority || 0;
+            if (!grouped[priority]) grouped[priority] = [];
+            grouped[priority].push(task);
+        });
+        
+        // Render grouped tasks (High to Low)
+        container.innerHTML = '';
+        [2, 1, 0].forEach(priority => {
+            if (grouped[priority].length === 0) return;
+            
+            const groupId = `${columnId}-priority-${priority}`;
+            const isCollapsed = collapsedGroups[groupId] || false;
+            
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'assignee-group';
+            groupDiv.innerHTML = `
+                <div class="assignee-group-header" onclick="toggleAssigneeGroup('${groupId}')">
+                    <div class="assignee-group-toggle ${isCollapsed ? 'collapsed' : ''}" id="toggle-${groupId}">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </div>
+                    <span class="assignee-group-name">${priorityNames[priority]} Priority</span>
+                    <span class="assignee-group-count">${grouped[priority].length}</span>
+                </div>
+                <div class="assignee-group-tasks ${isCollapsed ? 'collapsed' : ''}" id="tasks-${groupId}">
+                </div>
+            `;
+            
+            container.appendChild(groupDiv);
+            
+            // Add tasks to the group
+            const tasksContainer = groupDiv.querySelector('.assignee-group-tasks');
+            grouped[priority].forEach(task => {
+                const card = createTaskCard(task);
+                tasksContainer.appendChild(card);
+            });
+        });
+    });
+    
+    updateCounts();
+}
+
+function toggleAssigneeGroup(groupId) {
+    const toggle = document.getElementById(`toggle-${groupId}`);
+    const tasks = document.getElementById(`tasks-${groupId}`);
+    
+    if (toggle && tasks) {
+        const isCollapsed = tasks.classList.contains('collapsed');
+        
+        if (isCollapsed) {
+            toggle.classList.remove('collapsed');
+            tasks.classList.remove('collapsed');
+            collapsedGroups[groupId] = false;
+        } else {
+            toggle.classList.add('collapsed');
+            tasks.classList.add('collapsed');
+            collapsedGroups[groupId] = true;
+        }
+    }
+}
+
+// Make functions globally accessible
+window.handleGroupByChange = handleGroupByChange;
+window.toggleAssigneeGroup = toggleAssigneeGroup;

@@ -497,6 +497,66 @@
             gap: 8px;
         }
 
+        /* Assignee Group Styles */
+        .assignee-group {
+            margin-bottom: 16px;
+        }
+
+        .assignee-group-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #F4F5F7;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-bottom: 8px;
+            transition: background 0.15s;
+        }
+
+        .assignee-group-header:hover {
+            background: #EBECF0;
+        }
+
+        .assignee-group-toggle {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        .assignee-group-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .assignee-group-name {
+            flex: 1;
+            font-size: 13px;
+            font-weight: 600;
+            color: #172B4D;
+        }
+
+        .assignee-group-count {
+            background: #DFE1E6;
+            border-radius: 10px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #42526E;
+        }
+
+        .assignee-group-tasks {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .assignee-group-tasks.collapsed {
+            display: none;
+        }
+
         .task-card {
             background: #FFFFFF;
             border: 1px solid #DFE1E6;
@@ -1012,6 +1072,14 @@
                                 <path d="m21 21-4.35-4.35"></path>
                             </svg>
                         </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-left: 12px;">
+                        <label for="groupBySelect" style="font-size: 13px; color: #6B778C; font-weight: 500;">Group by:</label>
+                        <select id="groupBySelect" onchange="handleGroupByChange()" style="padding: 6px 12px; border: 1px solid #DFE1E6; border-radius: 3px; background: white; font-size: 13px; color: #42526E; cursor: pointer;">
+                            <option value="status">Status</option>
+                            <option value="assignee">Assignee</option>
+                            <option value="priority">Priority</option>
+                        </select>
                     </div>
                     <div class="board-user-avatars" id="boardUserAvatars">
                         <!-- Will be populated with real project members -->
