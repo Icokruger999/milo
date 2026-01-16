@@ -267,14 +267,7 @@ function setupUserMenu() {
     });
 }
 
-function renderBoard() {
-    renderColumn('todo', tasks.todo);
-    renderColumn('progress', tasks.progress);
-    renderColumn('review', tasks.review);
-    renderColumn('done', tasks.done);
-
-    updateCounts();
-}
+// Old renderBoard and renderColumn functions removed - now using renderBoardByAssignee
 
 function renderColumn(columnId, items) {
     const container = document.getElementById(columnId + 'Items');
@@ -2121,26 +2114,12 @@ window.loadTaskComments = loadTaskComments;
 
 
 
-// Group by functionality
-let currentGroupBy = 'status'; // 'status', 'assignee', or 'priority'
+// Group by functionality - Default to assignee grouping
 let collapsedGroups = {}; // Track which groups are collapsed
 
-function handleGroupByChange() {
-    const select = document.getElementById('groupBySelect');
-    currentGroupBy = select.value;
-    collapsedGroups = {}; // Reset collapsed state
-    renderBoardWithGrouping();
-}
-
-function renderBoardWithGrouping() {
-    if (currentGroupBy === 'status') {
-        // Default status-based rendering
-        renderBoard();
-    } else if (currentGroupBy === 'assignee') {
-        renderBoardByAssignee();
-    } else if (currentGroupBy === 'priority') {
-        renderBoardByPriority();
-    }
+function renderBoard() {
+    // Always render by assignee (no dropdown needed)
+    renderBoardByAssignee();
 }
 
 function renderBoardByAssignee() {
@@ -2155,10 +2134,15 @@ function renderBoardByAssignee() {
         const grouped = {};
         columnTasks.forEach(task => {
             const assignee = task.assigneeName || 'Unassigned';
+            const assigneeId = task.assigneeId || 'unassigned';
             if (!grouped[assignee]) {
-                grouped[assignee] = [];
+                grouped[assignee] = {
+                    tasks: [],
+                    assigneeId: assigneeId,
+                    assigneeName: assignee
+                };
             }
-            grouped[assignee].push(task);
+            grouped[assignee].tasks.push(task);
         });
         
         // Sort assignees alphabetically, but put Unassigned last
@@ -2171,9 +2155,15 @@ function renderBoardByAssignee() {
         // Render grouped tasks
         container.innerHTML = '';
         assignees.forEach((assignee, index) => {
+            const groupData = grouped[assignee];
             const groupId = `${columnId}-${assignee.replace(/\s+/g, '-')}`;
             const isCollapsed = collapsedGroups[groupId] || false;
             
+            // Get assignee initials and color
+            const initials = assignee === 'Unassigned' ? 'UN' : 
+                            assignee.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            const assigneeColor = getAssigneeColor(groupData.assigneeId, assignee);
+            
             const groupDiv = document.createElement('div');
             groupDiv.className = 'assignee-group';
             groupDiv.innerHTML = `
@@ -2182,9 +2172,12 @@ function renderBoardByAssignee() {
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="6 9 12 15 18 9"></polyline>
                         </svg>
+                    </div>
+                    <div class="assignee-group-avatar" style="background: ${assigneeColor.bg}; color: ${assigneeColor.text};">
+                        ${initials}
                     </div>
                     <span class="assignee-group-name">${assignee}</span>
-                    <span class="assignee-group-count">${grouped[assignee].length}</span>
+                    <span class="assignee-group-count">${groupData.tasks.length}</span>
                 </div>
                 <div class="assignee-group-tasks ${isCollapsed ? 'collapsed' : ''}" id="tasks-${groupId}">
                 </div>
@@ -2194,62 +2187,7 @@ function renderBoardByAssignee() {
             
             // Add tasks to the group
             const tasksContainer = groupDiv.querySelector('.assignee-group-tasks');
-            grouped[assignee].forEach(task => {
-                const card = createTaskCard(task);
-                tasksContainer.appendChild(card);
-            });
-        });
-    });
-    
-    updateCounts();
-}
-
-function renderBoardByPriority() {
-    // Group all tasks by priority across all statuses
-    const columns = ['todo', 'progress', 'review', 'done'];
-    const priorityNames = ['Low', 'Medium', 'High'];
-    
-    columns.forEach(columnId => {
-        const container = document.getElementById(columnId + 'Items');
-        const columnTasks = tasks[columnId] || [];
-        
-        // Group tasks by priority
-        const grouped = { 0: [], 1: [], 2: [] }; // Low, Medium, High
-        columnTasks.forEach(task => {
-            const priority = task.priority || 0;
-            if (!grouped[priority]) grouped[priority] = [];
-            grouped[priority].push(task);
-        });
-        
-        // Render grouped tasks (High to Low)
-        container.innerHTML = '';
-        [2, 1, 0].forEach(priority => {
-            if (grouped[priority].length === 0) return;
-            
-            const groupId = `${columnId}-priority-${priority}`;
-            const isCollapsed = collapsedGroups[groupId] || false;
-            
-            const groupDiv = document.createElement('div');
-            groupDiv.className = 'assignee-group';
-            groupDiv.innerHTML = `
-                <div class="assignee-group-header" onclick="toggleAssigneeGroup('${groupId}')">
-                    <div class="assignee-group-toggle ${isCollapsed ? 'collapsed' : ''}" id="toggle-${groupId}">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9"></polyline>
-                        </svg>
-                    </div>
-                    <span class="assignee-group-name">${priorityNames[priority]} Priority</span>
-                    <span class="assignee-group-count">${grouped[priority].length}</span>
-                </div>
-                <div class="assignee-group-tasks ${isCollapsed ? 'collapsed' : ''}" id="tasks-${groupId}">
-                </div>
-            `;
-            
-            container.appendChild(groupDiv);
-            
-            // Add tasks to the group
-            const tasksContainer = groupDiv.querySelector('.assignee-group-tasks');
-            grouped[priority].forEach(task => {
+            groupData.tasks.forEach(task => {
                 const card = createTaskCard(task);
                 tasksContainer.appendChild(card);
             });
@@ -2278,6 +2216,5 @@ function toggleAssigneeGroup(groupId) {
     }
 }
 
-// Make functions globally accessible
-window.handleGroupByChange = handleGroupByChange;
+// Make function globally accessible
 window.toggleAssigneeGroup = toggleAssigneeGroup;

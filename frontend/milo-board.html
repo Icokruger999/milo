@@ -499,23 +499,25 @@
 
         /* Assignee Group Styles */
         .assignee-group {
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .assignee-group-header {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            background: #F4F5F7;
+            gap: 10px;
+            padding: 10px 12px;
+            background: #FAFBFC;
             border-radius: 3px;
             cursor: pointer;
             margin-bottom: 8px;
             transition: background 0.15s;
+            border: 1px solid #DFE1E6;
         }
 
         .assignee-group-header:hover {
-            background: #EBECF0;
+            background: #F4F5F7;
+            border-color: #C1C7D0;
         }
 
         .assignee-group-toggle {
@@ -525,15 +527,28 @@
             align-items: center;
             justify-content: center;
             transition: transform 0.2s;
+            flex-shrink: 0;
         }
 
         .assignee-group-toggle.collapsed {
             transform: rotate(-90deg);
         }
 
+        .assignee-group-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
         .assignee-group-name {
             flex: 1;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 600;
             color: #172B4D;
         }
@@ -551,6 +566,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
+            padding-left: 0;
         }
 
         .assignee-group-tasks.collapsed {
@@ -1072,14 +1088,6 @@
                                 <path d="m21 21-4.35-4.35"></path>
                             </svg>
                         </div>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 8px; margin-left: 12px;">
-                        <label for="groupBySelect" style="font-size: 13px; color: #6B778C; font-weight: 500;">Group by:</label>
-                        <select id="groupBySelect" onchange="handleGroupByChange()" style="padding: 6px 12px; border: 1px solid #DFE1E6; border-radius: 3px; background: white; font-size: 13px; color: #42526E; cursor: pointer;">
-                            <option value="status">Status</option>
-                            <option value="assignee">Assignee</option>
-                            <option value="priority">Priority</option>
-                        </select>
                     </div>
                     <div class="board-user-avatars" id="boardUserAvatars">
                         <!-- Will be populated with real project members -->
