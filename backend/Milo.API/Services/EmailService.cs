@@ -135,6 +135,30 @@ public class EmailService : IEmailService
                 return false;
             }
 
+            // If htmlBody is the same as plainTextBody, send plain text only (no HTML)
+            // Otherwise, use standard multipart format with both HTML and text
+            var isPlainTextOnly = htmlBody == plainTextBody || htmlBody.Trim() == plainTextBody.Trim();
+
+            var body = new Body
+            {
+                Text = new Content
+                {
+                    Charset = "UTF-8",
+                    Data = plainTextBody
+                }
+            };
+
+            // Only add HTML part if htmlBody is different from plainTextBody
+            // This allows sending plain text only emails when htmlBody equals plainTextBody
+            if (!isPlainTextOnly)
+            {
+                body.Html = new Content
+                {
+                    Charset = "UTF-8",
+                    Data = htmlBody
+                };
+            }
+
             var request = new SendEmailRequest
             {
                 Source = $"{fromName} <{fromEmail}>",
@@ -145,19 +169,7 @@ public class EmailService : IEmailService
                 Message = new Message
                 {
                     Subject = new Content(subject),
-                    Body = new Body
-                    {
-                        Html = new Content
-                        {
-                            Charset = "UTF-8",
-                            Data = htmlBody
-                        },
-                        Text = new Content
-                        {
-                            Charset = "UTF-8",
-                            Data = plainTextBody
-                        }
-                    }
+                    Body = body
                 }
             };
 
