@@ -34,6 +34,8 @@ public class EmailService : IEmailService
         _configuration = configuration;
         _logger = logger;
         _serviceProvider = serviceProvider;
+        
+        // Always use SMTP (SES support removed)
         _logger.LogInformation("EmailService initialized with SMTP");
     }
 
