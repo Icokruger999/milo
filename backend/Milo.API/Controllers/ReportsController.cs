@@ -71,20 +71,21 @@ public class ReportsController : ControllerBase
             var emailToCheck = request.Email.Trim().ToLower();
             var projectIdToCheck = request.ProjectId;
             
-            // Use raw SQL query to avoid column mapping issues
-            bool recipientExists;
+            // Use raw SQL query with FormattableString for proper parameterization
+            // This avoids EF Core entity mapping issues with column names
+            int count;
             if (projectIdToCheck.HasValue)
             {
-                var sql = @"SELECT COUNT(*) FROM report_recipients WHERE LOWER(email) = LOWER({0}) AND project_id = {1}";
-                var count = await _context.Database.SqlQueryRaw<int>(sql, emailToCheck, projectIdToCheck.Value).FirstOrDefaultAsync();
-                recipientExists = count > 0;
+                FormattableString sql = $@"SELECT COUNT(*) FROM report_recipients WHERE LOWER(email) = LOWER({emailToCheck}) AND project_id = {projectIdToCheck.Value}";
+                count = await _context.Database.SqlQuery<int>(sql).FirstOrDefaultAsync();
             }
             else
             {
-                var sql = @"SELECT COUNT(*) FROM report_recipients WHERE LOWER(email) = LOWER({0}) AND project_id IS NULL";
-                var count = await _context.Database.SqlQueryRaw<int>(sql, emailToCheck).FirstOrDefaultAsync();
-                recipientExists = count > 0;
+                FormattableString sql = $@"SELECT COUNT(*) FROM report_recipients WHERE LOWER(email) = LOWER({emailToCheck}) AND project_id IS NULL";
+                count = await _context.Database.SqlQuery<int>(sql).FirstOrDefaultAsync();
             }
+            
+            bool recipientExists = count > 0;
             
             if (recipientExists)
             {
