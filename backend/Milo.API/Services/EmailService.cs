@@ -208,44 +208,51 @@ public class EmailService : IEmailService
                 Credentials = new NetworkCredential(smtpUsername, smtpPassword)
             };
 
-            // If htmlBody is the same as plainTextOnly OR doesn't contain HTML tags, send plain text only (no HTML)
             // Check if htmlBody actually contains HTML by looking for HTML tags
             var containsHtmlTags = htmlBody.Contains("<html", StringComparison.OrdinalIgnoreCase) || 
                                    htmlBody.Contains("<!DOCTYPE", StringComparison.OrdinalIgnoreCase) ||
-                                   htmlBody.Contains("<body", StringComparison.OrdinalIgnoreCase);
+                                   htmlBody.Contains("<body", StringComparison.OrdinalIgnoreCase) ||
+                                   htmlBody.Contains("<p>", StringComparison.OrdinalIgnoreCase) ||
+                                   htmlBody.Contains("<div", StringComparison.OrdinalIgnoreCase) ||
+                                   htmlBody.Contains("<table", StringComparison.OrdinalIgnoreCase);
+            
             var isPlainTextOnly = (htmlBody == plainTextBody || htmlBody.Trim() == plainTextBody.Trim()) && !containsHtmlTags;
             
             var message = new MailMessage
             {
                 From = new MailAddress(fromEmail, fromName),
                 Subject = subject,
-                BodyEncoding = System.Text.Encoding.UTF8
+                BodyEncoding = System.Text.Encoding.UTF8,
+                SubjectEncoding = System.Text.Encoding.UTF8
             };
 
-            // Only add HTML AlternateView if htmlBody is different from plainTextBody
-            // This allows sending plain text only emails when htmlBody equals plainTextBody
+            message.To.Add(new MailAddress(to));
+
             if (!isPlainTextOnly)
             {
-                // Set HTML as the primary body for better email client compatibility
-                message.Body = htmlBody;
-                message.IsBodyHtml = true;
-                
-                // Add plain text as alternate view for clients that don't support HTML
-                var plainView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(
+                // Use AlternateViews for proper multipart/alternative structure
+                // Plain text view (fallback for clients that don't support HTML)
+                var plainView = AlternateView.CreateAlternateViewFromString(
                     plainTextBody, 
                     System.Text.Encoding.UTF8, 
-                    System.Net.Mime.MediaTypeNames.Text.Plain);
-                plainView.ContentType.CharSet = "UTF-8";
+                    "text/plain");
+                plainView.TransferEncoding = System.Net.Mime.TransferEncoding.QuotedPrintable;
                 message.AlternateViews.Add(plainView);
+                
+                // HTML view (preferred by most modern email clients)
+                var htmlView = AlternateView.CreateAlternateViewFromString(
+                    htmlBody, 
+                    System.Text.Encoding.UTF8, 
+                    "text/html");
+                htmlView.TransferEncoding = System.Net.Mime.TransferEncoding.QuotedPrintable;
+                message.AlternateViews.Add(htmlView);
             }
             else
             {
-                // Plain text only
+                // Plain text only - no HTML
                 message.Body = plainTextBody;
                 message.IsBodyHtml = false;
             }
-
-            message.To.Add(new MailAddress(to));
 
             await client.SendMailAsync(message);
             _logger.LogInformation("Email sent successfully via SMTP to {To}", to);
