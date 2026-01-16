@@ -237,12 +237,11 @@ public class FlakesController : ControllerBase
             var dateStr = dateNow.ToString("MMM dd, yyyy");
             var timeStr = dateNow.ToString("hh:mm tt");
 
-            // Simple plain text email - no HTML to avoid rendering issues
-            var subject = $"Shared Flake: {flake.Title}";
+            // Create HTML email for flake sharing
+            var subject = $"{flake.Title}";
             
-            var textBody = $@"Shared Flake: {flake.Title}
-
-Hello,
+            // Plain text version
+            var textBody = $@"Hello,
 
 {authorName} has shared a flake from {projectName} with you.
 
@@ -250,25 +249,78 @@ Project: {projectName}
 Shared by: {authorName}
 Date: {dateStr} at {timeStr}
 
-Flake: {flake.Title}
-
-=====================================
-CLICK HERE TO VIEW THE FLAKE:
+View the flake here:
 {flakeUrl}
-=====================================
-
-Or copy and paste the link above into your browser.
 
 ---
-This flake was shared from Milo";
+This email was sent from Milo - Your Project Management Workspace";
 
-            // Use plain text only - no HTML body to avoid rendering issues
+            // HTML version with proper structure
+            var htmlBody = $@"<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=""utf-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+</head>
+<body style=""margin: 0; padding: 0; background-color: #F4F5F7; font-family: Arial, sans-serif;"">
+    <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""background-color: #F4F5F7;"">
+        <tr>
+            <td align=""center"" style=""padding: 40px 20px;"">
+                <table role=""presentation"" width=""600"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""background-color: #FFFFFF; max-width: 600px; width: 100%; border-radius: 8px; overflow: hidden;"">
+                    <tr>
+                        <td style=""background-color: #0052CC; padding: 40px 30px; text-align: center;"">
+                            <h1 style=""margin: 0; font-size: 24px; font-weight: 600; color: #FFFFFF; line-height: 1.3;"">{System.Net.WebUtility.HtmlEncode(flake.Title)}</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style=""padding: 40px 30px;"">
+                            <p style=""margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #172B4D;"">Hello,</p>
+                            <p style=""margin: 0 0 30px 0; font-size: 16px; line-height: 1.6; color: #172B4D;""><strong style=""color: #172B4D;"">{System.Net.WebUtility.HtmlEncode(authorName)}</strong> has shared a flake from <strong style=""color: #172B4D;"">{System.Net.WebUtility.HtmlEncode(projectName)}</strong> with you.</p>
+                            <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""background-color: #F4F5F7; border-radius: 4px; margin-bottom: 30px;"">
+                                <tr>
+                                    <td style=""padding: 20px;"">
+                                        <p style=""margin: 0 0 12px 0; font-size: 14px; color: #6B778C; line-height: 1.5;""><strong style=""color: #42526E;"">Project:</strong> {System.Net.WebUtility.HtmlEncode(projectName)}</p>
+                                        <p style=""margin: 0 0 12px 0; font-size: 14px; color: #6B778C; line-height: 1.5;""><strong style=""color: #42526E;"">Shared by:</strong> {System.Net.WebUtility.HtmlEncode(authorName)}</p>
+                                        <p style=""margin: 0; font-size: 14px; color: #6B778C; line-height: 1.5;""><strong style=""color: #42526E;"">Date:</strong> {dateStr} at {timeStr}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                            <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""margin: 32px 0;"">
+                                <tr>
+                                    <td align=""center"">
+                                        <a href=""{flakeUrl}"" style=""display: inline-block; background-color: #0052CC; color: #FFFFFF; padding: 14px 32px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 15px; line-height: 1.5;"">VIEW FLAKE</a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <table role=""presentation"" width=""100%"" cellpadding=""0"" cellspacing=""0"" border=""0"" style=""background-color: #F4F5F7; border-radius: 4px; margin-top: 30px;"">
+                                <tr>
+                                    <td style=""padding: 20px; text-align: center;"">
+                                        <p style=""margin: 0 0 12px 0; font-size: 13px; color: #6B778C;"">Or copy this link:</p>
+                                        <p style=""margin: 0; font-size: 13px; word-break: break-all;""><a href=""{flakeUrl}"" style=""color: #0052CC; text-decoration: underline;"">{System.Net.WebUtility.HtmlEncode(flakeUrl)}</a></p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style=""padding: 20px 30px; background-color: #F4F5F7; border-top: 1px solid #DFE1E6; text-align: center;"">
+                            <p style=""margin: 0; font-size: 12px; color: #6B778C; line-height: 1.5;"">This email was sent from <strong style=""color: #42526E;"">Milo</strong> - Your Project Management Workspace</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
+
+            // Send email with both HTML and plain text versions
             // Don't block the operation if email fails - send in background
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    await emailService.SendEmailWithPlainTextAsync(request.ToEmail, subject, textBody, textBody);
+                    await emailService.SendEmailWithPlainTextAsync(request.ToEmail, subject, htmlBody, textBody);
                     _logger.LogInformation($"Flake share email sent to {request.ToEmail}");
                 }
                 catch (Exception emailEx)
