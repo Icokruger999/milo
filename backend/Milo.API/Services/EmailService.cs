@@ -139,25 +139,26 @@ public class EmailService : IEmailService
             // Otherwise, use standard multipart format with both HTML and text
             var isPlainTextOnly = htmlBody == plainTextBody || htmlBody.Trim() == plainTextBody.Trim();
 
-            var body = new Body
-            {
-                Text = new Content
-                {
-                    Charset = "UTF-8",
-                    Data = plainTextBody
-                }
-            };
+            var body = new Body();
 
             // Only add HTML part if htmlBody is different from plainTextBody
             // This allows sending plain text only emails when htmlBody equals plainTextBody
             if (!isPlainTextOnly)
             {
+                // Set HTML first - email clients prefer HTML when both are available
                 body.Html = new Content
                 {
                     Charset = "UTF-8",
                     Data = htmlBody
                 };
             }
+            
+            // Always include plain text as fallback
+            body.Text = new Content
+            {
+                Charset = "UTF-8",
+                Data = plainTextBody
+            };
 
             var request = new SendEmailRequest
             {
@@ -207,7 +208,7 @@ public class EmailService : IEmailService
                 Credentials = new NetworkCredential(smtpUsername, smtpPassword)
             };
 
-            // If htmlBody is the same as plainTextBody OR doesn't contain HTML tags, send plain text only (no HTML)
+            // If htmlBody is the same as plainTextOnly OR doesn't contain HTML tags, send plain text only (no HTML)
             // Check if htmlBody actually contains HTML by looking for HTML tags
             var containsHtmlTags = htmlBody.Contains("<html", StringComparison.OrdinalIgnoreCase) || 
                                    htmlBody.Contains("<!DOCTYPE", StringComparison.OrdinalIgnoreCase) ||
@@ -218,8 +219,6 @@ public class EmailService : IEmailService
             {
                 From = new MailAddress(fromEmail, fromName),
                 Subject = subject,
-                Body = plainTextBody, // Plain text as body
-                IsBodyHtml = false, // Body is plain text
                 BodyEncoding = System.Text.Encoding.UTF8
             };
 
@@ -227,13 +226,23 @@ public class EmailService : IEmailService
             // This allows sending plain text only emails when htmlBody equals plainTextBody
             if (!isPlainTextOnly)
             {
-                var htmlView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(
-                    htmlBody, 
+                // Set HTML as the primary body for better email client compatibility
+                message.Body = htmlBody;
+                message.IsBodyHtml = true;
+                
+                // Add plain text as alternate view for clients that don't support HTML
+                var plainView = System.Net.Mail.AlternateView.CreateAlternateViewFromString(
+                    plainTextBody, 
                     System.Text.Encoding.UTF8, 
-                    System.Net.Mime.MediaTypeNames.Text.Html);
-                htmlView.ContentType.CharSet = "UTF-8";
-                htmlView.TransferEncoding = System.Net.Mime.TransferEncoding.Base64;
-                message.AlternateViews.Add(htmlView);
+                    System.Net.Mime.MediaTypeNames.Text.Plain);
+                plainView.ContentType.CharSet = "UTF-8";
+                message.AlternateViews.Add(plainView);
+            }
+            else
+            {
+                // Plain text only
+                message.Body = plainTextBody;
+                message.IsBodyHtml = false;
             }
 
             message.To.Add(new MailAddress(to));
