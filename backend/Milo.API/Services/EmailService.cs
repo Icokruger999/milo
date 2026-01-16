@@ -234,23 +234,34 @@ public class EmailService : IEmailService
 
             if (!isPlainTextOnly)
             {
-                // Set HTML as the body with explicit Content-Type header
-                message.Body = htmlBody;
-                message.IsBodyHtml = true;
+                // Create multipart/alternative message with both HTML and plain text
+                // This ensures maximum compatibility across email clients
                 
-                // Explicitly set the Content-Type header to ensure HTML rendering
-                message.Headers.Add("MIME-Version", "1.0");
-                message.Headers.Add("Content-Type", "text/html; charset=UTF-8");
-                
-                // Add plain text as alternate for clients that don't support HTML
+                // Create plain text view
                 var plainView = AlternateView.CreateAlternateViewFromString(
                     plainTextBody, 
                     System.Text.Encoding.UTF8, 
                     "text/plain");
-                plainView.ContentType.CharSet = "utf-8";
-                message.AlternateViews.Add(plainView);
+                plainView.ContentType.CharSet = "UTF-8";
                 
-                _logger.LogInformation("Email configured as HTML with explicit Content-Type header");
+                // Create HTML view with explicit content type
+                var htmlView = AlternateView.CreateAlternateViewFromString(
+                    htmlBody, 
+                    System.Text.Encoding.UTF8, 
+                    "text/html");
+                htmlView.ContentType.CharSet = "UTF-8";
+                htmlView.ContentType.MediaType = "text/html";
+                
+                // Add views in order: plain text first, HTML second
+                // Email clients prefer the last alternative (HTML)
+                message.AlternateViews.Add(plainView);
+                message.AlternateViews.Add(htmlView);
+                
+                // Set body to plain text as fallback
+                message.Body = plainTextBody;
+                message.IsBodyHtml = false;
+                
+                _logger.LogInformation("Email configured as multipart/alternative with HTML and plain text");
             }
             else
             {
