@@ -68,15 +68,24 @@ public class ReportsController : ControllerBase
 
             // Check if recipient already exists with same email and project
             // Handle null ProjectId correctly in LINQ query
+            // Use AsNoTracking to avoid entity tracking issues and ensure column mapping works correctly
             var emailToCheck = request.Email.Trim().ToLower();
             var projectIdToCheck = request.ProjectId;
             
-            // Use explicit null handling for ProjectId comparison
-            var existingRecipient = projectIdToCheck.HasValue
-                ? await _context.ReportRecipients
-                    .FirstOrDefaultAsync(r => r.Email.ToLower() == emailToCheck && r.ProjectId == projectIdToCheck.Value)
-                : await _context.ReportRecipients
+            // Query with explicit null handling - use AsNoTracking to avoid entity mapping issues
+            ReportRecipient? existingRecipient;
+            if (projectIdToCheck.HasValue)
+            {
+                existingRecipient = await _context.ReportRecipients
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(r => r.Email.ToLower() == emailToCheck && r.ProjectId == projectIdToCheck.Value);
+            }
+            else
+            {
+                existingRecipient = await _context.ReportRecipients
+                    .AsNoTracking()
                     .FirstOrDefaultAsync(r => r.Email.ToLower() == emailToCheck && r.ProjectId == null);
+            }
             
             if (existingRecipient != null)
             {
