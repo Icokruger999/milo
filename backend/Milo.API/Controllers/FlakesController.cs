@@ -263,16 +263,23 @@ Or copy and paste the link above into your browser.
 This flake was shared from Milo";
 
             // Use plain text only - no HTML body to avoid rendering issues
-            var sent = await emailService.SendEmailWithPlainTextAsync(request.ToEmail, subject, textBody, textBody);
+            // Don't block the operation if email fails - send in background
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await emailService.SendEmailWithPlainTextAsync(request.ToEmail, subject, textBody, textBody);
+                    _logger.LogInformation($"Flake share email sent to {request.ToEmail}");
+                }
+                catch (Exception emailEx)
+                {
+                    _logger.LogWarning(emailEx, "Failed to send flake share email to {Email}", request.ToEmail);
+                    // Email failure should not block the operation
+                }
+            });
             
-            if (sent)
-            {
-                return Ok(new { message = "Flake shared via email successfully" });
-            }
-            else
-            {
-                return StatusCode(500, new { message = "Failed to send email" });
-            }
+            // Return success immediately - email is sent in background
+            return Ok(new { message = "Flake shared successfully. Email sent in background." });
         }
         catch (Exception ex)
         {

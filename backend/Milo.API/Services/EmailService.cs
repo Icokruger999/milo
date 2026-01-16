@@ -207,9 +207,12 @@ public class EmailService : IEmailService
                 Credentials = new NetworkCredential(smtpUsername, smtpPassword)
             };
 
-            // If htmlBody is the same as plainTextBody, send plain text only (no HTML)
-            // Otherwise, use standard multipart format with HTML as AlternateView
-            var isPlainTextOnly = htmlBody == plainTextBody || htmlBody.Trim() == plainTextBody.Trim();
+            // If htmlBody is the same as plainTextBody OR doesn't contain HTML tags, send plain text only (no HTML)
+            // Check if htmlBody actually contains HTML by looking for HTML tags
+            var containsHtmlTags = htmlBody.Contains("<html", StringComparison.OrdinalIgnoreCase) || 
+                                   htmlBody.Contains("<!DOCTYPE", StringComparison.OrdinalIgnoreCase) ||
+                                   htmlBody.Contains("<body", StringComparison.OrdinalIgnoreCase);
+            var isPlainTextOnly = (htmlBody == plainTextBody || htmlBody.Trim() == plainTextBody.Trim()) && !containsHtmlTags;
             
             var message = new MailMessage
             {
