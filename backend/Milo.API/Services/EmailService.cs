@@ -216,6 +216,8 @@ public class EmailService : IEmailService
                                    htmlBody.Contains("<div", StringComparison.OrdinalIgnoreCase) ||
                                    htmlBody.Contains("<table", StringComparison.OrdinalIgnoreCase);
             
+            // If htmlBody contains HTML tags, always send as HTML
+            // Only send as plain text if htmlBody equals plainTextBody AND contains no HTML tags
             var isPlainTextOnly = (htmlBody == plainTextBody || htmlBody.Trim() == plainTextBody.Trim()) && !containsHtmlTags;
             
             _logger.LogInformation("Sending email to {To}: IsPlainTextOnly={IsPlainTextOnly}, ContainsHtmlTags={ContainsHtmlTags}", 
@@ -232,19 +234,21 @@ public class EmailService : IEmailService
 
             message.To.Add(new MailAddress(to));
 
+            // CRITICAL FIX: Always set IsBodyHtml BEFORE setting Body
+            // This ensures the Content-Type header is set correctly
             if (!isPlainTextOnly)
             {
-                // Simple approach: Set HTML body directly
-                message.Body = htmlBody;
+                // HTML email - MUST set IsBodyHtml = true
                 message.IsBodyHtml = true;
-                _logger.LogInformation("Email configured as HTML");
+                message.Body = htmlBody;
+                _logger.LogInformation("Email configured as HTML (Content-Type: text/html)");
             }
             else
             {
                 // Plain text only
-                message.Body = plainTextBody;
                 message.IsBodyHtml = false;
-                _logger.LogInformation("Email configured as plain text only");
+                message.Body = plainTextBody;
+                _logger.LogInformation("Email configured as plain text only (Content-Type: text/plain)");
             }
 
             await client.SendMailAsync(message);
@@ -802,6 +806,7 @@ This is an automated invitation from Milo. If you didn't expect this invitation,
             }
             
             var descriptionHtml = "";
+            var descriptionText = "";
             if (!string.IsNullOrWhiteSpace(description))
             {
                 var escapedDescription = description.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
@@ -810,7 +815,45 @@ This is an automated invitation from Milo. If you didn't expect this invitation,
                         <div class='detail-label'>Description</div>
                         <div style='font-size: 14px; color: #42526E; line-height: 1.6; margin-top: 8px; white-space: pre-wrap;'>{escapedDescription}</div>
                     </div>";
+                descriptionText = $"\n\nDescription:\n{description}";
             }
+            
+            // Build plain text version
+            var plainTextDetails = new StringBuilder();
+            plainTextDetails.AppendLine($"Priority: {priority}");
+            plainTextDetails.AppendLine($"Status: {status}");
+            if (!string.IsNullOrWhiteSpace(requesterName))
+            {
+                var requesterText = requesterName;
+                if (!string.IsNullOrWhiteSpace(requesterEmail))
+                    requesterText += $" ({requesterEmail})";
+                plainTextDetails.AppendLine($"Requester: {requesterText}");
+            }
+            if (createdAt.HasValue)
+            {
+                plainTextDetails.AppendLine($"Created: {createdAt.Value:MMM dd, yyyy HH:mm} UTC");
+            }
+            if (!string.IsNullOrWhiteSpace(category))
+            {
+                plainTextDetails.AppendLine($"Category: {category}");
+            }
+            if (!string.IsNullOrWhiteSpace(source))
+            {
+                plainTextDetails.AppendLine($"Source: {source}");
+            }
+            
+            var plainTextBody = $@"Hello {assigneeName},
+
+A new incident has been assigned to you and requires your attention:
+
+{incidentNumber} - {subject}
+
+{plainTextDetails.ToString().Trim()}{descriptionText}
+
+View incident details: {link}
+
+This is an automated notification from Milo Incident Management
+Please review and respond to this incident as soon as possible.";
             
             var htmlBody = $@"
 <!DOCTYPE html>
