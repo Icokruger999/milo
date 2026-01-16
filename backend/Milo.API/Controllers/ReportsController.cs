@@ -71,9 +71,12 @@ public class ReportsController : ControllerBase
             var emailToCheck = request.Email.Trim().ToLower();
             var projectIdToCheck = request.ProjectId;
             
-            var existingRecipient = await _context.ReportRecipients
-                .FirstOrDefaultAsync(r => r.Email.ToLower() == emailToCheck && 
-                                         (r.ProjectId == projectIdToCheck));
+            // Use explicit null handling for ProjectId comparison
+            var existingRecipient = projectIdToCheck.HasValue
+                ? await _context.ReportRecipients
+                    .FirstOrDefaultAsync(r => r.Email.ToLower() == emailToCheck && r.ProjectId == projectIdToCheck.Value)
+                : await _context.ReportRecipients
+                    .FirstOrDefaultAsync(r => r.Email.ToLower() == emailToCheck && r.ProjectId == null);
             
             if (existingRecipient != null)
             {
