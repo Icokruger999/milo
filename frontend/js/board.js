@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Step 1: Always load fresh projects from API first (force refresh on page load)
         try {
             console.log('🔄 Loading projects from API...');
-            await projectSelector.loadProjects(user.id, true); // Force refresh
+            await projectSelector.loadProjects(user.id); // Use cache if available
             
             // Step 2: Try to get stored project
             const stored = localStorage.getItem('milo_current_project');
