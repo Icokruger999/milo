@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -915,7 +916,7 @@
                         </svg>
                         Board
                     </a>
-                    <a href="milo-dashboard.html" class="sidebar-item">
+                    <a href="#" class="sidebar-item" onclick="showDashboardView(); return false;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="3" y="3" width="7" height="9"></rect>
                             <rect x="14" y="3" width="7" height="5"></rect>
@@ -1146,6 +1147,49 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Dashboard View (Hidden by default) -->
+                <div class="dashboard-view" id="dashboardView" style="display: none; flex: 1; overflow: auto; padding: 24px;">
+                    <div style="max-width: 1200px; margin: 0 auto;">
+                        <h2 style="font-size: 24px; font-weight: 600; color: #172B4D; margin-bottom: 24px;">Dashboard</h2>
+                        
+                        <!-- Stats Cards -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #DFE1E6;">
+                                <div style="font-size: 13px; color: #6B778C; margin-bottom: 8px;">Total Tasks</div>
+                                <div id="dashTotalTasks" style="font-size: 32px; font-weight: 700; color: #172B4D;">0</div>
+                            </div>
+                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #DFE1E6;">
+                                <div style="font-size: 13px; color: #6B778C; margin-bottom: 8px;">In Progress</div>
+                                <div id="dashInProgress" style="font-size: 32px; font-weight: 700; color: #FFAB00;">0</div>
+                            </div>
+                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #DFE1E6;">
+                                <div style="font-size: 13px; color: #6B778C; margin-bottom: 8px;">Completed</div>
+                                <div id="dashCompleted" style="font-size: 32px; font-weight: 700; color: #36B37E;">0</div>
+                            </div>
+                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #DFE1E6;">
+                                <div style="font-size: 13px; color: #6B778C; margin-bottom: 8px;">Completion Rate</div>
+                                <div id="dashCompletionRate" style="font-size: 32px; font-weight: 700; color: #0052CC;">0%</div>
+                            </div>
+                        </div>
+
+                        <!-- Charts -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 16px;">
+                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #DFE1E6;">
+                                <div style="font-size: 16px; font-weight: 600; color: #172B4D; margin-bottom: 16px;">Tasks by Status</div>
+                                <div style="position: relative; height: 300px;">
+                                    <canvas id="dashStatusChart"></canvas>
+                                </div>
+                            </div>
+                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #DFE1E6;">
+                                <div style="font-size: 16px; font-weight: 600; color: #172B4D; margin-bottom: 16px;">Tasks by Priority</div>
+                                <div style="position: relative; height: 300px;">
+                                    <canvas id="dashPriorityChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1365,18 +1409,21 @@
         })(); // End of IIFE
 
         // Timeline View Functions
-        let currentBoardView = 'board'; // 'board', 'timeline', or 'roadmap'
+        let currentBoardView = 'board'; // 'board', 'timeline', 'roadmap', or 'dashboard'
         let timelineTasks = [];
         const monthWidth = 150;
+        let dashboardCharts = { statusChart: null, priorityChart: null };
 
         function showBoardView() {
             currentBoardView = 'board';
             document.querySelector('.board-content').style.display = 'block';
             document.getElementById('timelineView').style.display = 'none';
             document.getElementById('roadmapView').style.display = 'none';
+            document.getElementById('dashboardView').style.display = 'none';
             document.getElementById('boardLink').classList.add('active');
             document.querySelector('[onclick="showTimelineView(); return false;"]').classList.remove('active');
             document.querySelector('[onclick="showRoadmapView(); return false;"]').classList.remove('active');
+            document.querySelector('[onclick="showDashboardView(); return false;"]').classList.remove('active');
         }
 
         function showTimelineView() {
@@ -1384,9 +1431,11 @@
             document.querySelector('.board-content').style.display = 'none';
             document.getElementById('timelineView').style.display = 'flex';
             document.getElementById('roadmapView').style.display = 'none';
+            document.getElementById('dashboardView').style.display = 'none';
             document.getElementById('boardLink').classList.remove('active');
             document.querySelector('[onclick="showTimelineView(); return false;"]').classList.add('active');
             document.querySelector('[onclick="showRoadmapView(); return false;"]').classList.remove('active');
+            document.querySelector('[onclick="showDashboardView(); return false;"]').classList.remove('active');
             loadTimelineData();
         }
 
@@ -1395,10 +1444,25 @@
             document.querySelector('.board-content').style.display = 'none';
             document.getElementById('timelineView').style.display = 'none';
             document.getElementById('roadmapView').style.display = 'block';
+            document.getElementById('dashboardView').style.display = 'none';
             document.getElementById('boardLink').classList.remove('active');
             document.querySelector('[onclick="showTimelineView(); return false;"]').classList.remove('active');
             document.querySelector('[onclick="showRoadmapView(); return false;"]').classList.add('active');
+            document.querySelector('[onclick="showDashboardView(); return false;"]').classList.remove('active');
             loadRoadmapData();
+        }
+
+        function showDashboardView() {
+            currentBoardView = 'dashboard';
+            document.querySelector('.board-content').style.display = 'none';
+            document.getElementById('timelineView').style.display = 'none';
+            document.getElementById('roadmapView').style.display = 'none';
+            document.getElementById('dashboardView').style.display = 'block';
+            document.getElementById('boardLink').classList.remove('active');
+            document.querySelector('[onclick="showTimelineView(); return false;"]').classList.remove('active');
+            document.querySelector('[onclick="showRoadmapView(); return false;"]').classList.remove('active');
+            document.querySelector('[onclick="showDashboardView(); return false;"]').classList.add('active');
+            loadDashboardData();
         }
 
         async function loadRoadmapData() {
@@ -1453,6 +1517,106 @@
 
         function showCreateRoadmapItemModal() {
             alert('Roadmap item creation coming soon! For now, use the standalone Roadmap page.');
+        }
+
+        // Dashboard Functions
+        async function loadDashboardData() {
+            const currentProject = projectSelector.getCurrentProject();
+            if (!currentProject) return;
+
+            try {
+                const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
+                if (response.ok) {
+                    const tasks = await response.json();
+                    renderDashboard(tasks);
+                }
+            } catch (error) {
+                console.error('Failed to load dashboard:', error);
+            }
+        }
+
+        function renderDashboard(tasks) {
+            // Update stats
+            const totalTasks = tasks.length;
+            const inProgress = tasks.filter(t => (t.status || '').toLowerCase().includes('progress')).length;
+            const completed = tasks.filter(t => (t.status || '').toLowerCase() === 'done').length;
+            const completionRate = totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : 0;
+
+            document.getElementById('dashTotalTasks').textContent = totalTasks;
+            document.getElementById('dashInProgress').textContent = inProgress;
+            document.getElementById('dashCompleted').textContent = completed;
+            document.getElementById('dashCompletionRate').textContent = completionRate + '%';
+
+            // Render charts
+            renderDashboardCharts(tasks);
+        }
+
+        function renderDashboardCharts(tasks) {
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js not loaded');
+                return;
+            }
+
+            // Status Chart
+            const statusCtx = document.getElementById('dashStatusChart');
+            if (statusCtx) {
+                const statusCounts = {
+                    todo: tasks.filter(t => !t.status || t.status.toLowerCase() === 'todo' || t.status.toLowerCase() === 'backlog').length,
+                    progress: tasks.filter(t => (t.status || '').toLowerCase().includes('progress')).length,
+                    review: tasks.filter(t => (t.status || '').toLowerCase().includes('review')).length,
+                    done: tasks.filter(t => (t.status || '').toLowerCase() === 'done').length
+                };
+
+                if (dashboardCharts.statusChart) dashboardCharts.statusChart.destroy();
+                dashboardCharts.statusChart = new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['To Do', 'In Progress', 'In Review', 'Done'],
+                        datasets: [{
+                            data: [statusCounts.todo, statusCounts.progress, statusCounts.review, statusCounts.done],
+                            backgroundColor: ['#DFE1E6', '#FFAB00', '#0065FF', '#36B37E'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { padding: 15, font: { size: 12 } } }
+                        }
+                    }
+                });
+            }
+
+            // Priority Chart
+            const priorityCtx = document.getElementById('dashPriorityChart');
+            if (priorityCtx) {
+                const priorityCounts = {
+                    low: tasks.filter(t => (t.priority || 0) === 0).length,
+                    medium: tasks.filter(t => (t.priority || 0) === 1).length,
+                    high: tasks.filter(t => (t.priority || 0) === 2).length
+                };
+
+                if (dashboardCharts.priorityChart) dashboardCharts.priorityChart.destroy();
+                dashboardCharts.priorityChart = new Chart(priorityCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Low', 'Medium', 'High'],
+                        datasets: [{
+                            data: [priorityCounts.low, priorityCounts.medium, priorityCounts.high],
+                            backgroundColor: ['#36B37E', '#FFAB00', '#DE350B'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { padding: 15, font: { size: 12 } } }
+                        }
+                    }
+                });
+            }
         }
 
         async function loadTimelineData() {
