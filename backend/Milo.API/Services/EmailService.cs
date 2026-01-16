@@ -234,11 +234,15 @@ public class EmailService : IEmailService
 
             if (!isPlainTextOnly)
             {
-                // CRITICAL FIX: Set body as HTML directly with proper content type
+                // Set HTML as the body with explicit Content-Type header
                 message.Body = htmlBody;
                 message.IsBodyHtml = true;
                 
-                // Also add plain text as alternate for maximum compatibility
+                // Explicitly set the Content-Type header to ensure HTML rendering
+                message.Headers.Add("MIME-Version", "1.0");
+                message.Headers.Add("Content-Type", "text/html; charset=UTF-8");
+                
+                // Add plain text as alternate for clients that don't support HTML
                 var plainView = AlternateView.CreateAlternateViewFromString(
                     plainTextBody, 
                     System.Text.Encoding.UTF8, 
@@ -246,7 +250,7 @@ public class EmailService : IEmailService
                 plainView.ContentType.CharSet = "utf-8";
                 message.AlternateViews.Add(plainView);
                 
-                _logger.LogInformation("Email configured as HTML with plain text alternate view");
+                _logger.LogInformation("Email configured as HTML with explicit Content-Type header");
             }
             else
             {
