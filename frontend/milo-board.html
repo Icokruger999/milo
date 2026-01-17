@@ -1415,32 +1415,48 @@
                     <!-- Timeline Header -->
                     <div style="background: white; border-bottom: 1px solid #DFE1E6; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
                         <div>
-                            <h2 style="font-size: 24px; font-weight: 600; color: #172B4D; margin: 0;">Timeline</h2>
-                            <p style="font-size: 14px; color: #6B778C; margin: 4px 0 0 0;">Project timeline and task scheduling</p>
+                            <h2 style="font-size: 24px; font-weight: 600; color: #172B4D; margin: 0;">Program Timeline</h2>
+                            <p style="font-size: 14px; color: #6B778C; margin: 4px 0 0 0;">Project hierarchy and task scheduling</p>
                         </div>
-                        <button onclick="loadTimelineData(); return false;" style="background: #0052CC; color: white; border: none; padding: 8px 16px; border-radius: 3px; font-size: 14px; font-weight: 500; cursor: pointer;">
-                            🔄 Refresh Data
-                        </button>
+                        <div style="display: flex; gap: 12px;">
+                            <button onclick="showCreateSubProjectModal(); return false;" style="background: #36B37E; color: white; border: none; padding: 8px 16px; border-radius: 3px; font-size: 14px; font-weight: 500; cursor: pointer;">
+                                ➕ Add Sub-Project
+                            </button>
+                            <button onclick="loadTimelineData(); return false;" style="background: #0052CC; color: white; border: none; padding: 8px 16px; border-radius: 3px; font-size: 14px; font-weight: 500; cursor: pointer;">
+                                🔄 Refresh Data
+                            </button>
+                        </div>
                     </div>
                     
-                    <div class="timeline-container-board">
-                        <div class="timeline-task-list">
-                            <div class="timeline-task-list-header">Tasks</div>
-                            <div id="timelineTaskList">
-                                <div style="padding: 24px; text-align: center; color: #6B778C;">Loading timeline...</div>
+                    <!-- Timeline Content -->
+                    <div class="program-timeline-container" style="flex: 1; display: flex; overflow: hidden;">
+                        <!-- Left: Project Hierarchy -->
+                        <div class="timeline-project-tree" style="width: 350px; background: white; border-right: 1px solid #DFE1E6; overflow-y: auto;">
+                            <div style="padding: 12px 16px; background: #F4F5F7; border-bottom: 1px solid #DFE1E6; font-weight: 600; font-size: 12px; color: #6B778C; text-transform: uppercase;">
+                                Project Structure
+                            </div>
+                            <div id="timelineProjectTree">
+                                <!-- Project hierarchy will be loaded here -->
+                                <div style="padding: 24px; text-align: center; color: #6B778C;">Loading project structure...</div>
                             </div>
                         </div>
-                        <div class="timeline-gantt-area">
-                            <div class="timeline-gantt-header">
-                                <div class="timeline-gantt-months" id="timelineMonths">
-                                    <div style="padding: 12px; text-align: center; color: #6B778C;">Loading months...</div>
+                        
+                        <!-- Right: Timeline Gantt -->
+                        <div class="timeline-gantt-container" style="flex: 1; overflow: auto; background: #FAFBFC; position: relative;">
+                            <!-- Timeline Header with Months -->
+                            <div style="position: sticky; top: 0; background: white; border-bottom: 2px solid #DFE1E6; z-index: 10;">
+                                <div style="display: flex; height: 40px;" id="timelineMonths">
+                                    <div style="padding: 12px; text-align: center; color: #6B778C; flex: 1;">Loading months...</div>
                                 </div>
                             </div>
-                            <div class="timeline-gantt-grid" id="timelineGrid">
-                                <svg id="timelineDependencySvg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;"></svg>
-                                <div id="timelineBars"></div>
-                                <div class="timeline-today-line" id="timelineTodayLine"></div>
+                            
+                            <!-- Timeline Rows (Sub-projects as swim lanes) -->
+                            <div id="timelineRows" style="position: relative; min-height: 100%;">
+                                <!-- Timeline rows will be generated here -->
                             </div>
+                            
+                            <!-- Today Line -->
+                            <div class="timeline-today-line" id="timelineTodayLine" style="position: absolute; top: 0; bottom: 0; width: 2px; background: #FF5630; z-index: 15; display: none;"></div>
                         </div>
                     </div>
                 </div>
@@ -2282,76 +2298,290 @@
         }
 
         async function loadTimelineData() {
-            console.log('loadTimelineData called');
+            console.log('loadTimelineData called - Program Timeline');
             const currentProject = projectSelector.getCurrentProject();
             console.log('Current project:', currentProject);
             
             if (!currentProject) {
                 console.log('No current project found');
-                const container = document.getElementById('timelineTaskList');
+                const container = document.getElementById('timelineProjectTree');
                 if (container) {
-                    container.innerHTML = '<div style="padding: 24px; text-align: center; color: #DE350B; background: white; border-radius: 3px; margin: 8px;">⚠️ No project selected. Please select a project first.</div>';
+                    container.innerHTML = '<div style="padding: 24px; text-align: center; color: #DE350B;">⚠️ No project selected. Please select a project first.</div>';
                 }
                 return;
             }
 
             try {
-                console.log('Loading tasks from API for timeline, project:', currentProject.id);
+                // Load both sub-projects and tasks
+                console.log('Loading program timeline data for project:', currentProject.id);
+                
+                // For now, create mock sub-projects structure
+                // TODO: Replace with actual API calls when backend supports sub-projects
+                const mockSubProjects = [
+                    {
+                        id: 'fabric-migration',
+                        name: 'Fabric Migration',
+                        parentId: currentProject.id,
+                        color: '#0052CC',
+                        startDate: '2024-02-01',
+                        endDate: '2024-05-31'
+                    },
+                    {
+                        id: 'server-migration', 
+                        name: 'Server Migration',
+                        parentId: currentProject.id,
+                        color: '#36B37E',
+                        startDate: '2024-03-01',
+                        endDate: '2024-07-31'
+                    },
+                    {
+                        id: 'ux-experience',
+                        name: 'UX Experience Redesign',
+                        parentId: currentProject.id,
+                        color: '#FFAB00',
+                        startDate: '2024-04-01',
+                        endDate: '2024-08-31'
+                    }
+                ];
+                
+                // Load tasks from API
                 const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
                 console.log('Timeline API response status:', response.status);
                 
+                let tasks = [];
                 if (response.ok) {
                     const tasksData = await response.json();
                     console.log('Raw API response:', tasksData);
                     
                     // Ensure we have an array
                     if (Array.isArray(tasksData)) {
-                        timelineTasks = tasksData;
+                        tasks = tasksData;
                     } else if (tasksData && Array.isArray(tasksData.tasks)) {
-                        timelineTasks = tasksData.tasks;
+                        tasks = tasksData.tasks;
                     } else if (tasksData && typeof tasksData === 'object') {
                         // If it's an object with task arrays, combine them
-                        timelineTasks = [];
                         Object.keys(tasksData).forEach(key => {
                             if (Array.isArray(tasksData[key])) {
-                                timelineTasks = timelineTasks.concat(tasksData[key]);
+                                tasks = tasks.concat(tasksData[key]);
                             }
                         });
-                    } else {
-                        timelineTasks = [];
-                    }
-                    
-                    console.log('Processed timeline tasks:', timelineTasks.length, timelineTasks);
-                    renderTimeline();
-                } else {
-                    console.error('Failed to load timeline tasks, status:', response.status);
-                    const container = document.getElementById('timelineTaskList');
-                    if (container) {
-                        container.innerHTML = '<div style="padding: 24px; text-align: center; color: #DE350B; background: white; border-radius: 3px; margin: 8px;">❌ Failed to load tasks. Check API connection.</div>';
                     }
                 }
+                
+                console.log('Processed tasks:', tasks.length, tasks);
+                console.log('Mock sub-projects:', mockSubProjects.length, mockSubProjects);
+                
+                // Render the program timeline
+                renderProgramTimeline(currentProject, mockSubProjects, tasks);
+                
             } catch (error) {
-                console.error('Failed to load timeline:', error);
-                const container = document.getElementById('timelineTaskList');
+                console.error('Failed to load program timeline:', error);
+                const container = document.getElementById('timelineProjectTree');
                 if (container) {
-                    container.innerHTML = '<div style="padding: 24px; text-align: center; color: #DE350B; background: white; border-radius: 3px; margin: 8px;">❌ Error loading tasks: ' + error.message + '</div>';
+                    container.innerHTML = '<div style="padding: 24px; text-align: center; color: #DE350B;">❌ Error loading program timeline: ' + error.message + '</div>';
                 }
             }
         }
 
-        function renderTimeline() {
-            console.log('renderTimeline called, timelineTasks:', timelineTasks);
+        function renderProgramTimeline(mainProject, subProjects, tasks) {
+            console.log('renderProgramTimeline called');
             
-            // Ensure timelineTasks is an array
-            if (!Array.isArray(timelineTasks)) {
-                console.error('timelineTasks is not an array:', typeof timelineTasks, timelineTasks);
-                timelineTasks = [];
+            // Render project tree (left side)
+            renderProjectTree(mainProject, subProjects);
+            
+            // Render timeline months (top)
+            renderTimelineMonths();
+            
+            // Render timeline rows (sub-projects as swim lanes)
+            renderTimelineRows(subProjects, tasks);
+            
+            // Show today line
+            renderTimelineTodayLine();
+        }
+        
+        function renderProjectTree(mainProject, subProjects) {
+            console.log('renderProjectTree called');
+            const container = document.getElementById('timelineProjectTree');
+            if (!container) return;
+            
+            let html = `
+                <!-- Main Project -->
+                <div style="padding: 12px 16px; background: #F4F5F7; border-bottom: 1px solid #DFE1E6; font-weight: 600; color: #172B4D;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 16px; height: 16px; background: #6554C0; border-radius: 3px;"></div>
+                        ${mainProject.name}
+                    </div>
+                </div>
+                
+                <!-- Sub-Projects -->
+            `;
+            
+            if (subProjects.length === 0) {
+                html += `
+                    <div style="padding: 24px; text-align: center; color: #6B778C;">
+                        No sub-projects yet.<br>
+                        <button onclick="showCreateSubProjectModal(); return false;" style="background: #36B37E; color: white; border: none; padding: 6px 12px; border-radius: 3px; font-size: 12px; margin-top: 8px; cursor: pointer;">
+                            ➕ Add Sub-Project
+                        </button>
+                    </div>
+                `;
+            } else {
+                subProjects.forEach(subProject => {
+                    html += `
+                        <div class="timeline-subproject-item" data-project-id="${subProject.id}" style="padding: 12px 16px 12px 32px; border-bottom: 1px solid #F4F5F7; cursor: pointer; transition: background 0.15s;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 12px; height: 12px; background: ${subProject.color}; border-radius: 2px;"></div>
+                                <span style="font-size: 14px; color: #172B4D; font-weight: 500;">${subProject.name}</span>
+                            </div>
+                            <div style="font-size: 11px; color: #6B778C; margin-top: 4px; margin-left: 20px;">
+                                ${new Date(subProject.startDate).toLocaleDateString()} - ${new Date(subProject.endDate).toLocaleDateString()}
+                            </div>
+                        </div>
+                    `;
+                });
             }
             
-            renderTimelineMonths();
-            renderTimelineTaskList();
-            renderTimelineGanttBars();
-            renderTimelineTodayLine();
+            container.innerHTML = html;
+            
+            // Add hover effects
+            container.querySelectorAll('.timeline-subproject-item').forEach(item => {
+                item.addEventListener('mouseenter', () => {
+                    item.style.background = '#F4F5F7';
+                });
+                item.addEventListener('mouseleave', () => {
+                    item.style.background = 'white';
+                });
+            });
+        }
+        
+        function renderTimelineRows(subProjects, tasks) {
+            console.log('renderTimelineRows called');
+            const container = document.getElementById('timelineRows');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            if (subProjects.length === 0) {
+                container.innerHTML = `
+                    <div style="padding: 48px; text-align: center; color: #6B778C;">
+                        <h3 style="margin: 0 0 8px 0; color: #172B4D;">No Sub-Projects</h3>
+                        <p style="margin: 0 0 16px 0;">Create sub-projects to organize your tasks in the timeline.</p>
+                        <button onclick="showCreateSubProjectModal(); return false;" style="background: #36B37E; color: white; border: none; padding: 8px 16px; border-radius: 3px; font-size: 14px; cursor: pointer;">
+                            ➕ Add Sub-Project
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Create a row for each sub-project
+            subProjects.forEach((subProject, index) => {
+                const row = document.createElement('div');
+                row.className = 'timeline-row';
+                row.style.cssText = `
+                    height: 60px;
+                    border-bottom: 1px solid #DFE1E6;
+                    position: relative;
+                    background: ${index % 2 === 0 ? '#FAFBFC' : '#FFFFFF'};
+                `;
+                row.setAttribute('data-project-id', subProject.id);
+                
+                // Add drop zone for tasks
+                row.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    row.style.background = '#DEEBFF';
+                });
+                
+                row.addEventListener('dragleave', (e) => {
+                    row.style.background = index % 2 === 0 ? '#FAFBFC' : '#FFFFFF';
+                });
+                
+                row.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const taskId = e.dataTransfer.getData('text/plain');
+                    console.log('Task', taskId, 'dropped on sub-project', subProject.id);
+                    // TODO: Update task's sub-project assignment
+                    row.style.background = index % 2 === 0 ? '#FAFBFC' : '#FFFFFF';
+                });
+                
+                container.appendChild(row);
+                
+                // Add tasks assigned to this sub-project
+                const projectTasks = tasks.filter(task => task.subProjectId === subProject.id);
+                renderTaskBarsForProject(row, projectTasks, subProject);
+            });
+        }
+        
+        function renderTaskBarsForProject(rowElement, tasks, subProject) {
+            console.log('renderTaskBarsForProject called for', subProject.name, 'with', tasks.length, 'tasks');
+            
+            const baseDate = new Date('2024-02-01');
+            const monthWidth = 150;
+            
+            tasks.forEach((task, index) => {
+                try {
+                    const startDate = task.startDate ? new Date(task.startDate) : new Date(baseDate.getTime() + Math.random() * 90 * 24 * 60 * 60 * 1000);
+                    const duration = task.estimatedHours ? Math.max(task.estimatedHours / 8, 3) : Math.floor(Math.random() * 14) + 3;
+                    const endDate = new Date(startDate.getTime() + duration * 24 * 60 * 60 * 1000);
+                    
+                    const daysSinceBase = (startDate - baseDate) / (1000 * 60 * 60 * 24);
+                    const durationDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
+                    
+                    const left = (daysSinceBase / 30) * monthWidth;
+                    const width = Math.max((durationDays / 30) * monthWidth, 60);
+                    const top = 8 + (index * 16); // Stack tasks vertically within the row
+                    
+                    const taskBar = document.createElement('div');
+                    taskBar.className = 'timeline-task-bar';
+                    taskBar.style.cssText = `
+                        position: absolute;
+                        left: ${left}px;
+                        top: ${top}px;
+                        width: ${width}px;
+                        height: 14px;
+                        background: ${subProject.color};
+                        border-radius: 2px;
+                        color: white;
+                        font-size: 10px;
+                        font-weight: 500;
+                        padding: 0 4px;
+                        display: flex;
+                        align-items: center;
+                        cursor: move;
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+                        z-index: 5;
+                    `;
+                    
+                    taskBar.textContent = (task.title || 'Untitled Task').substring(0, 20);
+                    taskBar.title = `${task.title || 'Untitled Task'} (${subProject.name})`;
+                    taskBar.setAttribute('data-task-id', task.id);
+                    
+                    // Make task draggable
+                    taskBar.draggable = true;
+                    taskBar.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('text/plain', task.id);
+                        taskBar.style.opacity = '0.5';
+                    });
+                    
+                    taskBar.addEventListener('dragend', (e) => {
+                        taskBar.style.opacity = '1';
+                    });
+                    
+                    rowElement.appendChild(taskBar);
+                    
+                } catch (error) {
+                    console.error('Error rendering task bar:', task, error);
+                }
+            });
+        }
+        
+        function showCreateSubProjectModal() {
+            const name = prompt('Enter sub-project name:');
+            if (name && name.trim()) {
+                console.log('Creating sub-project:', name);
+                // TODO: Add API call to create sub-project
+                alert('Sub-project creation will be implemented with backend API');
+            }
         }
 
         function renderTimelineMonths() {
