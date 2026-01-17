@@ -1413,9 +1413,14 @@
                 <!-- Timeline View (Hidden by default) -->
                 <div class="timeline-view" id="timelineView" style="display: none; flex: 1; flex-direction: column; overflow: hidden; background: #FAFBFC;">
                     <!-- Timeline Header -->
-                    <div style="background: white; border-bottom: 1px solid #DFE1E6; padding: 16px 24px;">
-                        <h2 style="font-size: 24px; font-weight: 600; color: #172B4D; margin: 0;">Timeline</h2>
-                        <p style="font-size: 14px; color: #6B778C; margin: 4px 0 0 0;">Project timeline and task scheduling</p>
+                    <div style="background: white; border-bottom: 1px solid #DFE1E6; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h2 style="font-size: 24px; font-weight: 600; color: #172B4D; margin: 0;">Timeline</h2>
+                            <p style="font-size: 14px; color: #6B778C; margin: 4px 0 0 0;">Project timeline and task scheduling</p>
+                        </div>
+                        <button onclick="loadTimelineData(); return false;" style="background: #0052CC; color: white; border: none; padding: 8px 16px; border-radius: 3px; font-size: 14px; font-weight: 500; cursor: pointer;">
+                            🔄 Refresh Data
+                        </button>
                     </div>
                     
                     <div class="timeline-container-board">
@@ -1456,7 +1461,12 @@
                 <!-- Dashboard View (Hidden by default) -->
                 <div class="dashboard-view" id="dashboardView" style="display: none; flex: 1; overflow: auto; padding: 24px;">
                     <div style="max-width: 1200px; margin: 0 auto;">
-                        <h2 style="font-size: 24px; font-weight: 600; color: #172B4D; margin-bottom: 24px;">Dashboard</h2>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                            <h2 style="font-size: 24px; font-weight: 600; color: #172B4D;">Dashboard</h2>
+                            <button onclick="loadDashboardData(); return false;" style="background: #0052CC; color: white; border: none; padding: 8px 16px; border-radius: 3px; font-size: 14px; font-weight: 500; cursor: pointer;">
+                                🔄 Refresh Data
+                            </button>
+                        </div>
                         
                         <!-- Stats Cards -->
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
@@ -1941,24 +1951,43 @@
         async function loadDashboardData() {
             console.log('loadDashboardData called');
             const currentProject = projectSelector.getCurrentProject();
+            console.log('Dashboard current project:', currentProject);
+            
             if (!currentProject) {
-                console.log('No current project found');
+                console.log('No current project found for dashboard');
+                // Show error in dashboard
+                document.getElementById('dashTotalTasks').textContent = '⚠️';
+                document.getElementById('dashInProgress').textContent = '⚠️';
+                document.getElementById('dashCompleted').textContent = '⚠️';
+                document.getElementById('dashCompletionRate').textContent = 'No Project';
                 return;
             }
 
             try {
                 // Always load fresh data from API for dashboard
-                console.log('Loading tasks from API for project:', currentProject.id);
+                console.log('Loading tasks from API for dashboard, project:', currentProject.id);
                 const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
+                console.log('Dashboard API response status:', response.status);
+                
                 if (response.ok) {
                     const tasks = await response.json();
-                    console.log('Loaded tasks:', tasks.length);
+                    console.log('Dashboard loaded tasks:', tasks.length, tasks);
                     renderDashboard(tasks);
                 } else {
-                    console.error('Failed to load tasks, status:', response.status);
+                    console.error('Failed to load dashboard tasks, status:', response.status);
+                    // Show error in dashboard
+                    document.getElementById('dashTotalTasks').textContent = '❌';
+                    document.getElementById('dashInProgress').textContent = '❌';
+                    document.getElementById('dashCompleted').textContent = '❌';
+                    document.getElementById('dashCompletionRate').textContent = 'API Error';
                 }
             } catch (error) {
                 console.error('Failed to load dashboard:', error);
+                // Show error in dashboard
+                document.getElementById('dashTotalTasks').textContent = '❌';
+                document.getElementById('dashInProgress').textContent = '❌';
+                document.getElementById('dashCompleted').textContent = '❌';
+                document.getElementById('dashCompletionRate').textContent = 'Error';
             }
         }
 
@@ -2255,23 +2284,39 @@
         async function loadTimelineData() {
             console.log('loadTimelineData called');
             const currentProject = projectSelector.getCurrentProject();
+            console.log('Current project:', currentProject);
+            
             if (!currentProject) {
                 console.log('No current project found');
+                const container = document.getElementById('timelineTaskList');
+                if (container) {
+                    container.innerHTML = '<div style="padding: 24px; text-align: center; color: #DE350B; background: white; border-radius: 3px; margin: 8px;">⚠️ No project selected. Please select a project first.</div>';
+                }
                 return;
             }
 
             try {
                 console.log('Loading tasks from API for timeline, project:', currentProject.id);
                 const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
+                console.log('Timeline API response status:', response.status);
+                
                 if (response.ok) {
                     timelineTasks = await response.json();
-                    console.log('Loaded timeline tasks:', timelineTasks.length);
+                    console.log('Loaded timeline tasks:', timelineTasks.length, timelineTasks);
                     renderTimeline();
                 } else {
                     console.error('Failed to load timeline tasks, status:', response.status);
+                    const container = document.getElementById('timelineTaskList');
+                    if (container) {
+                        container.innerHTML = '<div style="padding: 24px; text-align: center; color: #DE350B; background: white; border-radius: 3px; margin: 8px;">❌ Failed to load tasks. Check API connection.</div>';
+                    }
                 }
             } catch (error) {
                 console.error('Failed to load timeline:', error);
+                const container = document.getElementById('timelineTaskList');
+                if (container) {
+                    container.innerHTML = '<div style="padding: 24px; text-align: center; color: #DE350B; background: white; border-radius: 3px; margin: 8px;">❌ Error loading tasks: ' + error.message + '</div>';
+                }
             }
         }
 
