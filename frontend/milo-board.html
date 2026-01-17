@@ -1792,6 +1792,7 @@
         // Setup project selector (use enhanced if available, otherwise fallback)
         console.log('Setting up project selector...');
         try {
+            // Check if functions exist before calling them
             if (typeof setupProjectSelectorEnhanced === 'function') {
                 console.log('Using enhanced project selector');
                 await setupProjectSelectorEnhanced();
@@ -1799,11 +1800,28 @@
                 console.log('Using basic project selector');
                 await setupProjectSelector();
             } else {
-                console.error('No project selector function available');
-                // Fallback: Show error in selector
+                console.error('No project selector function available - functions not loaded');
+                // Try to set up a basic fallback
                 const selector = document.getElementById('projectSelector');
                 if (selector) {
-                    selector.innerHTML = '<option value="">⚠️ Project selector not available</option>';
+                    selector.innerHTML = '<option value="">⚠️ Project functions not loaded</option>';
+                }
+                
+                // Try to get current project from localStorage as fallback
+                const storedProject = localStorage.getItem('milo_current_project');
+                if (storedProject) {
+                    try {
+                        const project = JSON.parse(storedProject);
+                        const projectNameEl = document.getElementById('currentProjectName');
+                        if (projectNameEl && project.name) {
+                            projectNameEl.textContent = project.name;
+                        }
+                        if (selector) {
+                            selector.innerHTML = `<option value="${project.id}">${project.name}</option>`;
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse stored project:', e);
+                    }
                 }
             }
             console.log('Project selector setup complete');
@@ -1856,50 +1874,105 @@
         // Hash detection for direct navigation
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOMContentLoaded - checking hash:', window.location.hash);
-            const hash = window.location.hash.substring(1); // Remove the # symbol
-            if (hash === 'timeline') {
-                console.log('Hash is timeline, showing timeline view in 100ms');
-                setTimeout(() => showTimelineView(), 100);
-            } else if (hash === 'roadmap') {
-                console.log('Hash is roadmap, showing roadmap view in 100ms');
-                setTimeout(() => showRoadmapView(), 100);
-            } else if (hash === 'dashboard') {
-                console.log('Hash is dashboard, showing dashboard view in 100ms');
-                setTimeout(() => showDashboardView(), 100);
-            } else {
-                console.log('No matching hash, showing board view');
-            }
             
-            // Add click event listeners to navigation links
-            const timelineLink = document.getElementById('timelineLink');
-            const boardLink = document.getElementById('boardLink');
-            const dashboardLink = document.getElementById('dashboardLink');
-            
-            if (timelineLink) {
-                timelineLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    console.log('Timeline clicked');
-                    showTimelineView();
-                    return false;
+            try {
+                const hash = window.location.hash.substring(1); // Remove the # symbol
+                if (hash === 'timeline') {
+                    console.log('Hash is timeline, showing timeline view in 100ms');
+                    setTimeout(() => {
+                        try {
+                            showTimelineView();
+                        } catch (error) {
+                            console.error('Error showing timeline view:', error);
+                        }
+                    }, 100);
+                } else if (hash === 'roadmap') {
+                    console.log('Hash is roadmap, showing roadmap view in 100ms');
+                    setTimeout(() => {
+                        try {
+                            showRoadmapView();
+                        } catch (error) {
+                            console.error('Error showing roadmap view:', error);
+                        }
+                    }, 100);
+                } else if (hash === 'dashboard') {
+                    console.log('Hash is dashboard, showing dashboard view in 100ms');
+                    setTimeout(() => {
+                        try {
+                            showDashboardView();
+                        } catch (error) {
+                            console.error('Error showing dashboard view:', error);
+                        }
+                    }, 100);
+                } else {
+                    console.log('No matching hash, showing board view');
+                }
+                
+                // Add click event listeners to navigation links with error handling
+                console.log('Setting up navigation event listeners...');
+                
+                const timelineLink = document.getElementById('timelineLink');
+                const boardLink = document.getElementById('boardLink');
+                const dashboardLink = document.getElementById('dashboardLink');
+                
+                console.log('Found elements:', {
+                    timelineLink: !!timelineLink,
+                    boardLink: !!boardLink,
+                    dashboardLink: !!dashboardLink
                 });
-            }
-            
-            if (boardLink) {
-                boardLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    console.log('Board clicked');
-                    showBoardView();
-                    return false;
-                });
-            }
-            
-            if (dashboardLink) {
-                dashboardLink.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    console.log('Dashboard clicked');
-                    showDashboardView();
-                    return false;
-                });
+                
+                if (timelineLink) {
+                    timelineLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        console.log('Timeline clicked - calling showTimelineView');
+                        try {
+                            showTimelineView();
+                        } catch (error) {
+                            console.error('Error in timeline click handler:', error);
+                        }
+                        return false;
+                    });
+                    console.log('Timeline event listener added');
+                } else {
+                    console.error('Timeline link not found!');
+                }
+                
+                if (boardLink) {
+                    boardLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        console.log('Board clicked - calling showBoardView');
+                        try {
+                            showBoardView();
+                        } catch (error) {
+                            console.error('Error in board click handler:', error);
+                        }
+                        return false;
+                    });
+                    console.log('Board event listener added');
+                } else {
+                    console.error('Board link not found!');
+                }
+                
+                if (dashboardLink) {
+                    dashboardLink.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        console.log('Dashboard clicked - calling showDashboardView');
+                        try {
+                            showDashboardView();
+                        } catch (error) {
+                            console.error('Error in dashboard click handler:', error);
+                        }
+                        return false;
+                    });
+                    console.log('Dashboard event listener added');
+                } else {
+                    console.error('Dashboard link not found!');
+                }
+                
+                console.log('Navigation setup complete');
+                
+            } catch (error) {
+                console.error('Error in DOMContentLoaded handler:', error);
             }
         });
 
@@ -1965,69 +2038,90 @@
 
         function showTimelineView() {
             console.log('showTimelineView called');
-            currentBoardView = 'timeline';
             
-            // Update URL hash without triggering hashchange event
-            if (window.location.hash !== '#timeline') {
-                history.replaceState(null, null, '#timeline');
-            }
-            
-            // Hide other views
-            const boardContent = document.querySelector('.board-content');
-            const timelineView = document.getElementById('timelineView');
-            const roadmapView = document.getElementById('roadmapView');
-            const dashboardView = document.getElementById('dashboardView');
-            
-            console.log('Timeline view element found:', !!timelineView);
-            console.log('Board content element found:', !!boardContent);
-            
-            if (boardContent) {
-                boardContent.style.display = 'none';
-                console.log('Board content hidden');
-            }
-            if (roadmapView) {
-                roadmapView.style.display = 'none';
-                console.log('Roadmap view hidden');
-            }
-            if (dashboardView) {
-                dashboardView.style.display = 'none';
-                console.log('Dashboard view hidden');
-            }
-            
-            if (timelineView) {
-                timelineView.style.display = 'flex';
-                timelineView.style.flexDirection = 'column';
-                console.log('Timeline view should now be visible');
-                console.log('Timeline view display style:', timelineView.style.display);
-            } else {
-                console.error('Timeline view element not found!');
-                return;
-            }
-            
-            // Update sidebar links with error handling
-            const boardLink = document.getElementById('boardLink');
-            const timelineLink = document.getElementById('timelineLink');
-            const roadmapLink = document.getElementById('roadmapLink');
-            const dashboardLink = document.getElementById('dashboardLink');
-            
-            if (boardLink) boardLink.classList.remove('active');
-            if (timelineLink) timelineLink.classList.add('active');
-            if (roadmapLink) roadmapLink.classList.remove('active');
-            if (dashboardLink) dashboardLink.classList.remove('active');
-            
-            console.log('Loading timeline data...');
-            
-            // Ensure tasks are loaded for timeline
-            if (typeof loadTasks === 'function') {
-                loadTasks().then(() => {
-                    console.log('Tasks loaded, now loading timeline data');
-                    loadTimelineData();
-                }).catch(error => {
-                    console.error('Failed to load tasks for timeline:', error);
-                    loadTimelineData(); // Try to load timeline anyway
+            try {
+                currentBoardView = 'timeline';
+                
+                // Update URL hash without triggering hashchange event
+                if (window.location.hash !== '#timeline') {
+                    history.replaceState(null, null, '#timeline');
+                }
+                
+                // Hide other views
+                const boardContent = document.querySelector('.board-content');
+                const timelineView = document.getElementById('timelineView');
+                const roadmapView = document.getElementById('roadmapView');
+                const dashboardView = document.getElementById('dashboardView');
+                
+                console.log('Timeline view elements found:', {
+                    boardContent: !!boardContent,
+                    timelineView: !!timelineView,
+                    roadmapView: !!roadmapView,
+                    dashboardView: !!dashboardView
                 });
-            } else {
-                loadTimelineData();
+                
+                if (boardContent) {
+                    boardContent.style.display = 'none';
+                    console.log('Board content hidden');
+                }
+                if (roadmapView) {
+                    roadmapView.style.display = 'none';
+                    console.log('Roadmap view hidden');
+                }
+                if (dashboardView) {
+                    dashboardView.style.display = 'none';
+                    console.log('Dashboard view hidden');
+                }
+                
+                if (timelineView) {
+                    timelineView.style.display = 'flex';
+                    timelineView.style.flexDirection = 'column';
+                    console.log('Timeline view should now be visible');
+                    console.log('Timeline view display style:', timelineView.style.display);
+                } else {
+                    console.error('Timeline view element not found!');
+                    return;
+                }
+                
+                // Update sidebar links with error handling
+                const boardLink = document.getElementById('boardLink');
+                const timelineLink = document.getElementById('timelineLink');
+                const roadmapLink = document.getElementById('roadmapLink');
+                const dashboardLink = document.getElementById('dashboardLink');
+                
+                if (boardLink) boardLink.classList.remove('active');
+                if (timelineLink) timelineLink.classList.add('active');
+                if (roadmapLink) roadmapLink.classList.remove('active');
+                if (dashboardLink) dashboardLink.classList.remove('active');
+                
+                console.log('Loading timeline data...');
+                
+                // Ensure tasks are loaded for timeline
+                if (typeof loadTasks === 'function') {
+                    loadTasks().then(() => {
+                        console.log('Tasks loaded, now loading timeline data');
+                        if (typeof loadTimelineData === 'function') {
+                            loadTimelineData();
+                        } else {
+                            console.error('loadTimelineData function not found');
+                        }
+                    }).catch(error => {
+                        console.error('Failed to load tasks for timeline:', error);
+                        if (typeof loadTimelineData === 'function') {
+                            loadTimelineData(); // Try to load timeline anyway
+                        }
+                    });
+                } else {
+                    console.error('loadTasks function not found');
+                    if (typeof loadTimelineData === 'function') {
+                        loadTimelineData();
+                    }
+                }
+                
+                console.log('showTimelineView completed successfully');
+                
+            } catch (error) {
+                console.error('Error in showTimelineView:', error);
             }
         }
 
@@ -2046,42 +2140,87 @@
 
         function showDashboardView() {
             console.log('showDashboardView called');
-            currentBoardView = 'dashboard';
             
-            // Update URL hash without triggering hashchange event
-            if (window.location.hash !== '#dashboard') {
-                history.replaceState(null, null, '#dashboard');
-            }
-            
-            document.querySelector('.board-content').style.display = 'none';
-            document.getElementById('timelineView').style.display = 'none';
-            document.getElementById('roadmapView').style.display = 'none';
-            document.getElementById('dashboardView').style.display = 'block';
-            
-            // Update sidebar links with error handling
-            const boardLink = document.getElementById('boardLink');
-            const timelineLink = document.getElementById('timelineLink');
-            const roadmapLink = document.getElementById('roadmapLink');
-            const dashboardLink = document.getElementById('dashboardLink');
-            
-            if (boardLink) boardLink.classList.remove('active');
-            if (timelineLink) timelineLink.classList.remove('active');
-            if (roadmapLink) roadmapLink.classList.remove('active');
-            if (dashboardLink) dashboardLink.classList.add('active');
-            
-            console.log('Loading dashboard data...');
-            
-            // Ensure tasks are loaded first, then load dashboard
-            if (typeof loadTasks === 'function') {
-                loadTasks().then(() => {
-                    console.log('Tasks loaded, now loading dashboard data');
-                    loadDashboardData();
-                }).catch(error => {
-                    console.error('Failed to load tasks for dashboard:', error);
-                    loadDashboardData(); // Try to load dashboard anyway
+            try {
+                currentBoardView = 'dashboard';
+                
+                // Update URL hash without triggering hashchange event
+                if (window.location.hash !== '#dashboard') {
+                    history.replaceState(null, null, '#dashboard');
+                }
+                
+                const boardContent = document.querySelector('.board-content');
+                const timelineView = document.getElementById('timelineView');
+                const roadmapView = document.getElementById('roadmapView');
+                const dashboardView = document.getElementById('dashboardView');
+                
+                console.log('Dashboard view elements found:', {
+                    boardContent: !!boardContent,
+                    timelineView: !!timelineView,
+                    roadmapView: !!roadmapView,
+                    dashboardView: !!dashboardView
                 });
-            } else {
-                loadDashboardData();
+                
+                if (boardContent) {
+                    boardContent.style.display = 'none';
+                    console.log('Board content hidden');
+                }
+                if (timelineView) {
+                    timelineView.style.display = 'none';
+                    console.log('Timeline view hidden');
+                }
+                if (roadmapView) {
+                    roadmapView.style.display = 'none';
+                    console.log('Roadmap view hidden');
+                }
+                if (dashboardView) {
+                    dashboardView.style.display = 'block';
+                    console.log('Dashboard view should now be visible');
+                    console.log('Dashboard view display style:', dashboardView.style.display);
+                } else {
+                    console.error('Dashboard view element not found!');
+                    return;
+                }
+                
+                // Update sidebar links with error handling
+                const boardLink = document.getElementById('boardLink');
+                const timelineLink = document.getElementById('timelineLink');
+                const roadmapLink = document.getElementById('roadmapLink');
+                const dashboardLink = document.getElementById('dashboardLink');
+                
+                if (boardLink) boardLink.classList.remove('active');
+                if (timelineLink) timelineLink.classList.remove('active');
+                if (roadmapLink) roadmapLink.classList.remove('active');
+                if (dashboardLink) dashboardLink.classList.add('active');
+                
+                console.log('Loading dashboard data...');
+                
+                // Ensure tasks are loaded first, then load dashboard
+                if (typeof loadTasks === 'function') {
+                    loadTasks().then(() => {
+                        console.log('Tasks loaded, now loading dashboard data');
+                        if (typeof loadDashboardData === 'function') {
+                            loadDashboardData();
+                        } else {
+                            console.error('loadDashboardData function not found');
+                        }
+                    }).catch(error => {
+                        console.error('Failed to load tasks for dashboard:', error);
+                        if (typeof loadDashboardData === 'function') {
+                            loadDashboardData(); // Try to load dashboard anyway
+                        }
+                    });
+                } else {
+                    console.error('loadTasks function not found');
+                    if (typeof loadDashboardData === 'function') {
+                        loadDashboardData();
+                    }
+                }
+                
+                console.log('showDashboardView completed successfully');
+                
+            } catch (error) {
+                console.error('Error in showDashboardView:', error);
             }
         }
 
