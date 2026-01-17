@@ -87,10 +87,22 @@ async function loadIncidents() {
     try {
         console.log('Loading incidents...');
         
+        // Show loading state
+        const tbody = document.getElementById('incidentsTableBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #6B778C;">Loading incidents...</td></tr>';
+        }
+        
         const projectId = currentProject?.id;
         const url = projectId ? `/incidents?projectId=${projectId}&page=1&pageSize=50` : '/incidents?page=1&pageSize=50';
         
-        const response = await apiClient.get(url);
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        
+        const response = await apiClient.get(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        
         if (response.ok) {
             const data = await response.json() || {};
             // Handle pagination response (new format) or direct array (old format)
@@ -111,8 +123,16 @@ async function loadIncidents() {
             showEmptyState();
         }
     } catch (error) {
-        console.error('Failed to load incidents:', error);
-        showEmptyState();
+        if (error.name === 'AbortError') {
+            console.error('Incidents loading timed out');
+            const tbody = document.getElementById('incidentsTableBody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #DE350B;">Loading timed out. Please refresh the page.</td></tr>';
+            }
+        } else {
+            console.error('Failed to load incidents:', error);
+            showEmptyState();
+        }
     }
 }
 
