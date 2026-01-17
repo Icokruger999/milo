@@ -1665,6 +1665,24 @@ async function handleTaskSubmit(event) {
     }
 }
 
+// Helper function to get all tasks as a flat array for dashboard
+function getAllTasksFlat() {
+    const allTasks = [];
+    if (tasks && typeof tasks === 'object') {
+        Object.keys(tasks).forEach(status => {
+            if (Array.isArray(tasks[status])) {
+                tasks[status].forEach(task => {
+                    allTasks.push({
+                        ...task,
+                        status: status === 'progress' ? 'in progress' : status
+                    });
+                });
+            }
+        });
+    }
+    return allTasks;
+}
+
 async function loadTasksFromAPI() {
     try {
         // Get current project
@@ -1760,6 +1778,14 @@ async function loadTasksFromAPI() {
             
                 renderBoard();
                 
+                // Make tasks available globally for dashboard
+                window.tasks = getAllTasksFlat();
+                
+                // Refresh dashboard if it's currently visible
+                if (typeof loadDashboardData === 'function' && currentBoardView === 'dashboard') {
+                    setTimeout(() => loadDashboardData(), 200);
+                }
+                
                 // Apply filters after loading tasks
                 if (typeof filterTasks === 'function') {
                     filterTasks();
@@ -1777,6 +1803,7 @@ async function loadTasksFromAPI() {
                     review: [],
                     done: []
                 };
+                window.tasks = [];
                 renderBoard();
                 return Promise.resolve();
             }
@@ -1789,6 +1816,7 @@ async function loadTasksFromAPI() {
                 review: [],
                 done: []
             };
+            window.tasks = [];
             renderBoard();
             return Promise.reject(error);
         }

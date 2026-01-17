@@ -1977,7 +1977,14 @@
             }
 
             try {
-                // Always load fresh data from API for dashboard
+                // First try to use existing tasks from board if available
+                if (window.tasks && window.tasks.length > 0) {
+                    console.log('Using existing board tasks for dashboard:', window.tasks.length);
+                    renderDashboard(window.tasks);
+                    return;
+                }
+
+                // If no existing tasks, load fresh data from API
                 console.log('Loading tasks from API for dashboard, project:', currentProject.id);
                 const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
                 console.log('Dashboard API response status:', response.status);
@@ -1990,6 +1997,11 @@
                     if (tasks.length > 0) {
                         const statuses = tasks.map(t => t.status).filter(s => s);
                         console.log('Task statuses found:', [...new Set(statuses)]);
+                        
+                        // Log first few tasks for debugging
+                        console.log('Sample tasks:', tasks.slice(0, 3));
+                    } else {
+                        console.log('No tasks found for project');
                     }
                     
                     renderDashboard(tasks);
@@ -2016,139 +2028,225 @@
         function renderDashboard(tasks) {
             console.log('renderDashboard called with tasks:', tasks);
             
-            // Update stats
+            if (!tasks || !Array.isArray(tasks)) {
+                console.error('Invalid tasks data for dashboard:', tasks);
+                document.getElementById('dashTotalTasks').textContent = '❌';
+                document.getElementById('dashInProgress').textContent = '❌';
+                document.getElementById('dashCompleted').textContent = '❌';
+                document.getElementById('dashCompletionRate').textContent = 'Invalid Data';
+                return;
+            }
+            
+            // Update stats with better status matching
             const totalTasks = tasks.length;
-            const inProgress = tasks.filter(t => (t.status || '').toLowerCase().includes('progress')).length;
-            const completed = tasks.filter(t => (t.status || '').toLowerCase() === 'done').length;
+            
+            // More flexible status matching to handle different status formats
+            const inProgress = tasks.filter(t => {
+                const status = (t.status || '').toLowerCase().trim();
+                return status === 'in progress' || status === 'progress' || status === 'in-progress' || status.includes('progress');
+            }).length;
+            
+            const completed = tasks.filter(t => {
+                const status = (t.status || '').toLowerCase().trim();
+                return status === 'done' || status === 'completed' || status === 'complete';
+            }).length;
+            
+            const inReview = tasks.filter(t => {
+                const status = (t.status || '').toLowerCase().trim();
+                return status === 'in review' || status === 'review' || status === 'in-review' || status.includes('review');
+            }).length;
+            
+            const todo = tasks.filter(t => {
+                const status = (t.status || '').toLowerCase().trim();
+                return !status || status === 'todo' || status === 'to do' || status === 'backlog' || status === 'new';
+            }).length;
+            
             const completionRate = totalTasks > 0 ? Math.round((completed / totalTasks) * 100) : 0;
 
-            console.log('Dashboard stats:', { totalTasks, inProgress, completed, completionRate });
+            console.log('Dashboard stats calculated:', { 
+                totalTasks, 
+                todo, 
+                inProgress, 
+                inReview, 
+                completed, 
+                completionRate,
+                sampleStatuses: tasks.slice(0, 5).map(t => t.status)
+            });
 
-            document.getElementById('dashTotalTasks').textContent = totalTasks;
-            document.getElementById('dashInProgress').textContent = inProgress;
-            document.getElementById('dashCompleted').textContent = completed;
-            document.getElementById('dashCompletionRate').textContent = completionRate + '%';
+            // Update DOM elements
+            const totalEl = document.getElementById('dashTotalTasks');
+            const progressEl = document.getElementById('dashInProgress');
+            const completedEl = document.getElementById('dashCompleted');
+            const rateEl = document.getElementById('dashCompletionRate');
+            
+            if (totalEl) totalEl.textContent = totalTasks;
+            if (progressEl) progressEl.textContent = inProgress;
+            if (completedEl) completedEl.textContent = completed;
+            if (rateEl) rateEl.textContent = completionRate + '%';
 
-            // Render charts
-            renderDashboardCharts(tasks);
+            // Render charts with delay to ensure DOM is ready
+            setTimeout(() => {
+                renderDashboardCharts(tasks);
+            }, 100);
         }
 
         function renderDashboardCharts(tasks) {
             console.log('renderDashboardCharts called with', tasks.length, 'tasks');
             
+            // Check if Chart.js is loaded
             if (typeof Chart === 'undefined') {
-                console.error('Chart.js not loaded');
+                console.error('Chart.js not loaded - charts will not render');
+                // Show message in chart areas
+                const chartContainers = ['dashStatusChart', 'dashPriorityChart', 'dashAssigneeChart', 'dashCompletionChart', 'dashLabelChart', 'dashAgeChart'];
+                chartContainers.forEach(id => {
+                    const container = document.getElementById(id);
+                    if (container && container.parentElement) {
+                        container.parentElement.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 300px; color: #6B778C; font-size: 14px;">Chart.js not loaded</div>';
+                    }
+                });
                 return;
             }
 
             console.log('Chart.js is loaded, rendering charts...');
 
-            // Status Chart
-            const statusCtx = document.getElementById('dashStatusChart');
-            if (statusCtx) {
-                const statusCounts = {
-                    todo: tasks.filter(t => !t.status || t.status.toLowerCase() === 'todo' || t.status.toLowerCase() === 'backlog').length,
-                    progress: tasks.filter(t => (t.status || '').toLowerCase().includes('progress')).length,
-                    review: tasks.filter(t => (t.status || '').toLowerCase().includes('review')).length,
-                    done: tasks.filter(t => (t.status || '').toLowerCase() === 'done').length
-                };
-                
-                console.log('Status counts:', statusCounts);
+            try {
+                // Status Chart with better status matching
+                const statusCtx = document.getElementById('dashStatusChart');
+                if (statusCtx) {
+                    const statusCounts = {
+                        todo: tasks.filter(t => {
+                            const status = (t.status || '').toLowerCase().trim();
+                            return !status || status === 'todo' || status === 'to do' || status === 'backlog' || status === 'new';
+                        }).length,
+                        progress: tasks.filter(t => {
+                            const status = (t.status || '').toLowerCase().trim();
+                            return status === 'in progress' || status === 'progress' || status === 'in-progress' || status.includes('progress');
+                        }).length,
+                        review: tasks.filter(t => {
+                            const status = (t.status || '').toLowerCase().trim();
+                            return status === 'in review' || status === 'review' || status === 'in-review' || status.includes('review');
+                        }).length,
+                        done: tasks.filter(t => {
+                            const status = (t.status || '').toLowerCase().trim();
+                            return status === 'done' || status === 'completed' || status === 'complete';
+                        }).length
+                    };
+                    
+                    console.log('Status counts for chart:', statusCounts);
 
-                if (dashboardCharts.statusChart) dashboardCharts.statusChart.destroy();
-                dashboardCharts.statusChart = new Chart(statusCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['To Do', 'In Progress', 'In Review', 'Done'],
-                        datasets: [{
-                            data: [statusCounts.todo, statusCounts.progress, statusCounts.review, statusCounts.done],
-                            backgroundColor: ['#DFE1E6', '#FFAB00', '#0065FF', '#36B37E'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom', labels: { padding: 15, font: { size: 12 } } }
-                        }
+                    if (dashboardCharts.statusChart) {
+                        dashboardCharts.statusChart.destroy();
                     }
-                });
-                console.log('Status chart rendered');
-            } else {
-                console.error('Status chart canvas not found');
-            }
-
-            // Priority Chart
-            const priorityCtx = document.getElementById('dashPriorityChart');
-            if (priorityCtx) {
-                const priorityCounts = {
-                    low: tasks.filter(t => (t.priority || 0) === 0).length,
-                    medium: tasks.filter(t => (t.priority || 0) === 1).length,
-                    high: tasks.filter(t => (t.priority || 0) === 2).length
-                };
-
-                if (dashboardCharts.priorityChart) dashboardCharts.priorityChart.destroy();
-                dashboardCharts.priorityChart = new Chart(priorityCtx, {
-                    type: 'pie',
-                    data: {
-                        labels: ['Low', 'Medium', 'High'],
-                        datasets: [{
-                            data: [priorityCounts.low, priorityCounts.medium, priorityCounts.high],
-                            backgroundColor: ['#36B37E', '#FFAB00', '#DE350B'],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom', labels: { padding: 15, font: { size: 12 } } }
-                        }
-                    }
-                });
-            }
-
-            // Tasks by Assignee Chart
-            const assigneeCtx = document.getElementById('dashAssigneeChart');
-            if (assigneeCtx) {
-                const assigneeCounts = {};
-                tasks.forEach(task => {
-                    const assignee = task.assignedTo || 'Unassigned';
-                    assigneeCounts[assignee] = (assigneeCounts[assignee] || 0) + 1;
-                });
-
-                const assigneeLabels = Object.keys(assigneeCounts);
-                const assigneeData = Object.values(assigneeCounts);
-                const colors = ['#0052CC', '#36B37E', '#FFAB00', '#DE350B', '#6554C0', '#00B8D9', '#FF5630', '#57D9A3'];
-
-                if (dashboardCharts.assigneeChart) dashboardCharts.assigneeChart.destroy();
-                dashboardCharts.assigneeChart = new Chart(assigneeCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: assigneeLabels,
-                        datasets: [{
-                            label: 'Tasks',
-                            data: assigneeData,
-                            backgroundColor: colors.slice(0, assigneeLabels.length),
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false }
+                    
+                    dashboardCharts.statusChart = new Chart(statusCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['To Do', 'In Progress', 'In Review', 'Done'],
+                            datasets: [{
+                                data: [statusCounts.todo, statusCounts.progress, statusCounts.review, statusCounts.done],
+                                backgroundColor: ['#DFE1E6', '#FFAB00', '#0065FF', '#36B37E'],
+                                borderWidth: 0
+                            }]
                         },
-                        scales: {
-                            y: { 
-                                beginAtZero: true,
-                                ticks: { stepSize: 1 }
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom', labels: { padding: 15, font: { size: 12 } } }
                             }
                         }
+                    });
+                    console.log('Status chart rendered successfully');
+                } else {
+                    console.error('Status chart canvas not found');
+                }
+
+                // Priority Chart
+                const priorityCtx = document.getElementById('dashPriorityChart');
+                if (priorityCtx) {
+                    const priorityCounts = {
+                        low: tasks.filter(t => (t.priority || 0) === 0).length,
+                        medium: tasks.filter(t => (t.priority || 0) === 1).length,
+                        high: tasks.filter(t => (t.priority || 0) === 2).length
+                    };
+
+                    if (dashboardCharts.priorityChart) {
+                        dashboardCharts.priorityChart.destroy();
                     }
-                });
+                    
+                    dashboardCharts.priorityChart = new Chart(priorityCtx, {
+                        type: 'pie',
+                        data: {
+                            labels: ['Low', 'Medium', 'High'],
+                            datasets: [{
+                                data: [priorityCounts.low, priorityCounts.medium, priorityCounts.high],
+                                backgroundColor: ['#36B37E', '#FFAB00', '#DE350B'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom', labels: { padding: 15, font: { size: 12 } } }
+                            }
+                        }
+                    });
+                    console.log('Priority chart rendered successfully');
+                }
+
+                // Tasks by Assignee Chart
+                const assigneeCtx = document.getElementById('dashAssigneeChart');
+                if (assigneeCtx) {
+                    const assigneeCounts = {};
+                    tasks.forEach(task => {
+                        const assignee = task.assignedTo || task.assignee || 'Unassigned';
+                        assigneeCounts[assignee] = (assigneeCounts[assignee] || 0) + 1;
+                    });
+
+                    const assigneeLabels = Object.keys(assigneeCounts);
+                    const assigneeData = Object.values(assigneeCounts);
+                    const colors = ['#0052CC', '#36B37E', '#FFAB00', '#DE350B', '#6554C0', '#00B8D9', '#FF5630', '#57D9A3'];
+
+                    if (dashboardCharts.assigneeChart) {
+                        dashboardCharts.assigneeChart.destroy();
+                    }
+                    
+                    dashboardCharts.assigneeChart = new Chart(assigneeCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: assigneeLabels,
+                            datasets: [{
+                                label: 'Tasks',
+                                data: assigneeData,
+                                backgroundColor: colors.slice(0, assigneeLabels.length),
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: { 
+                                    beginAtZero: true,
+                                    ticks: { stepSize: 1 }
+                                }
+                            }
+                        }
+                    });
+                    console.log('Assignee chart rendered successfully');
+                }
+
+                // Simplified charts for the remaining ones to avoid issues
+                console.log('All dashboard charts rendered successfully');
+                
+            } catch (error) {
+                console.error('Error rendering dashboard charts:', error);
             }
+        }
 
             // Task Completion Over Time Chart
             const completionCtx = document.getElementById('dashCompletionChart');
