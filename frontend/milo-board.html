@@ -2811,7 +2811,8 @@
             
             // Default 90-day duration for better visibility
             const duration = 90;
-            const width = Math.max(120, duration * 2); // 2px per day
+            const width = Math.max(200, duration * 2); // Wider bars for more content
+            const endDate = new Date(startDate.getTime() + duration * 24 * 60 * 60 * 1000);
             
             bar.className = 'timeline-project-bar';
             bar.style.cssText = `
@@ -2819,36 +2820,54 @@
                 left: ${actualX}px;
                 top: ${actualY}px;
                 width: ${width}px;
-                height: 36px;
-                background: ${subProject.color};
-                border-radius: 6px;
+                height: 50px;
+                background: linear-gradient(135deg, ${subProject.color} 0%, ${subProject.color}CC 100%);
+                border-radius: 8px;
                 color: white;
-                font-size: 13px;
+                font-size: 12px;
                 font-weight: 600;
-                padding: 0 12px;
+                padding: 8px 12px;
                 display: flex;
-                align-items: center;
+                flex-direction: column;
+                justify-content: space-between;
                 cursor: pointer;
-                box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+                box-shadow: 0 4px 16px rgba(0,0,0,0.15);
                 z-index: 100;
                 border: 2px solid white;
                 transition: all 0.2s ease;
                 user-select: none;
+                overflow: hidden;
             `;
             
-            bar.textContent = subProject.name;
-            bar.title = `${subProject.name}\nStart: ${startDate.toLocaleDateString()}\nDuration: ${duration} days\nClick to create tasks`;
+            // Create content with project name and dates
+            bar.innerHTML = `
+                <div style="font-size: 13px; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                    ${subProject.name}
+                </div>
+                <div style="font-size: 10px; opacity: 0.9; display: flex; justify-content: space-between; align-items: center;">
+                    <span>${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    <span style="font-size: 9px; opacity: 0.8;">${duration}d</span>
+                    <span>${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                </div>
+                <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.3); border-radius: 0 0 6px 6px;">
+                    <div style="height: 100%; width: 35%; background: rgba(255,255,255,0.8); border-radius: 0 0 6px 6px; transition: width 0.3s ease;"></div>
+                </div>
+            `;
+            
+            bar.title = `${subProject.name}\nStart: ${startDate.toLocaleDateString()}\nEnd: ${endDate.toLocaleDateString()}\nDuration: ${duration} days\nProgress: 35%\n\nClick to create tasks for this sub-project`;
             bar.setAttribute('data-project-id', subProject.id);
             
             // Add hover effect
             bar.addEventListener('mouseenter', () => {
-                bar.style.transform = 'translateY(-3px) scale(1.02)';
-                bar.style.boxShadow = '0 6px 20px rgba(0,0,0,0.25)';
+                bar.style.transform = 'translateY(-4px) scale(1.03)';
+                bar.style.boxShadow = '0 8px 24px rgba(0,0,0,0.25)';
+                bar.style.zIndex = '101';
             });
             
             bar.addEventListener('mouseleave', () => {
                 bar.style.transform = 'translateY(0) scale(1)';
-                bar.style.boxShadow = '0 3px 12px rgba(0,0,0,0.15)';
+                bar.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+                bar.style.zIndex = '100';
             });
             
             // Add click to create task functionality
@@ -2870,6 +2889,12 @@
                 bar.style.opacity = '1';
             });
             
+            // Add right-click context menu for more options
+            bar.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showTimelineBarContextMenu(e, subProject, bar);
+            });
+            
             container.appendChild(bar);
             
             // Update sub-project with timeline position (mock storage)
@@ -2878,13 +2903,165 @@
             const subProjectIndex = mockSubProjects.findIndex(sp => sp.id === subProject.id);
             if (subProjectIndex >= 0) {
                 mockSubProjects[subProjectIndex].timelineStartDate = startDate.toISOString();
+                mockSubProjects[subProjectIndex].timelineEndDate = endDate.toISOString();
                 mockSubProjects[subProjectIndex].timelineX = actualX;
                 mockSubProjects[subProjectIndex].timelineY = actualY;
                 mockSubProjects[subProjectIndex].onTimeline = true;
+                mockSubProjects[subProjectIndex].duration = duration;
                 localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(mockSubProjects));
             }
             
-            console.log('Timeline bar created successfully at position:', actualX, actualY);
+            console.log('Enhanced timeline bar created successfully at position:', actualX, actualY);
+        }
+        
+        function showTimelineBarContextMenu(event, subProject, barElement) {
+            // Remove any existing context menu
+            const existingMenu = document.getElementById('timelineBarContextMenu');
+            if (existingMenu) {
+                existingMenu.remove();
+            }
+            
+            const menu = document.createElement('div');
+            menu.id = 'timelineBarContextMenu';
+            menu.style.cssText = `
+                position: fixed;
+                left: ${event.clientX}px;
+                top: ${event.clientY}px;
+                background: white;
+                border: 1px solid #DFE1E6;
+                border-radius: 6px;
+                box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+                z-index: 1000;
+                min-width: 180px;
+                padding: 8px 0;
+                font-size: 14px;
+            `;
+            
+            const menuItems = [
+                {
+                    label: '📝 Create Task',
+                    action: () => showCreateTaskForSubProject(subProject)
+                },
+                {
+                    label: '📊 View Details',
+                    action: () => showSubProjectDetails(subProject)
+                },
+                {
+                    label: '✏️ Edit Timeline',
+                    action: () => editTimelineBar(subProject, barElement)
+                },
+                {
+                    label: '🗑️ Remove from Timeline',
+                    action: () => removeFromTimeline(subProject, barElement)
+                }
+            ];
+            
+            menuItems.forEach(item => {
+                const menuItem = document.createElement('div');
+                menuItem.style.cssText = `
+                    padding: 8px 16px;
+                    cursor: pointer;
+                    transition: background 0.15s;
+                    color: #172B4D;
+                `;
+                menuItem.textContent = item.label;
+                
+                menuItem.addEventListener('mouseenter', () => {
+                    menuItem.style.background = '#F4F5F7';
+                });
+                
+                menuItem.addEventListener('mouseleave', () => {
+                    menuItem.style.background = 'transparent';
+                });
+                
+                menuItem.addEventListener('click', () => {
+                    item.action();
+                    menu.remove();
+                });
+                
+                menu.appendChild(menuItem);
+            });
+            
+            document.body.appendChild(menu);
+            
+            // Close menu when clicking outside
+            const closeMenu = (e) => {
+                if (!menu.contains(e.target)) {
+                    menu.remove();
+                    document.removeEventListener('click', closeMenu);
+                }
+            };
+            
+            setTimeout(() => {
+                document.addEventListener('click', closeMenu);
+            }, 100);
+        }
+        
+        function showSubProjectDetails(subProject) {
+            const currentProject = projectSelector.getCurrentProject();
+            const mockSubProjects = JSON.parse(localStorage.getItem('mockSubProjects_' + currentProject.id) || '[]');
+            const fullSubProject = mockSubProjects.find(sp => sp.id === subProject.id) || subProject;
+            
+            const startDate = fullSubProject.timelineStartDate ? new Date(fullSubProject.timelineStartDate) : new Date(fullSubProject.startDate);
+            const endDate = fullSubProject.timelineEndDate ? new Date(fullSubProject.timelineEndDate) : new Date(fullSubProject.endDate);
+            const duration = fullSubProject.duration || 90;
+            
+            alert(`Sub-Project Details:
+            
+Name: ${fullSubProject.name}
+Start Date: ${startDate.toLocaleDateString()}
+End Date: ${endDate.toLocaleDateString()}
+Duration: ${duration} days
+Status: Active
+Progress: 35%
+
+Click OK to close this dialog.`);
+        }
+        
+        function editTimelineBar(subProject, barElement) {
+            // Simple inline editing for now
+            const newName = prompt(`Edit sub-project name:`, subProject.name);
+            if (newName && newName.trim() && newName !== subProject.name) {
+                // Update the bar display
+                const nameElement = barElement.querySelector('div:first-child');
+                if (nameElement) {
+                    nameElement.textContent = newName.trim();
+                }
+                
+                // Update localStorage
+                const currentProject = projectSelector.getCurrentProject();
+                const mockSubProjects = JSON.parse(localStorage.getItem('mockSubProjects_' + currentProject.id) || '[]');
+                const subProjectIndex = mockSubProjects.findIndex(sp => sp.id === subProject.id);
+                if (subProjectIndex >= 0) {
+                    mockSubProjects[subProjectIndex].name = newName.trim();
+                    localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(mockSubProjects));
+                }
+                
+                // Update the left panel as well
+                loadTimelineData();
+            }
+        }
+        
+        function removeFromTimeline(subProject, barElement) {
+            if (confirm(`Remove "${subProject.name}" from timeline?\n\nThis will not delete the sub-project, just remove it from the timeline view.`)) {
+                // Remove the visual bar
+                barElement.remove();
+                
+                // Update localStorage to mark as not on timeline
+                const currentProject = projectSelector.getCurrentProject();
+                const mockSubProjects = JSON.parse(localStorage.getItem('mockSubProjects_' + currentProject.id) || '[]');
+                const subProjectIndex = mockSubProjects.findIndex(sp => sp.id === subProject.id);
+                if (subProjectIndex >= 0) {
+                    mockSubProjects[subProjectIndex].onTimeline = false;
+                    delete mockSubProjects[subProjectIndex].timelineX;
+                    delete mockSubProjects[subProjectIndex].timelineY;
+                    delete mockSubProjects[subProjectIndex].timelineStartDate;
+                    delete mockSubProjects[subProjectIndex].timelineEndDate;
+                    localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(mockSubProjects));
+                }
+                
+                console.log('Sub-project removed from timeline:', subProject.name);
+            }
         }
         
         // Add timeline panning functionality
