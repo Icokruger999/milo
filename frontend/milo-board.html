@@ -2543,8 +2543,10 @@
             const subProjectElement = document.querySelector(`[data-project-id="${subProjectId}"]`);
             if (!subProjectElement) return;
             
+            // Store original content for restoration
+            subProjectElement.setAttribute('data-original-content', subProjectElement.innerHTML);
+            
             // Replace content with inline confirmation
-            const originalContent = subProjectElement.innerHTML;
             subProjectElement.innerHTML = `
                 <div style="padding: 8px; background: #FFEBE6; border: 1px solid #DE350B; border-radius: 3px;">
                     <div style="color: #DE350B; font-size: 13px; font-weight: 500; margin-bottom: 8px;">
@@ -2554,7 +2556,7 @@
                         <button onclick="confirmDeleteSubProject('${subProjectId}')" style="background: #DE350B; color: white; border: none; padding: 4px 12px; border-radius: 3px; font-size: 12px; cursor: pointer;">
                             Delete
                         </button>
-                        <button onclick="cancelDeleteSubProject('${subProjectId}', \`${originalContent.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" style="background: #6B778C; color: white; border: none; padding: 4px 12px; border-radius: 3px; font-size: 12px; cursor: pointer;">
+                        <button onclick="cancelDeleteSubProject('${subProjectId}')" style="background: #6B778C; color: white; border: none; padding: 4px 12px; border-radius: 3px; font-size: 12px; cursor: pointer;">
                             Cancel
                         </button>
                     </div>
@@ -2575,34 +2577,21 @@
             loadTimelineData();
         }
         
-        function cancelDeleteSubProject(subProjectId, originalContent) {
+        function cancelDeleteSubProject(subProjectId) {
             console.log('Cancelled delete sub-project:', subProjectId);
             
-            // Restore original content
+            // Find the element and restore original content
             const subProjectElement = document.querySelector(`[data-project-id="${subProjectId}"]`);
             if (subProjectElement) {
-                subProjectElement.innerHTML = originalContent;
-                
-                // Re-add event listeners
-                const nameSpan = subProjectElement.querySelector('.subproject-name');
-                if (nameSpan) {
-                    nameSpan.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        editSubProjectName(subProjectElement, nameSpan);
-                    });
+                const originalContent = subProjectElement.getAttribute('data-original-content');
+                if (originalContent) {
+                    subProjectElement.innerHTML = originalContent;
+                    subProjectElement.removeAttribute('data-original-content');
+                    
+                    // Re-add event listeners by reloading the timeline
+                    // This is simpler and more reliable than trying to restore individual listeners
+                    loadTimelineData();
                 }
-                
-                // Re-add hover effects
-                subProjectElement.addEventListener('mouseenter', () => {
-                    subProjectElement.style.background = '#F4F5F7';
-                    const deleteBtn = subProjectElement.querySelector('.delete-subproject-btn');
-                    if (deleteBtn) deleteBtn.style.display = 'block';
-                });
-                subProjectElement.addEventListener('mouseleave', () => {
-                    subProjectElement.style.background = 'white';
-                    const deleteBtn = subProjectElement.querySelector('.delete-subproject-btn');
-                    if (deleteBtn) deleteBtn.style.display = 'none';
-                });
             }
         }
         
