@@ -44,6 +44,10 @@ public class Task
     public int? ProjectId { get; set; }
     public Project? Project { get; set; }
     
+    [ForeignKey("SubProject")]
+    public int? SubProjectId { get; set; }
+    public SubProject? SubProject { get; set; }
+    
     public int Priority { get; set; } = 0; // 0 = low, 1 = medium, 2 = high
     
     public DateTime? DueDate { get; set; }

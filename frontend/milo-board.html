@@ -517,6 +517,7 @@
         .assignee-row {
             display: grid;
             grid-template-columns: 140px repeat(4, 1fr);
+            grid-auto-rows: minmax(120px, auto);
             border-bottom: 1px solid #DFE1E6;
             background: white;
             min-height: 120px;
@@ -2923,6 +2924,7 @@
             console.log('loadTimelineData called - Program Timeline');
             const currentProject = projectSelector.getCurrentProject();
             console.log('Current project:', currentProject);
+            console.log('Project ID:', currentProject?.id, 'Type:', typeof currentProject?.id);
             
             if (!currentProject) {
                 console.log('No current project found');
@@ -2934,58 +2936,16 @@
             }
 
             try {
-                // Load sub-projects from API (not localStorage - this is production!)
-                // TODO: Implement backend API endpoint for sub-projects
-                // For now, use localStorage as temporary storage
-                const storageKey = 'mockSubProjects_' + currentProject.id;
-                let subProjects = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                // Load sub-projects from API (database only)
+                console.log('Loading sub-projects from API for project:', currentProject.id);
+                const subProjectsResponse = await apiClient.get(`/api/subprojects?projectId=${currentProject.id}`);
                 
-                // If no sub-projects exist, create default ones
-                if (subProjects.length === 0) {
-                    subProjects = [
-                        {
-                            id: 'fabric-migration',
-                            name: 'Fabric Migration',
-                            parentId: currentProject.id,
-                            departmentId: 'it',
-                            color: '#0052CC',
-                            startDate: '2024-02-01',
-                            endDate: '2024-05-31'
-                        },
-                        {
-                            id: 'server-migration', 
-                            name: 'Server Migration',
-                            parentId: currentProject.id,
-                            departmentId: 'it',
-                            color: '#36B37E',
-                            startDate: '2024-03-01',
-                            endDate: '2024-07-31'
-                        },
-                        {
-                            id: 'ux-experience',
-                            name: 'UX Experience Redesign',
-                            parentId: currentProject.id,
-                            departmentId: 'bi',
-                            color: '#FFAB00',
-                            startDate: '2024-04-01',
-                            endDate: '2024-08-31'
-                        }
-                    ];
-                    // Save default sub-projects
-                    localStorage.setItem(storageKey, JSON.stringify(subProjects));
-                } else {
-                    // Ensure existing sub-projects have department assignments
-                    let updated = false;
-                    subProjects.forEach(sp => {
-                        if (!sp.departmentId) {
-                            sp.departmentId = 'general'; // Assign to general department
-                            updated = true;
-                        }
-                    });
-                    if (updated) {
-                        localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(subProjects));
-                    }
+                if (!subProjectsResponse.ok) {
+                    throw new Error(`Failed to load sub-projects: ${subProjectsResponse.status}`);
                 }
+                
+                const subProjects = await subProjectsResponse.json();
+                console.log('Loaded sub-projects from database:', subProjects.length, subProjects);
                 
                 // Load tasks from API
                 const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
@@ -3047,23 +3007,49 @@
             renderTimelineTodayLine();
         }
         
-        function renderProjectTree(mainProject, subProjects) {
+        async function renderProjectTree(mainProject, subProjects) {
             console.log('renderProjectTree called');
             const container = document.getElementById('timelineProjectTree');
             if (!container) return;
             
-            // Get or create departments
+            // Load departments from API (database only)
             const currentProject = projectSelector.getCurrentProject();
-            const departments = JSON.parse(localStorage.getItem('departments_' + currentProject.id) || '[]');
+            let departments = [];
+            
+            try {
+                // Load departments from API
+                const deptResponse = await apiClient.get(`/api/departments?projectId=${currentProject.id}`);
+                if (!deptResponse.ok) {
+                    throw new Error(`Failed to load departments: ${deptResponse.status}`);
+                }
+                departments = await deptResponse.json();
+                console.log('Loaded departments from database:', departments.length, departments);
+            } catch (error) {
+                console.error('Error loading departments from API:', error);
+                throw error; // Don't fall back to localStorage - fail loudly
+            }
             
             // If no departments exist, create default ones
             if (departments.length === 0) {
-                departments.push(
-                    { id: 'it', name: 'IT Department', color: '#0052CC' },
-                    { id: 'bi', name: 'BI Department', color: '#36B37E' },
-                    { id: 'general', name: 'General', color: '#6554C0' }
-                );
-                localStorage.setItem('departments_' + currentProject.id, JSON.stringify(departments));
+                console.log('No departments found, creating defaults');
+                const defaultDepartments = [
+                    { name: 'IT Department', description: 'Information Technology', projectId: currentProject.id, color: '#0052CC' },
+                    { name: 'BI Department', description: 'Business Intelligence', projectId: currentProject.id, color: '#36B37E' },
+                    { name: 'General', description: 'General Department', projectId: currentProject.id, color: '#6554C0' }
+                ];
+                
+                // Create default departments via API
+                for (const dept of defaultDepartments) {
+                    try {
+                        const response = await apiClient.post('/api/departments', dept);
+                        if (response.ok) {
+                            const created = await response.json();
+                            departments.push(created);
+                        }
+                    } catch (e) {
+                        console.error('Failed to create default department:', e);
+                    }
+                }
             }
             
             let html = `
@@ -3109,7 +3095,7 @@
                                 </button>
                             </div>
                             <div style="font-size: 11px; color: #6B778C; margin-top: 4px; margin-left: 20px;">
-                                ${new Date(subProject.startDate).toLocaleDateString()} - ${new Date(subProject.endDate).toLocaleDateString()}
+                                ${subProject.startDate ? new Date(subProject.startDate).toLocaleDateString() : 'No start'} - ${subProject.endDate ? new Date(subProject.endDate).toLocaleDateString() : 'No end'}
                             </div>
                         </div>
                     `;
@@ -3332,11 +3318,11 @@
             loadTimelineData(); // Refresh the timeline
         }
         
-        function addSubProject() {
+        async function addSubProject() {
             const nameInput = document.getElementById('newSubProjectName');
             const departmentSelect = document.getElementById('newSubProjectDepartment');
             const name = nameInput.value.trim();
-            const departmentId = departmentSelect.value;
+            const departmentId = parseInt(departmentSelect.value);
             
             if (!name) {
                 nameInput.focus();
@@ -3349,27 +3335,31 @@
             const colors = ['#0052CC', '#36B37E', '#FFAB00', '#DE350B', '#6554C0', '#00B8D9'];
             const color = colors[Math.floor(Math.random() * colors.length)];
             
-            // Create new sub-project with department assignment
+            const currentProject = projectSelector.getCurrentProject();
+            
+            // Create new sub-project via API (database only)
             const newSubProject = {
-                id: 'subproject-' + Date.now(),
                 name: name,
-                parentId: projectSelector.getCurrentProject().id,
+                projectId: currentProject.id,
                 departmentId: departmentId,
                 color: color,
-                startDate: new Date().toISOString().split('T')[0],
-                endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                startDate: new Date().toISOString(),
+                endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
             };
             
-            // Add to mock data and re-render
-            const currentProject = projectSelector.getCurrentProject();
-            const mockSubProjects = JSON.parse(localStorage.getItem('mockSubProjects_' + currentProject.id) || '[]');
-            mockSubProjects.push(newSubProject);
-            localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(mockSubProjects));
-            
-            // Reload timeline
-            loadTimelineData();
-            
-            cancelAddSubProject();
+            try {
+                const response = await apiClient.post('/api/subprojects', newSubProject);
+                if (!response.ok) {
+                    throw new Error(`Failed to create sub-project: ${response.status}`);
+                }
+                console.log('Sub-project created successfully');
+                // Reload timeline
+                loadTimelineData();
+                cancelAddSubProject();
+            } catch (error) {
+                console.error('Error creating sub-project:', error);
+                showToast('Failed to create sub-project: ' + error.message, 'error');
+            }
         }
         
         function cancelAddSubProject() {
@@ -3414,17 +3404,21 @@
             `;
         }
         
-        function confirmDeleteSubProject(subProjectId) {
+        async function confirmDeleteSubProject(subProjectId) {
             console.log('Confirmed delete sub-project:', subProjectId);
             
-            // Remove from mock data
-            const currentProject = projectSelector.getCurrentProject();
-            const mockSubProjects = JSON.parse(localStorage.getItem('mockSubProjects_' + currentProject.id) || '[]');
-            const updatedSubProjects = mockSubProjects.filter(sp => sp.id !== subProjectId);
-            localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(updatedSubProjects));
-            
-            // Reload timeline
-            loadTimelineData();
+            try {
+                // Delete via API (database only)
+                const response = await apiClient.delete(`/api/subprojects/${subProjectId}`);
+                if (!response.ok) {
+                    throw new Error(`Failed to delete sub-project: ${response.status}`);
+                }
+                console.log('Sub-project deleted successfully');
+                loadTimelineData();
+            } catch (error) {
+                console.error('Error deleting sub-project:', error);
+                showToast('Failed to delete sub-project: ' + error.message, 'error');
+            }
         }
         
         function cancelDeleteSubProject(subProjectId) {

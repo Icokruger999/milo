@@ -34,5 +34,7 @@ public class Project
     public ICollection<ProjectInvitation> Invitations { get; set; } = new List<ProjectInvitation>();
     public ICollection<ProjectMember> Members { get; set; } = new List<ProjectMember>();
     public ICollection<Team> Teams { get; set; } = new List<Team>();
+    public ICollection<SubProject> SubProjects { get; set; } = new List<SubProject>();
+    public ICollection<Department> Departments { get; set; } = new List<Department>();
 }
 

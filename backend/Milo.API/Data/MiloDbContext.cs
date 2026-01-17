@@ -30,6 +30,8 @@ public class MiloDbContext : DbContext
     public DbSet<IncidentAssignee> IncidentAssignees { get; set; }
     public DbSet<IncidentRequester> IncidentRequesters { get; set; }
     public DbSet<IncidentGroup> IncidentGroups { get; set; }
+    public DbSet<SubProject> SubProjects { get; set; }
+    public DbSet<Department> Departments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -422,6 +424,42 @@ public class MiloDbContext : DbContext
             entity.Property(e => e.IsActive).HasColumnName("is_active");
             entity.HasIndex(e => e.Name);
             entity.HasIndex(e => e.IsActive);
+        });
+
+        // Department configuration
+        modelBuilder.Entity<Department>(entity =>
+        {
+            entity.HasIndex(e => e.ProjectId);
+            entity.HasIndex(e => e.Name);
+            entity.HasOne(e => e.Project)
+                .WithMany(p => p.Departments)
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // SubProject configuration
+        modelBuilder.Entity<SubProject>(entity =>
+        {
+            entity.HasIndex(e => e.ProjectId);
+            entity.HasIndex(e => e.DepartmentId);
+            entity.HasIndex(e => new { e.ProjectId, e.DepartmentId });
+            entity.HasOne(e => e.Project)
+                .WithMany(p => p.SubProjects)
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.Department)
+                .WithMany(d => d.SubProjects)
+                .HasForeignKey(e => e.DepartmentId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Task SubProject relationship
+        modelBuilder.Entity<Task>(entity =>
+        {
+            entity.HasOne(e => e.SubProject)
+                .WithMany(sp => sp.Tasks)
+                .HasForeignKey(e => e.SubProjectId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         // Force all table and column names to snake_case for PostgreSQL compatibility
