@@ -1799,48 +1799,52 @@
 
         // Setup project selector (use enhanced if available, otherwise fallback)
         console.log('Setting up project selector...');
-        try {
-            // Check if functions exist before calling them
-            if (typeof setupProjectSelectorEnhanced === 'function') {
-                console.log('Using enhanced project selector');
-                await setupProjectSelectorEnhanced();
-            } else if (typeof setupProjectSelector === 'function') {
-                console.log('Using basic project selector');
-                await setupProjectSelector();
-            } else {
-                console.error('No project selector function available - functions not loaded');
-                // Try to set up a basic fallback
-                const selector = document.getElementById('projectSelector');
-                if (selector) {
-                    selector.innerHTML = '<option value="">⚠️ Project functions not loaded</option>';
-                }
-                
-                // Try to get current project from localStorage as fallback
-                const storedProject = localStorage.getItem('milo_current_project');
-                if (storedProject) {
-                    try {
-                        const project = JSON.parse(storedProject);
-                        const projectNameEl = document.getElementById('currentProjectName');
-                        if (projectNameEl && project.name) {
-                            projectNameEl.textContent = project.name;
+        
+        // Wait a bit to ensure all scripts are loaded
+        setTimeout(async () => {
+            try {
+                // Check if functions exist before calling them
+                if (typeof setupProjectSelectorEnhanced === 'function') {
+                    console.log('Using enhanced project selector');
+                    await setupProjectSelectorEnhanced();
+                } else if (typeof setupProjectSelector === 'function') {
+                    console.log('Using basic project selector');
+                    await setupProjectSelector();
+                } else {
+                    console.error('No project selector function available - functions not loaded');
+                    // Try to set up a basic fallback
+                    const selector = document.getElementById('projectSelector');
+                    if (selector) {
+                        selector.innerHTML = '<option value="">⚠️ Project functions not loaded</option>';
+                    }
+                    
+                    // Try to get current project from localStorage as fallback
+                    const storedProject = localStorage.getItem('milo_current_project');
+                    if (storedProject) {
+                        try {
+                            const project = JSON.parse(storedProject);
+                            const projectNameEl = document.getElementById('currentProjectName');
+                            if (projectNameEl && project.name) {
+                                projectNameEl.textContent = project.name;
+                            }
+                            if (selector) {
+                                selector.innerHTML = `<option value="${project.id}">${project.name}</option>`;
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse stored project:', e);
                         }
-                        if (selector) {
-                            selector.innerHTML = `<option value="${project.id}">${project.name}</option>`;
-                        }
-                    } catch (e) {
-                        console.error('Failed to parse stored project:', e);
                     }
                 }
+                console.log('Project selector setup complete');
+            } catch (error) {
+                console.error('Failed to setup project selector:', error);
+                // Fallback: Show error in selector
+                const selector = document.getElementById('projectSelector');
+                if (selector) {
+                    selector.innerHTML = '<option value="">⚠️ Failed to load projects</option>';
+                }
             }
-            console.log('Project selector setup complete');
-        } catch (error) {
-            console.error('Failed to setup project selector:', error);
-            // Fallback: Show error in selector
-            const selector = document.getElementById('projectSelector');
-            if (selector) {
-                selector.innerHTML = '<option value="">⚠️ Failed to load projects</option>';
-            }
-        }
+        }, 500);
         
         // Make Create button work
         document.addEventListener('DOMContentLoaded', function() {
