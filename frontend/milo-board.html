@@ -2108,6 +2108,13 @@
             }
 
             console.log('Chart.js is loaded, rendering charts...');
+            
+            // Debug: Check if all canvas elements exist
+            const chartIds = ['dashStatusChart', 'dashPriorityChart', 'dashAssigneeChart', 'dashCompletionChart', 'dashLabelChart', 'dashAgeChart'];
+            chartIds.forEach(id => {
+                const canvas = document.getElementById(id);
+                console.log(`Chart canvas ${id}:`, !!canvas);
+            });
 
             try {
                 // Status Chart with better status matching
@@ -2240,7 +2247,183 @@
                     console.log('Assignee chart rendered successfully');
                 }
 
-                // Simplified charts for the remaining ones to avoid issues
+                // Task Completion Over Time Chart
+                const completionCtx = document.getElementById('dashCompletionChart');
+                if (completionCtx) {
+                    // Group tasks by completion date (last 30 days)
+                    const today = new Date();
+                    const thirtyDaysAgo = new Date(today);
+                    thirtyDaysAgo.setDate(today.getDate() - 30);
+                    
+                    const completionByDate = {};
+                    for (let d = new Date(thirtyDaysAgo); d <= today; d.setDate(d.getDate() + 1)) {
+                        const dateStr = d.toISOString().split('T')[0];
+                        completionByDate[dateStr] = 0;
+                    }
+
+                    tasks.filter(t => {
+                        const status = (t.status || '').toLowerCase().trim();
+                        return status === 'done' || status === 'completed' || status === 'complete';
+                    }).forEach(task => {
+                        if (task.updatedAt) {
+                            const taskDate = new Date(task.updatedAt).toISOString().split('T')[0];
+                            if (completionByDate.hasOwnProperty(taskDate)) {
+                                completionByDate[taskDate]++;
+                            }
+                        }
+                    });
+
+                    const dates = Object.keys(completionByDate).sort();
+                    const counts = dates.map(date => completionByDate[date]);
+
+                    if (dashboardCharts.completionChart) {
+                        dashboardCharts.completionChart.destroy();
+                    }
+                    
+                    dashboardCharts.completionChart = new Chart(completionCtx, {
+                        type: 'line',
+                        data: {
+                            labels: dates.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })),
+                            datasets: [{
+                                label: 'Completed Tasks',
+                                data: counts,
+                                borderColor: '#36B37E',
+                                backgroundColor: 'rgba(54, 179, 126, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: { 
+                                    beginAtZero: true,
+                                    ticks: { stepSize: 1 }
+                                }
+                            }
+                        }
+                    });
+                    console.log('Completion chart rendered successfully');
+                }
+
+                // Tasks by Label Chart
+                const labelCtx = document.getElementById('dashLabelChart');
+                if (labelCtx) {
+                    const labelCounts = {};
+                    tasks.forEach(task => {
+                        if (task.labels && task.labels.length > 0) {
+                            task.labels.forEach(label => {
+                                const labelName = label.name || label;
+                                labelCounts[labelName] = (labelCounts[labelName] || 0) + 1;
+                            });
+                        } else if (task.label) {
+                            // Handle single label field
+                            labelCounts[task.label] = (labelCounts[task.label] || 0) + 1;
+                        } else {
+                            labelCounts['No Label'] = (labelCounts['No Label'] || 0) + 1;
+                        }
+                    });
+
+                    const labelLabels = Object.keys(labelCounts);
+                    const labelData = Object.values(labelCounts);
+                    const colors = ['#0052CC', '#36B37E', '#FFAB00', '#DE350B', '#6554C0', '#00B8D9', '#FF5630', '#57D9A3', '#FFC400', '#00875A'];
+
+                    if (dashboardCharts.labelChart) {
+                        dashboardCharts.labelChart.destroy();
+                    }
+                    
+                    dashboardCharts.labelChart = new Chart(labelCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: labelLabels,
+                            datasets: [{
+                                data: labelData,
+                                backgroundColor: colors.slice(0, labelLabels.length),
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom', labels: { padding: 10, font: { size: 11 } } }
+                            }
+                        }
+                    });
+                    console.log('Label chart rendered successfully');
+                }
+
+                // Average Task Age by Status Chart
+                const ageCtx = document.getElementById('dashAgeChart');
+                if (ageCtx) {
+                    const now = new Date();
+                    const statusAges = {
+                        'To Do': [],
+                        'In Progress': [],
+                        'In Review': [],
+                        'Done': []
+                    };
+
+                    tasks.forEach(task => {
+                        if (task.createdAt) {
+                            const createdDate = new Date(task.createdAt);
+                            const ageInDays = Math.floor((now - createdDate) / (1000 * 60 * 60 * 24));
+                            
+                            const status = (task.status || '').toLowerCase().trim();
+                            if (!status || status === 'todo' || status === 'to do' || status === 'backlog' || status === 'new') {
+                                statusAges['To Do'].push(ageInDays);
+                            } else if (status === 'in progress' || status === 'progress' || status === 'in-progress' || status.includes('progress')) {
+                                statusAges['In Progress'].push(ageInDays);
+                            } else if (status === 'in review' || status === 'review' || status === 'in-review' || status.includes('review')) {
+                                statusAges['In Review'].push(ageInDays);
+                            } else if (status === 'done' || status === 'completed' || status === 'complete') {
+                                statusAges['Done'].push(ageInDays);
+                            }
+                        }
+                    });
+
+                    const avgAges = Object.keys(statusAges).map(status => {
+                        const ages = statusAges[status];
+                        return ages.length > 0 ? Math.round(ages.reduce((a, b) => a + b, 0) / ages.length) : 0;
+                    });
+
+                    if (dashboardCharts.ageChart) {
+                        dashboardCharts.ageChart.destroy();
+                    }
+                    
+                    dashboardCharts.ageChart = new Chart(ageCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['To Do', 'In Progress', 'In Review', 'Done'],
+                            datasets: [{
+                                label: 'Average Age (days)',
+                                data: avgAges,
+                                backgroundColor: ['#DFE1E6', '#FFAB00', '#0065FF', '#36B37E'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: { 
+                                    beginAtZero: true,
+                                    ticks: { stepSize: 1 },
+                                    title: { display: true, text: 'Days' }
+                                }
+                            }
+                        }
+                    });
+                    console.log('Age chart rendered successfully');
+                }
+
                 console.log('All dashboard charts rendered successfully');
                 
             } catch (error) {
