@@ -2333,6 +2333,7 @@
                             id: 'fabric-migration',
                             name: 'Fabric Migration',
                             parentId: currentProject.id,
+                            departmentId: 'it',
                             color: '#0052CC',
                             startDate: '2024-02-01',
                             endDate: '2024-05-31'
@@ -2341,6 +2342,7 @@
                             id: 'server-migration', 
                             name: 'Server Migration',
                             parentId: currentProject.id,
+                            departmentId: 'it',
                             color: '#36B37E',
                             startDate: '2024-03-01',
                             endDate: '2024-07-31'
@@ -2349,6 +2351,7 @@
                             id: 'ux-experience',
                             name: 'UX Experience Redesign',
                             parentId: currentProject.id,
+                            departmentId: 'bi',
                             color: '#FFAB00',
                             startDate: '2024-04-01',
                             endDate: '2024-08-31'
@@ -2356,6 +2359,18 @@
                     ];
                     // Save default sub-projects
                     localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(subProjects));
+                } else {
+                    // Ensure existing sub-projects have department assignments
+                    let updated = false;
+                    subProjects.forEach(sp => {
+                        if (!sp.departmentId) {
+                            sp.departmentId = 'general'; // Assign to general department
+                            updated = true;
+                        }
+                    });
+                    if (updated) {
+                        localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(subProjects));
+                    }
                 }
                 
                 // Load tasks from API
@@ -2423,51 +2438,94 @@
             const container = document.getElementById('timelineProjectTree');
             if (!container) return;
             
+            // Get or create departments
+            const currentProject = projectSelector.getCurrentProject();
+            const departments = JSON.parse(localStorage.getItem('departments_' + currentProject.id) || '[]');
+            
+            // If no departments exist, create default ones
+            if (departments.length === 0) {
+                departments.push(
+                    { id: 'it', name: 'IT Department', color: '#0052CC' },
+                    { id: 'bi', name: 'BI Department', color: '#36B37E' },
+                    { id: 'general', name: 'General', color: '#6554C0' }
+                );
+                localStorage.setItem('departments_' + currentProject.id, JSON.stringify(departments));
+            }
+            
             let html = `
-                <!-- Main Project -->
-                <div style="padding: 12px 16px; background: #F4F5F7; border-bottom: 1px solid #DFE1E6; font-weight: 600; color: #172B4D;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <div style="width: 16px; height: 16px; background: #6554C0; border-radius: 3px;"></div>
-                        ${mainProject.name}
-                    </div>
+                <!-- Department Management -->
+                <div style="padding: 12px 16px; background: #F4F5F7; border-bottom: 1px solid #DFE1E6; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-weight: 600; color: #172B4D; font-size: 14px;">DEPARTMENTS</div>
+                    <button onclick="addNewDepartment()" style="background: #36B37E; color: white; border: none; border-radius: 3px; padding: 4px 8px; font-size: 11px; cursor: pointer;">+ Add</button>
                 </div>
-                
-                <!-- Sub-Projects -->
             `;
             
-            subProjects.forEach(subProject => {
+            // Render each department with its sub-projects
+            departments.forEach(department => {
+                const deptSubProjects = subProjects.filter(sp => sp.departmentId === department.id);
+                
                 html += `
-                    <div class="timeline-subproject-item" 
-                         data-project-id="${subProject.id}" 
-                         draggable="true"
-                         style="padding: 12px 16px 12px 32px; border-bottom: 1px solid #F4F5F7; cursor: grab; transition: background 0.15s; position: relative;">
+                    <!-- Department Header -->
+                    <div style="padding: 12px 16px; background: #FAFBFC; border-bottom: 1px solid #DFE1E6; display: flex; align-items: center; justify-content: space-between;">
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <div style="width: 12px; height: 12px; background: ${subProject.color}; border-radius: 2px;"></div>
-                            <span class="subproject-name" style="font-size: 14px; color: #172B4D; font-weight: 500; flex: 1;">${subProject.name}</span>
-                            <button class="delete-subproject-btn" onclick="deleteSubProject('${subProject.id}'); return false;" style="display: none; background: #DE350B; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 10px; cursor: pointer;" title="Delete sub-project">
-                                ✕
-                            </button>
+                            <div style="width: 16px; height: 16px; background: ${department.color}; border-radius: 3px;"></div>
+                            <span style="font-weight: 600; color: #172B4D;">${department.name}</span>
+                            <span style="font-size: 11px; color: #6B778C;">(${deptSubProjects.length})</span>
                         </div>
-                        <div style="font-size: 11px; color: #6B778C; margin-top: 4px; margin-left: 20px;">
-                            ${new Date(subProject.startDate).toLocaleDateString()} - ${new Date(subProject.endDate).toLocaleDateString()}
+                        <div style="display: flex; gap: 4px;">
+                            <button onclick="editDepartment('${department.id}')" style="background: transparent; border: none; color: #6B778C; cursor: pointer; padding: 2px;" title="Edit Department">✏️</button>
+                            <button onclick="deleteDepartment('${department.id}')" style="background: transparent; border: none; color: #DE350B; cursor: pointer; padding: 2px;" title="Delete Department">🗑️</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Department Sub-Projects -->
+                `;
+                
+                deptSubProjects.forEach(subProject => {
+                    html += `
+                        <div class="timeline-subproject-item" 
+                             data-project-id="${subProject.id}" 
+                             draggable="true"
+                             style="padding: 12px 16px 12px 32px; border-bottom: 1px solid #F4F5F7; cursor: grab; transition: background 0.15s; position: relative;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 12px; height: 12px; background: ${subProject.color}; border-radius: 2px;"></div>
+                                <span class="subproject-name" style="font-size: 14px; color: #172B4D; font-weight: 500; flex: 1;">${subProject.name}</span>
+                                <button class="delete-subproject-btn" onclick="deleteSubProject('${subProject.id}'); return false;" style="display: none; background: #DE350B; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 10px; cursor: pointer;" title="Delete sub-project">
+                                    ✕
+                                </button>
+                            </div>
+                            <div style="font-size: 11px; color: #6B778C; margin-top: 4px; margin-left: 20px;">
+                                ${new Date(subProject.startDate).toLocaleDateString()} - ${new Date(subProject.endDate).toLocaleDateString()}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                // Add "Add Sub-Project" for this department
+                html += `
+                    <div style="padding: 8px 16px 8px 32px; border-bottom: 1px solid #F4F5F7;">
+                        <div onclick="showAddSubProjectInput('${department.id}')" style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #36B37E; font-size: 13px; font-weight: 500;">
+                            <div style="width: 12px; height: 12px; border: 2px dashed #36B37E; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 10px;">+</div>
+                            Add Sub-Project to ${department.name}
                         </div>
                     </div>
                 `;
             });
             
-            // Add "Add Sub-Project" inline input
+            // Add inline input for new sub-project (will be shown/hidden as needed)
             html += `
-                <div id="addSubProjectContainer" style="padding: 12px 16px 12px 32px; border-bottom: 1px solid #F4F5F7;">
-                    <div id="addSubProjectButton" style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #36B37E; font-size: 14px; font-weight: 500;" onclick="showAddSubProjectInput()">
-                        <div style="width: 12px; height: 12px; border: 2px dashed #36B37E; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 10px;">+</div>
-                        Add Sub-Project
-                    </div>
-                    <div id="addSubProjectInput" style="display: none; margin-top: 8px;">
+                <div id="addSubProjectContainer" style="padding: 12px 16px 12px 32px; border-bottom: 1px solid #F4F5F7; display: none;">
+                    <div style="margin-bottom: 8px;">
                         <input type="text" id="newSubProjectName" placeholder="Enter sub-project name..." style="width: 100%; padding: 6px 8px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px;" onkeypress="handleAddSubProjectKeypress(event)">
-                        <div style="margin-top: 8px; display: flex; gap: 8px;">
-                            <button onclick="addSubProject()" style="background: #36B37E; color: white; border: none; padding: 4px 12px; border-radius: 3px; font-size: 12px; cursor: pointer;">Add</button>
-                            <button onclick="cancelAddSubProject()" style="background: #6B778C; color: white; border: none; padding: 4px 12px; border-radius: 3px; font-size: 12px; cursor: pointer;">Cancel</button>
-                        </div>
+                    </div>
+                    <div style="margin-bottom: 8px;">
+                        <select id="newSubProjectDepartment" style="width: 100%; padding: 6px 8px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px;">
+                            ${departments.map(d => `<option value="${d.id}">${d.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="addSubProject()" style="background: #36B37E; color: white; border: none; padding: 4px 12px; border-radius: 3px; font-size: 12px; cursor: pointer;">Add</button>
+                        <button onclick="cancelAddSubProject()" style="background: #6B778C; color: white; border: none; padding: 4px 12px; border-radius: 3px; font-size: 12px; cursor: pointer;">Cancel</button>
                     </div>
                 </div>
             `;
@@ -2520,28 +2578,40 @@
             });
         }
         
-        function showAddSubProjectInput() {
-            document.getElementById('addSubProjectButton').style.display = 'none';
-            document.getElementById('addSubProjectInput').style.display = 'block';
+        function showAddSubProjectInput(departmentId) {
+            const container = document.getElementById('addSubProjectContainer');
+            const departmentSelect = document.getElementById('newSubProjectDepartment');
+            
+            if (departmentId) {
+                departmentSelect.value = departmentId;
+            }
+            
+            container.style.display = 'block';
             document.getElementById('newSubProjectName').focus();
         }
         
-        function cancelAddSubProject() {
-            document.getElementById('addSubProjectButton').style.display = 'flex';
-            document.getElementById('addSubProjectInput').style.display = 'none';
-            document.getElementById('newSubProjectName').value = '';
+        function addNewDepartment() {
+            const container = document.getElementById('timelineProjectTree');
+            
+            // Create inline input for new department
+            const inputHtml = `
+                <div id="newDepartmentInput" style="padding: 12px 16px; background: #E3F2FD; border-bottom: 1px solid #DFE1E6;">
+                    <input type="text" id="newDepartmentName" placeholder="Enter department name (e.g., IT, BI, Marketing)..." style="width: 100%; padding: 6px 8px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px; margin-bottom: 8px;">
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="saveDepartment()" style="background: #36B37E; color: white; border: none; padding: 4px 12px; border-radius: 3px; font-size: 12px; cursor: pointer;">Add Department</button>
+                        <button onclick="cancelAddDepartment()" style="background: #6B778C; color: white; border: none; padding: 4px 12px; border-radius: 3px; font-size: 12px; cursor: pointer;">Cancel</button>
+                    </div>
+                </div>
+            `;
+            
+            // Insert after the departments header
+            const departmentsHeader = container.querySelector('div');
+            departmentsHeader.insertAdjacentHTML('afterend', inputHtml);
+            document.getElementById('newDepartmentName').focus();
         }
         
-        function handleAddSubProjectKeypress(event) {
-            if (event.key === 'Enter') {
-                addSubProject();
-            } else if (event.key === 'Escape') {
-                cancelAddSubProject();
-            }
-        }
-        
-        function addSubProject() {
-            const nameInput = document.getElementById('newSubProjectName');
+        function saveDepartment() {
+            const nameInput = document.getElementById('newDepartmentName');
             const name = nameInput.value.trim();
             
             if (!name) {
@@ -2549,24 +2619,134 @@
                 return;
             }
             
-            console.log('Adding sub-project:', name);
+            const currentProject = projectSelector.getCurrentProject();
+            const departments = JSON.parse(localStorage.getItem('departments_' + currentProject.id) || '[]');
+            
+            // Generate random color
+            const colors = ['#0052CC', '#36B37E', '#FFAB00', '#DE350B', '#6554C0', '#00B8D9', '#FF5630', '#57D9A3'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            const newDepartment = {
+                id: 'dept-' + Date.now(),
+                name: name,
+                color: color
+            };
+            
+            departments.push(newDepartment);
+            localStorage.setItem('departments_' + currentProject.id, JSON.stringify(departments));
+            
+            cancelAddDepartment();
+            loadTimelineData(); // Refresh the timeline
+        }
+        
+        function cancelAddDepartment() {
+            const input = document.getElementById('newDepartmentInput');
+            if (input) {
+                input.remove();
+            }
+        }
+        
+        function editDepartment(departmentId) {
+            const currentProject = projectSelector.getCurrentProject();
+            const departments = JSON.parse(localStorage.getItem('departments_' + currentProject.id) || '[]');
+            const department = departments.find(d => d.id === departmentId);
+            
+            if (!department) return;
+            
+            // Create inline editor
+            const departmentElement = event.target.closest('div[style*="FAFBFC"]');
+            const nameSpan = departmentElement.querySelector('span[style*="font-weight: 600"]');
+            const currentName = nameSpan.textContent;
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentName;
+            input.style.cssText = 'font-size: 14px; font-weight: 600; border: 1px solid #0052CC; border-radius: 3px; padding: 2px 4px; background: white;';
+            
+            nameSpan.style.display = 'none';
+            nameSpan.parentNode.insertBefore(input, nameSpan);
+            input.focus();
+            input.select();
+            
+            const saveEdit = () => {
+                const newName = input.value.trim();
+                if (newName && newName !== currentName) {
+                    department.name = newName;
+                    localStorage.setItem('departments_' + currentProject.id, JSON.stringify(departments));
+                    nameSpan.textContent = newName;
+                }
+                input.remove();
+                nameSpan.style.display = 'inline';
+            };
+            
+            const cancelEdit = () => {
+                input.remove();
+                nameSpan.style.display = 'inline';
+            };
+            
+            input.addEventListener('blur', saveEdit);
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') saveEdit();
+                else if (e.key === 'Escape') cancelEdit();
+            });
+        }
+        
+        function deleteDepartment(departmentId) {
+            const currentProject = projectSelector.getCurrentProject();
+            const departments = JSON.parse(localStorage.getItem('departments_' + currentProject.id) || '[]');
+            const department = departments.find(d => d.id === departmentId);
+            
+            if (!department) return;
+            
+            // Check if department has sub-projects
+            const mockSubProjects = JSON.parse(localStorage.getItem('mockSubProjects_' + currentProject.id) || '[]');
+            const deptSubProjects = mockSubProjects.filter(sp => sp.departmentId === departmentId);
+            
+            if (deptSubProjects.length > 0) {
+                // Move sub-projects to General department
+                const generalDept = departments.find(d => d.id === 'general') || departments[0];
+                deptSubProjects.forEach(sp => {
+                    sp.departmentId = generalDept.id;
+                });
+                localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(mockSubProjects));
+            }
+            
+            // Remove department
+            const updatedDepartments = departments.filter(d => d.id !== departmentId);
+            localStorage.setItem('departments_' + currentProject.id, JSON.stringify(updatedDepartments));
+            
+            loadTimelineData(); // Refresh the timeline
+        }
+        
+        function addSubProject() {
+            const nameInput = document.getElementById('newSubProjectName');
+            const departmentSelect = document.getElementById('newSubProjectDepartment');
+            const name = nameInput.value.trim();
+            const departmentId = departmentSelect.value;
+            
+            if (!name) {
+                nameInput.focus();
+                return;
+            }
+            
+            console.log('Adding sub-project:', name, 'to department:', departmentId);
             
             // Generate random color
             const colors = ['#0052CC', '#36B37E', '#FFAB00', '#DE350B', '#6554C0', '#00B8D9'];
             const color = colors[Math.floor(Math.random() * colors.length)];
             
-            // Create new sub-project (mock for now)
+            // Create new sub-project with department assignment
             const newSubProject = {
                 id: 'subproject-' + Date.now(),
                 name: name,
                 parentId: projectSelector.getCurrentProject().id,
+                departmentId: departmentId,
                 color: color,
                 startDate: new Date().toISOString().split('T')[0],
                 endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
             };
             
             // Add to mock data and re-render
-            // TODO: Replace with API call when backend supports sub-projects
             const currentProject = projectSelector.getCurrentProject();
             const mockSubProjects = JSON.parse(localStorage.getItem('mockSubProjects_' + currentProject.id) || '[]');
             mockSubProjects.push(newSubProject);
@@ -2576,6 +2756,20 @@
             loadTimelineData();
             
             cancelAddSubProject();
+        }
+        
+        function cancelAddSubProject() {
+            const container = document.getElementById('addSubProjectContainer');
+            container.style.display = 'none';
+            document.getElementById('newSubProjectName').value = '';
+        }
+        
+        function handleAddSubProjectKeypress(event) {
+            if (event.key === 'Enter') {
+                addSubProject();
+            } else if (event.key === 'Escape') {
+                cancelAddSubProject();
+            }
         }
         
         function deleteSubProject(subProjectId) {
@@ -3805,16 +3999,22 @@
 
         function renderTimelineMonths() {
             console.log('renderTimelineMonths called');
-            // Show more months to accommodate future projects
-            const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+            // Show months with years for better clarity
+            const currentYear = new Date().getFullYear();
+            const months = [
+                `JAN ${currentYear}`, `FEB ${currentYear}`, `MAR ${currentYear}`, 
+                `APR ${currentYear}`, `MAY ${currentYear}`, `JUN ${currentYear}`,
+                `JUL ${currentYear}`, `AUG ${currentYear}`, `SEP ${currentYear}`, 
+                `OCT ${currentYear}`, `NOV ${currentYear}`, `DEC ${currentYear}`
+            ];
             const container = document.getElementById('timelineMonths');
             if (container) {
                 container.innerHTML = months.map(m => `
-                    <div class="timeline-gantt-month" style="flex: 1; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; color: #42526E; min-width: 150px; border-right: 1px solid #DFE1E6;">
+                    <div class="timeline-gantt-month" style="flex: 1; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px; color: #42526E; min-width: 150px; border-right: 1px solid #DFE1E6;">
                         ${m}
                     </div>
                 `).join('');
-                console.log('Timeline months rendered');
+                console.log('Timeline months rendered with years');
             } else {
                 console.error('Timeline months container not found');
             }
