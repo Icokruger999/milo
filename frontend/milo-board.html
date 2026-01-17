@@ -1442,13 +1442,13 @@
                         <div class="timeline-gantt-container" id="timelineGanttContainer" style="flex: 1; overflow: hidden; background: #FAFBFC; position: relative; cursor: grab;">
                             <!-- Timeline Header with Months -->
                             <div style="position: sticky; top: 0; background: white; border-bottom: 2px solid #DFE1E6; z-index: 10;">
-                                <div style="display: flex; height: 40px; min-width: 1800px;" id="timelineMonths">
+                                <div style="display: flex; height: 40px; min-width: 2700px;" id="timelineMonths">
                                     <div style="padding: 12px; text-align: center; color: #6B778C; flex: 1;">Loading months...</div>
                                 </div>
                             </div>
                             
                             <!-- Timeline Content Wrapper for Panning -->
-                            <div id="timelineContentWrapper" style="position: relative; min-width: 1800px; min-height: 100%; transform: translateX(0px); transition: transform 0.1s ease-out;">
+                            <div id="timelineContentWrapper" style="position: relative; min-width: 2700px; min-height: 100%; transform: translateX(0px); transition: transform 0.1s ease-out;">
                                 <!-- Timeline Rows (Sub-projects as swim lanes) -->
                                 <div id="timelineRows" style="position: relative; min-height: 400px;">
                                     <!-- Timeline rows will be generated here -->
@@ -2859,6 +2859,9 @@
                     if (subProject) {
                         subProject.name = newName;
                         localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(mockSubProjects));
+                        
+                        // Update any existing timeline bars for this sub-project
+                        updateTimelineBarName(subProjectId, newName);
                     }
                     
                     nameSpan.textContent = newName;
@@ -2878,6 +2881,18 @@
             input.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') saveEdit();
                 else if (e.key === 'Escape') cancelEdit();
+            });
+        }
+        
+        // New function to update timeline bar names when sub-project is renamed
+        function updateTimelineBarName(subProjectId, newName) {
+            const timelineBars = document.querySelectorAll(`[data-project-id="${subProjectId}"]`);
+            timelineBars.forEach(bar => {
+                const titleElement = bar.querySelector('.timeline-bar-title');
+                if (titleElement) {
+                    titleElement.textContent = newName;
+                    console.log('Updated timeline bar title to:', newName);
+                }
             });
         }
         
@@ -3707,9 +3722,9 @@
                 const deltaX = e.clientX - startX;
                 currentTranslateX = startTranslateX + deltaX;
                 
-                // More generous panning range to see all months
-                const maxTranslate = 300; // Allow panning right to see past dates
-                const minTranslate = -1200; // Allow panning left to see future dates (up to December)
+                // Extended panning range to see the entire 18-month timeline
+                const maxTranslate = 600; // Allow panning right to see past dates
+                const minTranslate = -3600; // Allow panning left to see all 18 months (June next year)
                 currentTranslateX = Math.max(minTranslate, Math.min(maxTranslate, currentTranslateX));
                 
                 contentWrapper.style.transform = `translateX(${currentTranslateX}px)`;
@@ -3744,8 +3759,8 @@
                     const currentX = match ? parseFloat(match[1]) : 0;
                     
                     const newX = currentX - scrollAmount;
-                    const maxTranslate = 300;
-                    const minTranslate = -1200;
+                    const maxTranslate = 600;
+                    const minTranslate = -3600;
                     const clampedX = Math.max(minTranslate, Math.min(maxTranslate, newX));
                     
                     contentWrapper.style.transform = `translateX(${clampedX}px)`;
@@ -4054,22 +4069,27 @@
 
         function renderTimelineMonths() {
             console.log('renderTimelineMonths called');
-            // Show months with years for better clarity
+            // Show 18 months for better project planning (current year + 6 months next year)
             const currentYear = new Date().getFullYear();
+            const nextYear = currentYear + 1;
             const months = [
                 `JAN ${currentYear}`, `FEB ${currentYear}`, `MAR ${currentYear}`, 
                 `APR ${currentYear}`, `MAY ${currentYear}`, `JUN ${currentYear}`,
                 `JUL ${currentYear}`, `AUG ${currentYear}`, `SEP ${currentYear}`, 
-                `OCT ${currentYear}`, `NOV ${currentYear}`, `DEC ${currentYear}`
+                `OCT ${currentYear}`, `NOV ${currentYear}`, `DEC ${currentYear}`,
+                `JAN ${nextYear}`, `FEB ${nextYear}`, `MAR ${nextYear}`,
+                `APR ${nextYear}`, `MAY ${nextYear}`, `JUN ${nextYear}`
             ];
             const container = document.getElementById('timelineMonths');
             if (container) {
+                // Update container min-width to accommodate more months
+                container.parentElement.style.minWidth = '2700px'; // 18 months * 150px
                 container.innerHTML = months.map(m => `
                     <div class="timeline-gantt-month" style="flex: 1; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px; color: #42526E; min-width: 150px; border-right: 1px solid #DFE1E6;">
                         ${m}
                     </div>
                 `).join('');
-                console.log('Timeline months rendered with years');
+                console.log('Timeline months rendered with 18 months (current year + 6 months next year)');
             } else {
                 console.error('Timeline months container not found');
             }
