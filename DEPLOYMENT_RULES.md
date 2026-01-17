@@ -1,12 +1,35 @@
 # 🚨 CRITICAL DEPLOYMENT RULES - DO NOT VIOLATE
 
+## ⚠️ **BEFORE ANY DEPLOYMENT OR FIX - READ THIS FIRST**
+
+### **THE GOLDEN RULES - NEVER BREAK THESE:**
+
+1. **NEVER TOUCH `appsettings.json`** - Use existing files from previous deploys
+2. **NEVER TOUCH Nginx configs** - They are working, leave them alone
+3. **NEVER TOUCH CORS configs** - They are configured correctly
+4. **NEVER TOUCH DLL files directly** - Always rebuild from source code
+5. **NEVER DELETE production files** - Copy over, never delete first
+6. **ALWAYS use PgBouncer** - We don't use Supabase anymore, use local database
+
+### **IF YOU NEED TO DEPLOY:**
+- ✅ Rebuild DLL from source with correct local database settings
+- ✅ Copy new DLL to production directory
+- ✅ Use existing appsettings.json (DO NOT OVERWRITE)
+- ✅ Restart service
+- ❌ DO NOT touch appsettings.json
+- ❌ DO NOT touch nginx configs
+- ❌ DO NOT touch CORS settings
+- ❌ DO NOT delete existing files first
+
+---
+
 ## ⚠️ QUICK REFERENCE - PROTECTED FILES
 
 **When making frontend or backend page changes, NEVER overwrite or modify:**
+- `backend/Milo.API/appsettings.json` ⚠️ **MOST CRITICAL - NEVER TOUCH**
+- `backend/Milo.API/publish/appsettings.json` ⚠️ **MOST CRITICAL - NEVER TOUCH**
 - `docker-compose.yml`
 - `backend/Milo.API/Services/milo-backend.service`
-- `backend/Milo.API/appsettings.json`
-- `backend/Milo.API/publish/appsettings.json`
 - `frontend/js/config.js`
 - `backend/Milo.API/Data/MiloDbContext.cs`
 - Migration files (`backend/Milo.API/Migrations/*.cs`)
@@ -66,16 +89,19 @@
    - **DO NOT MODIFY** - Only change if explicitly requested for nginx updates
 
 ### Configuration Files (NEVER OVERWRITE)
-4. **`backend/Milo.API/appsettings.json`**
+4. **`backend/Milo.API/appsettings.json`** ⚠️ **MOST CRITICAL**
    - Database connection strings
    - API configuration
    - Environment settings
-   - **DO NOT OVERWRITE** - Only modify specific values if explicitly requested
+   - **NEVER OVERWRITE** - Use existing file from previous deploys
+   - **NEVER MODIFY** - This file is configured correctly for local PgBouncer/PostgreSQL
+   - **IF BROKEN**: Copy from a previous working deploy, never create new
 
-5. **`backend/Milo.API/publish/appsettings.json`**
+5. **`backend/Milo.API/publish/appsettings.json`** ⚠️ **MOST CRITICAL**
    - Production configuration
    - Deployment-specific settings
-   - **DO NOT OVERWRITE** - Only modify specific values if explicitly requested
+   - **NEVER OVERWRITE** - Use existing file from previous deploys
+   - **NEVER MODIFY** - This file is configured correctly for local PgBouncer/PostgreSQL
 
 6. **`frontend/js/config.js`**
    - API endpoint URLs
@@ -119,9 +145,19 @@
 
 ### Rule 0: Protected Files Are OFF-LIMITS
 - **NEVER** overwrite or modify files listed in the "PROTECTED FILES" section above
+- **ESPECIALLY `appsettings.json`** - This is the most critical file, NEVER touch it
 - **NEVER** "update" or "fix" configuration files during frontend/backend page changes
 - **NEVER** regenerate or overwrite infrastructure files
+- **NEVER** copy appsettings.json from local machine to server
+- **ALWAYS** use existing appsettings.json from previous deploys on the server
 - If a protected file needs changes, **STOP and ASK the user first**
+
+### Rule 0.5: Database Configuration
+- **WE USE LOCAL PGBOUNCER/POSTGRESQL** - Not Supabase anymore
+- Connection string should be: `Host=localhost;Port=6432;Database=milo;Username=postgres`
+- **NEVER** add Supabase connection strings
+- **NEVER** add SSL Mode=Require (we use local database without SSL)
+- When rebuilding DLL, ensure it's built with local database settings
 
 ### Rule 1: Port Changes Are FORBIDDEN
 - **NEVER** change port numbers in any configuration file
@@ -142,13 +178,16 @@
 ### Rule 4: Deployment Process
 - When deploying new features:
   1. **ONLY** update the code files (Controllers, Services, Models, etc.)
-  2. **DO NOT** touch configuration files (appsettings.json, nginx configs, service files)
-  3. **DO NOT** change ports, connection strings, or infrastructure settings
-  4. Build and deploy the code only
-  5. **NEVER DELETE EXISTING FILES** - Always copy new files over existing ones, never use `rm -rf` or delete commands on production directories
-  6. **PRESERVE ALL FILES** - When deploying DLLs, copy new files without deleting the directory contents first
-  7. **PROTECT DLL FILES** - The `Milo.API.dll` and related files in `/home/ec2-user/milo-backend-publish/` are production files. Only rebuild and copy new DLLs when code changes are made. Do NOT delete or edit DLL files directly - always rebuild from source code.
-  8. **ONLY REBUILD WHEN NEEDED** - Only rebuild the DLL when there are actual code changes. Do not rebuild unnecessarily.
+  2. **REBUILD DLL** from source code with correct local database settings
+  3. **COPY** new DLL to production directory (DO NOT delete existing files first)
+  4. **USE EXISTING** appsettings.json (DO NOT OVERWRITE OR MODIFY)
+  5. **DO NOT** touch configuration files (appsettings.json, nginx configs, service files)
+  6. **DO NOT** change ports, connection strings, or infrastructure settings
+  7. **NEVER DELETE EXISTING FILES** - Always copy new files over existing ones, never use `rm -rf` or delete commands on production directories
+  8. **PRESERVE ALL FILES** - When deploying DLLs, copy new files without deleting the directory contents first
+  9. **PROTECT DLL FILES** - The `Milo.API.dll` and related files in `/home/ec2-user/milo-backend-publish/` are production files. Only rebuild and copy new DLLs when code changes are made. Do NOT delete or edit DLL files directly - always rebuild from source code.
+  10. **ONLY REBUILD WHEN NEEDED** - Only rebuild the DLL when there are actual code changes. Do not rebuild unnecessarily.
+  11. **USE LOCAL DATABASE SETTINGS** - Ensure DLL is built with local PgBouncer/PostgreSQL settings, not Supabase
 
 ### Rule 5: Diagnostic Commands
 - **AVOID** running multiple diagnostic commands with sleep delays
@@ -190,6 +229,10 @@
 8. ❌ **DO NOT** clear or empty production directories before copying new files
 9. ❌ **DO NOT EDIT DLL FILES** - Never edit, delete, or modify DLL files directly. Always rebuild from source code when changes are needed.
 10. ❌ **DO NOT REBUILD UNNECESSARILY** - Only rebuild the DLL when there are actual code changes that require it.
+11. ❌ **DO NOT TOUCH appsettings.json** - This is the most critical rule. NEVER modify, overwrite, or "fix" this file.
+12. ❌ **DO NOT COPY appsettings.json from local** - Always use the existing file on the server
+13. ❌ **DO NOT ADD SUPABASE SETTINGS** - We use local PgBouncer/PostgreSQL, not Supabase
+14. ❌ **DO NOT ADD SSL SETTINGS** - Local database doesn't use SSL
 
 ## ✅ WHAT TO DO
 
@@ -199,6 +242,10 @@
 4. ✅ **USE** direct command queries instead of nested substitutions
 5. ✅ **STOP** diagnostic loops once the issue is identified
 6. ✅ **RESPECT** working configurations even if they differ from docs
+7. ✅ **REBUILD DLL** from source when code changes are needed
+8. ✅ **USE EXISTING appsettings.json** from the server, never overwrite
+9. ✅ **BUILD WITH LOCAL DATABASE SETTINGS** - Use PgBouncer/PostgreSQL, not Supabase
+10. ✅ **COPY FILES** without deleting existing ones first
 
 ## 📝 When Making Changes
 
@@ -213,21 +260,32 @@ Before changing ANY port or infrastructure configuration:
 When deploying new features:
 - [ ] Only code files changed (Controllers, Services, Models, HTML, JS, CSS)
 - [ ] **NO protected files modified** (docker-compose.yml, service files, appsettings.json, config.js, etc.)
+- [ ] **appsettings.json NOT touched** (most critical check)
 - [ ] No port numbers changed
 - [ ] No nginx configs changed
 - [ ] No service files changed
 - [ ] No connection strings changed
 - [ ] No infrastructure files touched
+- [ ] DLL rebuilt from source with LOCAL database settings (not Supabase)
 - [ ] Build succeeds
-- [ ] Deploy to EC2
+- [ ] Deploy to EC2 (copy DLL without deleting existing files)
+- [ ] Use existing appsettings.json on server
+- [ ] Restart service
 - [ ] Test the new feature only
 
 ### Protected Files Verification
 Before deploying, verify these files were NOT modified:
 - [ ] `docker-compose.yml` - unchanged
 - [ ] `backend/Milo.API/Services/milo-backend.service` - unchanged
-- [ ] `backend/Milo.API/appsettings.json` - unchanged (or only specific requested values)
-- [ ] `backend/Milo.API/publish/appsettings.json` - unchanged (or only specific requested values)
+- [ ] `backend/Milo.API/appsettings.json` - **UNCHANGED (MOST CRITICAL)**
+- [ ] `backend/Milo.API/publish/appsettings.json` - **UNCHANGED (MOST CRITICAL)**
 - [ ] `frontend/js/config.js` - unchanged (or only specific requested values)
 - [ ] `backend/Milo.API/Data/MiloDbContext.cs` - unchanged (unless schema changes requested)
 - [ ] Migration files - unchanged (unless new migration created)
+
+### Database Configuration Verification
+Before deploying backend:
+- [ ] DLL built with local database settings (PgBouncer/PostgreSQL)
+- [ ] NO Supabase connection strings in code
+- [ ] NO SSL Mode=Require in connection strings
+- [ ] Connection string uses: `Host=localhost;Port=6432;Database=milo;Username=postgres`
