@@ -23,8 +23,7 @@ let tasks = {
     todo: [],
     progress: [],
     review: [],
-    done: [],
-    blocked: []
+    done: []
 };
 
 // Get consistent color for assignee based on ID or name
@@ -454,10 +453,6 @@ function updateCounts() {
     document.getElementById('progressCount').textContent = tasks.progress.length;
     document.getElementById('reviewCount').textContent = tasks.review.length;
     document.getElementById('doneCount').textContent = tasks.done.length;
-    const blockedCountEl = document.getElementById('blockedCount');
-    if (blockedCountEl) {
-        blockedCountEl.textContent = tasks.blocked.length;
-    }
 }
 
 function addTask(column) {
@@ -1846,7 +1841,6 @@ async function loadTasksFromAPI() {
                 if (task.status === 'progress' || task.status === 'in-progress') boardStatus = 'progress';
                 else if (task.status === 'review' || task.status === 'in-review') boardStatus = 'review';
                 else if (task.status === 'done' || task.status === 'completed') boardStatus = 'done';
-                else if (task.status === 'blocked') boardStatus = 'blocked';
                 else if (task.status === 'backlog') boardStatus = 'todo'; // Backlog tasks show in todo column
                 else boardStatus = 'todo';
                 
@@ -2240,8 +2234,7 @@ function renderBoardGrid() {
         ...(tasks.todo || []),
         ...(tasks.progress || []),
         ...(tasks.review || []),
-        ...(tasks.done || []),
-        ...(tasks.blocked || [])
+        ...(tasks.done || [])
     ];
     
     // Group tasks by assignee
@@ -2254,7 +2247,7 @@ function renderBoardGrid() {
             assigneeGroups[assigneeName] = {
                 name: assigneeName,
                 id: assigneeId,
-                tasks: { todo: [], progress: [], review: [], done: [], blocked: [] }
+                tasks: { todo: [], progress: [], review: [], done: [] }
             };
         }
         
@@ -2266,8 +2259,6 @@ function renderBoardGrid() {
             assigneeGroups[assigneeName].tasks.review.push(task);
         } else if (status === 'done') {
             assigneeGroups[assigneeName].tasks.done.push(task);
-        } else if (status === 'blocked') {
-            assigneeGroups[assigneeName].tasks.blocked.push(task);
         } else {
             assigneeGroups[assigneeName].tasks.todo.push(task);
         }
@@ -2285,7 +2276,7 @@ function renderBoardGrid() {
     sortedAssignees.forEach(assigneeName => {
         const group = assigneeGroups[assigneeName];
         const totalTasks = group.tasks.todo.length + group.tasks.progress.length + 
-                          group.tasks.review.length + group.tasks.done.length + group.tasks.blocked.length;
+                          group.tasks.review.length + group.tasks.done.length;
         
         const isCollapsed = collapsedAssignees[assigneeName] || false;
         const initials = assigneeName === 'Unassigned' ? 'UN' : 
@@ -2315,13 +2306,12 @@ function renderBoardGrid() {
             <div class="status-cell" data-status="progress" data-assignee="${assigneeName}"></div>
             <div class="status-cell" data-status="review" data-assignee="${assigneeName}"></div>
             <div class="status-cell" data-status="done" data-assignee="${assigneeName}"></div>
-            <div class="status-cell" data-status="blocked" data-assignee="${assigneeName}"></div>
         `;
         
         container.appendChild(row);
         
         // Add tasks to cells
-        ['todo', 'progress', 'review', 'done', 'blocked'].forEach(status => {
+        ['todo', 'progress', 'review', 'done'].forEach(status => {
             const cell = row.querySelector(`.status-cell[data-status="${status}"]`);
             group.tasks[status].forEach(task => {
                 const card = createTaskCard(task);
@@ -2392,8 +2382,7 @@ async function handleGridDrop(e) {
         'todo': 'To Do',
         'progress': 'In Progress',
         'review': 'In Review',
-        'done': 'Done',
-        'blocked': 'Blocked'
+        'done': 'Done'
     };
     
     try {
