@@ -3031,8 +3031,8 @@
             const storedSubProject = mockSubProjects.find(sp => sp.id === subProject.id) || {};
             
             const duration = storedSubProject.duration || 90;
-            const width = storedSubProject.timelineWidth || Math.max(200, duration * 2);
-            const height = storedSubProject.timelineHeight || 50;
+            const width = storedSubProject.timelineWidth || Math.max(250, duration * 2); // Increased default width
+            const height = storedSubProject.timelineHeight || 80; // Increased default height
             const customText = storedSubProject.customText || '';
             const endDate = new Date(startDate.getTime() + duration * 24 * 60 * 60 * 1000);
             
@@ -3046,57 +3046,56 @@
                 background: linear-gradient(135deg, ${subProject.color} 0%, ${subProject.color}CC 100%);
                 border-radius: 8px;
                 color: white;
-                font-size: 12px;
+                font-size: 14px;
                 font-weight: 600;
-                padding: 8px 12px;
+                padding: 12px 16px;
                 display: flex;
                 flex-direction: column;
-                justify-content: space-between;
+                justify-content: flex-start;
                 cursor: move;
                 box-shadow: 0 4px 16px rgba(0,0,0,0.15);
                 z-index: 100;
                 border: 2px solid white;
-                transition: all 0.2s ease;
+                transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
                 user-select: none;
                 overflow: hidden;
-                resize: both;
-                min-width: 150px;
-                min-height: 40px;
-                max-width: 600px;
-                max-height: 200px;
+                min-width: 200px;
+                min-height: 60px;
+                max-width: 800px;
+                max-height: 300px;
             `;
             
-            // Create content with project name, custom text, and dates
+            // Create content with project name, custom text, and dates - improved structure
             bar.innerHTML = `
-                <div style="font-size: 13px; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                <div class="timeline-bar-title" style="font-size: 16px; font-weight: 700; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;">
                     ${subProject.name}
                 </div>
-                ${customText ? `<div style="font-size: 11px; opacity: 0.95; margin-bottom: 4px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; max-height: ${height - 35}px;">${customText}</div>` : ''}
-                <div style="font-size: 10px; opacity: 0.9; display: flex; justify-content: space-between; align-items: center; margin-top: auto;">
+                <div class="timeline-bar-text" style="font-size: 14px; opacity: 0.95; margin-bottom: 8px; line-height: 1.4; overflow-wrap: break-word; flex: 1; min-height: 20px; ${!customText ? 'display: none;' : ''}" data-placeholder="Click 'Edit Text' to add notes...">${customText || ''}</div>
+                <div class="timeline-bar-dates" style="font-size: 12px; opacity: 0.9; display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.2);">
                     <span>${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                    <span style="font-size: 9px; opacity: 0.8;">${duration}d</span>
+                    <span style="font-size: 11px; opacity: 0.8; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 10px;">${duration}d</span>
                     <span>${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                 </div>
-                <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.3); border-radius: 0 0 6px 6px;">
+                <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.3); border-radius: 0 0 6px 6px;">
                     <div style="height: 100%; width: 35%; background: rgba(255,255,255,0.8); border-radius: 0 0 6px 6px; transition: width 0.3s ease;"></div>
                 </div>
-                <div class="resize-handle" style="position: absolute; bottom: 0; right: 0; width: 20px; height: 20px; cursor: se-resize; background: rgba(255,255,255,0.6); border-radius: 0 0 6px 0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: rgba(0,0,0,0.5);">⟲</div>
+                <div class="resize-handle" style="position: absolute; bottom: 2px; right: 2px; width: 24px; height: 24px; cursor: se-resize; background: rgba(255,255,255,0.8); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: rgba(0,0,0,0.6); font-weight: bold; border: 1px solid rgba(255,255,255,0.9);">⟲</div>
             `;
             
             bar.title = `${subProject.name}\nStart: ${startDate.toLocaleDateString()}\nEnd: ${endDate.toLocaleDateString()}\nDuration: ${duration} days\n${customText ? 'Notes: ' + customText + '\n' : ''}Progress: 35%\n\nDrag to move • Right-click for options • Double-click to create task\nResize from bottom-right corner (⟲)`;
             bar.setAttribute('data-project-id', subProject.id);
             
-            // Add hover effect
+            // Improved hover effect - lighter and faster
             bar.addEventListener('mouseenter', () => {
-                if (!bar.classList.contains('dragging')) {
-                    bar.style.transform = 'translateY(-2px) scale(1.02)';
-                    bar.style.boxShadow = '0 8px 24px rgba(0,0,0,0.25)';
+                if (!bar.classList.contains('dragging') && !bar.classList.contains('resizing')) {
+                    bar.style.transform = 'translateY(-1px) scale(1.01)';
+                    bar.style.boxShadow = '0 6px 20px rgba(0,0,0,0.2)';
                     bar.style.zIndex = '101';
                 }
             });
             
             bar.addEventListener('mouseleave', () => {
-                if (!bar.classList.contains('dragging')) {
+                if (!bar.classList.contains('dragging') && !bar.classList.contains('resizing')) {
                     bar.style.transform = 'translateY(0) scale(1)';
                     bar.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
                     bar.style.zIndex = '100';
@@ -3127,7 +3126,7 @@
                 }
             });
             
-            // Make the bar draggable within the timeline
+            // Improved dragging - lighter and more responsive
             let isDragging = false;
             let dragStartX = 0;
             let dragStartY = 0;
@@ -3146,6 +3145,7 @@
                 
                 bar.style.cursor = 'grabbing';
                 bar.style.zIndex = '102';
+                bar.style.transition = 'none'; // Remove transition during drag for better performance
                 e.preventDefault();
             });
             
@@ -3157,8 +3157,8 @@
                 const newX = Math.max(10, barStartX + deltaX);
                 const newY = Math.max(10, barStartY + deltaY);
                 
-                bar.style.left = newX + 'px';
-                bar.style.top = newY + 'px';
+                // Use transform for better performance during drag
+                bar.style.transform = `translate(${newX - barStartX}px, ${newY - barStartY}px)`;
             });
             
             document.addEventListener('mouseup', () => {
@@ -3167,18 +3167,34 @@
                     bar.classList.remove('dragging');
                     bar.style.cursor = 'move';
                     bar.style.zIndex = '100';
+                    bar.style.transition = 'transform 0.1s ease-out, box-shadow 0.1s ease-out'; // Restore transition
                     
-                    // Save new position
-                    saveTimelineBarPosition(subProject.id, parseInt(bar.style.left), parseInt(bar.style.top));
+                    // Apply final position and reset transform
+                    const transform = bar.style.transform;
+                    const match = transform.match(/translate\((-?\d+(?:\.\d+)?)px, (-?\d+(?:\.\d+)?)px\)/);
+                    if (match) {
+                        const deltaX = parseFloat(match[1]);
+                        const deltaY = parseFloat(match[2]);
+                        const finalX = barStartX + deltaX;
+                        const finalY = barStartY + deltaY;
+                        
+                        bar.style.left = finalX + 'px';
+                        bar.style.top = finalY + 'px';
+                        bar.style.transform = 'translateY(0) scale(1)';
+                        
+                        // Save new position
+                        saveTimelineBarPosition(subProject.id, finalX, finalY);
+                    }
                 }
             });
             
-            // Add resize functionality
+            // Improved resize functionality - more responsive
             let isResizing = false;
             const resizeHandle = bar.querySelector('.resize-handle');
             
             resizeHandle.addEventListener('mousedown', (e) => {
                 isResizing = true;
+                bar.classList.add('resizing');
                 e.stopPropagation();
                 e.preventDefault();
                 
@@ -3187,17 +3203,40 @@
                 const startWidth = parseInt(bar.style.width);
                 const startHeight = parseInt(bar.style.height);
                 
+                bar.style.transition = 'none'; // Remove transition during resize
+                
                 const handleResize = (e) => {
                     if (!isResizing) return;
                     
-                    const newWidth = Math.max(150, Math.min(600, startWidth + (e.clientX - startX)));
-                    const newHeight = Math.max(40, Math.min(200, startHeight + (e.clientY - startY)));
+                    const newWidth = Math.max(200, Math.min(800, startWidth + (e.clientX - startX)));
+                    const newHeight = Math.max(60, Math.min(300, startHeight + (e.clientY - startY)));
                     
                     bar.style.width = newWidth + 'px';
                     bar.style.height = newHeight + 'px';
                     
-                    // Update custom text max height
-                    const customTextEl = bar.querySelector('div:nth-child(2)');
+                    // Update custom text container height
+                    const customTextEl = bar.querySelector('.timeline-bar-text');
+                    if (customTextEl) {
+                        customTextEl.style.maxHeight = (newHeight - 80) + 'px';
+                    }
+                };
+                
+                const stopResize = () => {
+                    if (isResizing) {
+                        isResizing = false;
+                        bar.classList.remove('resizing');
+                        bar.style.transition = 'transform 0.1s ease-out, box-shadow 0.1s ease-out'; // Restore transition
+                        document.removeEventListener('mousemove', handleResize);
+                        document.removeEventListener('mouseup', stopResize);
+                        
+                        // Save new dimensions
+                        saveTimelineBarDimensions(subProject.id, parseInt(bar.style.width), parseInt(bar.style.height));
+                    }
+                };
+                
+                document.addEventListener('mousemove', handleResize);
+                document.addEventListener('mouseup', stopResize);
+            });
                     if (customTextEl && customText) {
                         customTextEl.style.maxHeight = (newHeight - 35) + 'px';
                     }
@@ -3362,44 +3401,48 @@
             const storedSubProject = mockSubProjects.find(sp => sp.id === subProject.id) || {};
             const currentText = storedSubProject.customText || '';
             
-            // Find the text element in the bar
-            const textElements = barElement.querySelectorAll('div');
-            let textElement = null;
+            // Find the text element in the bar using the specific class
+            const textElement = barElement.querySelector('.timeline-bar-text');
             
-            // Look for existing custom text element or create one
-            if (textElements.length > 2) {
-                textElement = textElements[1]; // Second div is custom text
-            } else {
-                // Create new text element
-                textElement = document.createElement('div');
-                textElement.style.cssText = 'font-size: 11px; opacity: 0.95; margin-bottom: 4px; line-height: 1.3; overflow: hidden; text-overflow: ellipsis;';
-                barElement.insertBefore(textElement, textElements[1]);
+            if (!textElement) {
+                console.error('Timeline bar text element not found');
+                return;
             }
             
-            // Create inline input
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.value = currentText;
-            input.style.cssText = `
+            // Create inline textarea for multi-line editing
+            const textarea = document.createElement('textarea');
+            textarea.value = currentText;
+            textarea.style.cssText = `
                 width: 100%;
-                background: rgba(255,255,255,0.9);
-                border: 1px solid rgba(255,255,255,0.5);
-                border-radius: 3px;
-                padding: 2px 4px;
-                font-size: 11px;
+                background: rgba(255,255,255,0.95);
+                border: 2px solid rgba(255,255,255,0.8);
+                border-radius: 4px;
+                padding: 6px 8px;
+                font-size: 14px;
                 color: #333;
                 margin-bottom: 4px;
+                resize: vertical;
+                min-height: 40px;
+                max-height: 120px;
+                font-family: inherit;
+                line-height: 1.4;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             `;
-            input.placeholder = 'Add notes/description...';
+            textarea.placeholder = 'Add notes, tasks, or description...\nPress Ctrl+Enter to save, Escape to cancel';
             
-            // Replace text with input
+            // Store original content
+            const originalContent = textElement.innerHTML;
+            const originalDisplay = textElement.style.display;
+            
+            // Replace text with textarea
             textElement.innerHTML = '';
-            textElement.appendChild(input);
-            input.focus();
-            input.select();
+            textElement.style.display = 'block';
+            textElement.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
             
             const saveText = () => {
-                const newText = input.value.trim();
+                const newText = textarea.value.trim();
                 
                 // Update localStorage
                 const subProjectIndex = mockSubProjects.findIndex(sp => sp.id === subProject.id);
@@ -3408,31 +3451,43 @@
                     localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(mockSubProjects));
                 }
                 
-                // Update display
+                // Update display with proper line breaks
                 if (newText) {
-                    textElement.innerHTML = newText;
+                    // Convert line breaks to HTML
+                    const htmlText = newText.replace(/\n/g, '<br>');
+                    textElement.innerHTML = htmlText;
                     textElement.style.display = 'block';
                 } else {
+                    textElement.innerHTML = '';
                     textElement.style.display = 'none';
                 }
+                
+                console.log('Timeline bar text saved:', newText);
             };
             
             const cancelEdit = () => {
-                if (currentText) {
-                    textElement.innerHTML = currentText;
-                    textElement.style.display = 'block';
-                } else {
-                    textElement.style.display = 'none';
-                }
+                textElement.innerHTML = originalContent;
+                textElement.style.display = originalDisplay;
+                console.log('Timeline bar text edit cancelled');
             };
             
-            input.addEventListener('blur', saveText);
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
+            // Save on blur
+            textarea.addEventListener('blur', saveText);
+            
+            // Handle keyboard shortcuts
+            textarea.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    e.preventDefault();
                     saveText();
                 } else if (e.key === 'Escape') {
+                    e.preventDefault();
                     cancelEdit();
                 }
+            });
+            
+            // Prevent event bubbling to avoid triggering bar drag
+            textarea.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
             });
         }
         
@@ -3541,17 +3596,17 @@
                 localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(mockSubProjects));
             }
             
-            // Reset the bar size visually
-            barElement.style.width = '200px';
-            barElement.style.height = '50px';
+            // Reset the bar size visually to new defaults
+            barElement.style.width = '250px';
+            barElement.style.height = '80px';
             
             // Update the custom text max height
-            const customTextEl = barElement.querySelector('div:nth-child(2)');
+            const customTextEl = barElement.querySelector('.timeline-bar-text');
             if (customTextEl) {
-                customTextEl.style.maxHeight = '15px';
+                customTextEl.style.maxHeight = '40px'; // 80 - 40 for other content
             }
             
-            console.log('Timeline bar size reset to default');
+            console.log('Timeline bar size reset to default (250x80)');
         }
         
         function removeFromTimeline(subProject, barElement) {
