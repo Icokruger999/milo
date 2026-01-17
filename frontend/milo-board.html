@@ -2537,11 +2537,33 @@
         }
         
         function deleteSubProject(subProjectId) {
-            if (!confirm('Delete this sub-project? Tasks will be unassigned.')) {
-                return;
-            }
-            
             console.log('Deleting sub-project:', subProjectId);
+            
+            // Find the sub-project element and show inline confirmation
+            const subProjectElement = document.querySelector(`[data-project-id="${subProjectId}"]`);
+            if (!subProjectElement) return;
+            
+            // Replace content with inline confirmation
+            const originalContent = subProjectElement.innerHTML;
+            subProjectElement.innerHTML = `
+                <div style="padding: 8px; background: #FFEBE6; border: 1px solid #DE350B; border-radius: 3px;">
+                    <div style="color: #DE350B; font-size: 13px; font-weight: 500; margin-bottom: 8px;">
+                        Delete this sub-project? Tasks will be unassigned.
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="confirmDeleteSubProject('${subProjectId}')" style="background: #DE350B; color: white; border: none; padding: 4px 12px; border-radius: 3px; font-size: 12px; cursor: pointer;">
+                            Delete
+                        </button>
+                        <button onclick="cancelDeleteSubProject('${subProjectId}', \`${originalContent.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)" style="background: #6B778C; color: white; border: none; padding: 4px 12px; border-radius: 3px; font-size: 12px; cursor: pointer;">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function confirmDeleteSubProject(subProjectId) {
+            console.log('Confirmed delete sub-project:', subProjectId);
             
             // Remove from mock data
             const currentProject = projectSelector.getCurrentProject();
@@ -2551,6 +2573,37 @@
             
             // Reload timeline
             loadTimelineData();
+        }
+        
+        function cancelDeleteSubProject(subProjectId, originalContent) {
+            console.log('Cancelled delete sub-project:', subProjectId);
+            
+            // Restore original content
+            const subProjectElement = document.querySelector(`[data-project-id="${subProjectId}"]`);
+            if (subProjectElement) {
+                subProjectElement.innerHTML = originalContent;
+                
+                // Re-add event listeners
+                const nameSpan = subProjectElement.querySelector('.subproject-name');
+                if (nameSpan) {
+                    nameSpan.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        editSubProjectName(subProjectElement, nameSpan);
+                    });
+                }
+                
+                // Re-add hover effects
+                subProjectElement.addEventListener('mouseenter', () => {
+                    subProjectElement.style.background = '#F4F5F7';
+                    const deleteBtn = subProjectElement.querySelector('.delete-subproject-btn');
+                    if (deleteBtn) deleteBtn.style.display = 'block';
+                });
+                subProjectElement.addEventListener('mouseleave', () => {
+                    subProjectElement.style.background = 'white';
+                    const deleteBtn = subProjectElement.querySelector('.delete-subproject-btn');
+                    if (deleteBtn) deleteBtn.style.display = 'none';
+                });
+            }
         }
         
         function editSubProjectName(itemElement, nameSpan) {
