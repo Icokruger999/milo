@@ -1416,12 +1416,9 @@
                     <div style="background: white; border-bottom: 1px solid #DFE1E6; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <h2 style="font-size: 24px; font-weight: 600; color: #172B4D; margin: 0;">Program Timeline</h2>
-                            <p style="font-size: 14px; color: #6B778C; margin: 4px 0 0 0;">Project hierarchy and task scheduling</p>
+                            <p style="font-size: 14px; color: #6B778C; margin: 4px 0 0 0;">Drag sub-projects to timeline • Click and drag to pan calendar</p>
                         </div>
                         <div style="display: flex; gap: 12px;">
-                            <button onclick="showCreateSubProjectModal(); return false;" style="background: #36B37E; color: white; border: none; padding: 8px 16px; border-radius: 3px; font-size: 14px; font-weight: 500; cursor: pointer;">
-                                ➕ Add Sub-Project
-                            </button>
                             <button onclick="loadTimelineData(); return false;" style="background: #0052CC; color: white; border: none; padding: 8px 16px; border-radius: 3px; font-size: 14px; font-weight: 500; cursor: pointer;">
                                 🔄 Refresh Data
                             </button>
@@ -1442,21 +1439,24 @@
                         </div>
                         
                         <!-- Right: Timeline Gantt -->
-                        <div class="timeline-gantt-container" style="flex: 1; overflow: auto; background: #FAFBFC; position: relative;">
+                        <div class="timeline-gantt-container" id="timelineGanttContainer" style="flex: 1; overflow: hidden; background: #FAFBFC; position: relative; cursor: grab;">
                             <!-- Timeline Header with Months -->
                             <div style="position: sticky; top: 0; background: white; border-bottom: 2px solid #DFE1E6; z-index: 10;">
-                                <div style="display: flex; height: 40px;" id="timelineMonths">
+                                <div style="display: flex; height: 40px; min-width: 1200px;" id="timelineMonths">
                                     <div style="padding: 12px; text-align: center; color: #6B778C; flex: 1;">Loading months...</div>
                                 </div>
                             </div>
                             
-                            <!-- Timeline Rows (Sub-projects as swim lanes) -->
-                            <div id="timelineRows" style="position: relative; min-height: 100%;">
-                                <!-- Timeline rows will be generated here -->
+                            <!-- Timeline Content Wrapper for Panning -->
+                            <div id="timelineContentWrapper" style="position: relative; min-width: 1200px; min-height: 100%; transform: translateX(0px); transition: transform 0.1s ease-out;">
+                                <!-- Timeline Rows (Sub-projects as swim lanes) -->
+                                <div id="timelineRows" style="position: relative; min-height: 400px;">
+                                    <!-- Timeline rows will be generated here -->
+                                </div>
+                                
+                                <!-- Today Line -->
+                                <div class="timeline-today-line" id="timelineTodayLine" style="position: absolute; top: 0; bottom: 0; width: 2px; background: #FF5630; z-index: 15; display: none;"></div>
                             </div>
-                            
-                            <!-- Today Line -->
-                            <div class="timeline-today-line" id="timelineTodayLine" style="position: absolute; top: 0; bottom: 0; width: 2px; background: #FF5630; z-index: 15; display: none;"></div>
                         </div>
                     </div>
                 </div>
@@ -1988,9 +1988,18 @@
                 if (response.ok) {
                     const tasks = await response.json();
                     console.log('Dashboard loaded tasks:', tasks.length, tasks);
+                    
+                    // Additional debugging - log task statuses
+                    if (tasks.length > 0) {
+                        const statuses = tasks.map(t => t.status).filter(s => s);
+                        console.log('Task statuses found:', [...new Set(statuses)]);
+                    }
+                    
                     renderDashboard(tasks);
                 } else {
                     console.error('Failed to load dashboard tasks, status:', response.status);
+                    const errorText = await response.text();
+                    console.error('API error response:', errorText);
                     // Show error in dashboard
                     document.getElementById('dashTotalTasks').textContent = '❌';
                     document.getElementById('dashInProgress').textContent = '❌';
@@ -2046,6 +2055,8 @@
                     review: tasks.filter(t => (t.status || '').toLowerCase().includes('review')).length,
                     done: tasks.filter(t => (t.status || '').toLowerCase() === 'done').length
                 };
+                
+                console.log('Status counts:', statusCounts);
 
                 if (dashboardCharts.statusChart) dashboardCharts.statusChart.destroy();
                 dashboardCharts.statusChart = new Chart(statusCtx, {
@@ -2066,6 +2077,9 @@
                         }
                     }
                 });
+                console.log('Status chart rendered');
+            } else {
+                console.error('Status chart canvas not found');
             }
 
             // Priority Chart
@@ -2377,6 +2391,11 @@
                 // Render the program timeline
                 renderProgramTimeline(currentProject, subProjects, tasks);
                 
+                // Initialize timeline panning after rendering
+                setTimeout(() => {
+                    initializeTimelinePanning();
+                }, 100);
+                
             } catch (error) {
                 console.error('Failed to load program timeline:', error);
                 const container = document.getElementById('timelineProjectTree');
@@ -2421,7 +2440,10 @@
             
             subProjects.forEach(subProject => {
                 html += `
-                    <div class="timeline-subproject-item" data-project-id="${subProject.id}" style="padding: 12px 16px 12px 32px; border-bottom: 1px solid #F4F5F7; cursor: pointer; transition: background 0.15s; position: relative;">
+                    <div class="timeline-subproject-item" 
+                         data-project-id="${subProject.id}" 
+                         draggable="true"
+                         style="padding: 12px 16px 12px 32px; border-bottom: 1px solid #F4F5F7; cursor: grab; transition: background 0.15s; position: relative;">
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <div style="width: 12px; height: 12px; background: ${subProject.color}; border-radius: 2px;"></div>
                             <span class="subproject-name" style="font-size: 14px; color: #172B4D; font-weight: 500; flex: 1;">${subProject.name}</span>
@@ -2455,18 +2477,41 @@
             
             container.innerHTML = html;
             
-            // Add hover effects and edit functionality
+            // Add drag and drop functionality to sub-projects
             container.querySelectorAll('.timeline-subproject-item').forEach(item => {
+                const subProjectId = item.getAttribute('data-project-id');
+                const subProject = subProjects.find(sp => sp.id === subProjectId);
+                
+                // Drag start
+                item.addEventListener('dragstart', (e) => {
+                    console.log('Dragging sub-project:', subProject.name);
+                    e.dataTransfer.setData('application/json', JSON.stringify(subProject));
+                    e.dataTransfer.effectAllowed = 'move';
+                    item.style.opacity = '0.5';
+                    item.style.cursor = 'grabbing';
+                });
+                
+                // Drag end
+                item.addEventListener('dragend', (e) => {
+                    item.style.opacity = '1';
+                    item.style.cursor = 'grab';
+                });
+                
                 // Hover effects
                 item.addEventListener('mouseenter', () => {
-                    item.style.background = '#F4F5F7';
-                    const deleteBtn = item.querySelector('.delete-subproject-btn');
-                    if (deleteBtn) deleteBtn.style.display = 'block';
+                    if (!item.style.opacity || item.style.opacity === '1') {
+                        item.style.background = '#F4F5F7';
+                        const deleteBtn = item.querySelector('.delete-subproject-btn');
+                        if (deleteBtn) deleteBtn.style.display = 'block';
+                    }
                 });
+                
                 item.addEventListener('mouseleave', () => {
-                    item.style.background = 'white';
-                    const deleteBtn = item.querySelector('.delete-subproject-btn');
-                    if (deleteBtn) deleteBtn.style.display = 'none';
+                    if (!item.style.opacity || item.style.opacity === '1') {
+                        item.style.background = 'white';
+                        const deleteBtn = item.querySelector('.delete-subproject-btn');
+                        if (deleteBtn) deleteBtn.style.display = 'none';
+                    }
                 });
                 
                 // Click to edit name
@@ -2657,20 +2702,75 @@
             
             container.innerHTML = '';
             
+            // Add drop zone for dragged sub-projects
+            const dropZone = document.createElement('div');
+            dropZone.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 1;
+            `;
+            
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                container.style.background = '#E3F2FD';
+            });
+            
+            dropZone.addEventListener('dragleave', (e) => {
+                if (!container.contains(e.relatedTarget)) {
+                    container.style.background = '';
+                }
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                container.style.background = '';
+                
+                try {
+                    const subProjectData = JSON.parse(e.dataTransfer.getData('application/json'));
+                    const rect = container.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    console.log('Sub-project dropped on timeline:', subProjectData.name, 'at position:', x, y);
+                    
+                    // Calculate timeline position
+                    const baseDate = new Date('2024-02-01');
+                    const monthWidth = 150;
+                    const daysFromStart = Math.floor((x / monthWidth) * 30);
+                    const dropDate = new Date(baseDate.getTime() + daysFromStart * 24 * 60 * 60 * 1000);
+                    
+                    // Create timeline bar for the sub-project
+                    createTimelineBar(subProjectData, x, y, dropDate);
+                    
+                } catch (error) {
+                    console.error('Error handling sub-project drop:', error);
+                }
+            });
+            
+            container.appendChild(dropZone);
+            
             if (subProjects.length === 0) {
-                container.innerHTML = `
-                    <div style="padding: 48px; text-align: center; color: #6B778C;">
-                        <h3 style="margin: 0 0 8px 0; color: #172B4D;">No Sub-Projects</h3>
-                        <p style="margin: 0 0 16px 0;">Create sub-projects to organize your tasks in the timeline.</p>
-                        <button onclick="showCreateSubProjectModal(); return false;" style="background: #36B37E; color: white; border: none; padding: 8px 16px; border-radius: 3px; font-size: 14px; cursor: pointer;">
-                            ➕ Add Sub-Project
-                        </button>
-                    </div>
+                const emptyMessage = document.createElement('div');
+                emptyMessage.style.cssText = `
+                    padding: 48px;
+                    text-align: center;
+                    color: #6B778C;
+                    z-index: 2;
+                    position: relative;
                 `;
+                emptyMessage.innerHTML = `
+                    <h3 style="margin: 0 0 8px 0; color: #172B4D;">Drag Sub-Projects Here</h3>
+                    <p style="margin: 0 0 16px 0;">Drag sub-projects from the left panel onto the timeline to schedule them.</p>
+                `;
+                container.appendChild(emptyMessage);
                 return;
             }
             
-            // Create a row for each sub-project
+            // Create swim lanes for existing sub-projects
             subProjects.forEach((subProject, index) => {
                 const row = document.createElement('div');
                 row.className = 'timeline-row';
@@ -2679,32 +2779,143 @@
                     border-bottom: 1px solid #DFE1E6;
                     position: relative;
                     background: ${index % 2 === 0 ? '#FAFBFC' : '#FFFFFF'};
+                    z-index: 2;
                 `;
                 row.setAttribute('data-project-id', subProject.id);
-                
-                // Add drop zone for tasks
-                row.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    row.style.background = '#DEEBFF';
-                });
-                
-                row.addEventListener('dragleave', (e) => {
-                    row.style.background = index % 2 === 0 ? '#FAFBFC' : '#FFFFFF';
-                });
-                
-                row.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    const taskId = e.dataTransfer.getData('text/plain');
-                    console.log('Task', taskId, 'dropped on sub-project', subProject.id);
-                    // TODO: Update task's sub-project assignment
-                    row.style.background = index % 2 === 0 ? '#FAFBFC' : '#FFFFFF';
-                });
                 
                 container.appendChild(row);
                 
                 // Add tasks assigned to this sub-project
                 const projectTasks = tasks.filter(task => task.subProjectId === subProject.id);
                 renderTaskBarsForProject(row, projectTasks, subProject);
+            });
+        }
+        
+        function createTimelineBar(subProject, x, y, startDate) {
+            console.log('Creating timeline bar for:', subProject.name, 'at date:', startDate);
+            
+            const container = document.getElementById('timelineRows');
+            const bar = document.createElement('div');
+            
+            // Default 30-day duration
+            const duration = 30;
+            const monthWidth = 150;
+            const width = (duration / 30) * monthWidth;
+            
+            bar.className = 'timeline-project-bar';
+            bar.style.cssText = `
+                position: absolute;
+                left: ${x}px;
+                top: ${Math.max(10, y - 15)}px;
+                width: ${Math.max(width, 100)}px;
+                height: 30px;
+                background: ${subProject.color};
+                border-radius: 4px;
+                color: white;
+                font-size: 12px;
+                font-weight: 500;
+                padding: 0 8px;
+                display: flex;
+                align-items: center;
+                cursor: move;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                z-index: 10;
+                border: 2px solid white;
+            `;
+            
+            bar.textContent = subProject.name;
+            bar.title = `${subProject.name} - ${startDate.toLocaleDateString()}`;
+            bar.setAttribute('data-project-id', subProject.id);
+            
+            // Make the bar draggable within the timeline
+            bar.draggable = true;
+            bar.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', subProject.id);
+                bar.style.opacity = '0.5';
+            });
+            
+            bar.addEventListener('dragend', (e) => {
+                bar.style.opacity = '1';
+            });
+            
+            container.appendChild(bar);
+            
+            // Update sub-project with timeline position (mock storage)
+            const currentProject = projectSelector.getCurrentProject();
+            const mockSubProjects = JSON.parse(localStorage.getItem('mockSubProjects_' + currentProject.id) || '[]');
+            const subProjectIndex = mockSubProjects.findIndex(sp => sp.id === subProject.id);
+            if (subProjectIndex >= 0) {
+                mockSubProjects[subProjectIndex].timelineStartDate = startDate.toISOString();
+                mockSubProjects[subProjectIndex].timelineX = x;
+                mockSubProjects[subProjectIndex].timelineY = y;
+                localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(mockSubProjects));
+            }
+        }
+        
+        // Add timeline panning functionality
+        function initializeTimelinePanning() {
+            const container = document.getElementById('timelineGanttContainer');
+            const contentWrapper = document.getElementById('timelineContentWrapper');
+            
+            if (!container || !contentWrapper) return;
+            
+            let isPanning = false;
+            let startX = 0;
+            let startTranslateX = 0;
+            let currentTranslateX = 0;
+            
+            container.addEventListener('mousedown', (e) => {
+                // Only start panning if not clicking on a draggable element
+                if (e.target.draggable || e.target.closest('[draggable="true"]')) {
+                    return;
+                }
+                
+                isPanning = true;
+                startX = e.clientX;
+                
+                // Get current transform value
+                const transform = contentWrapper.style.transform;
+                const match = transform.match(/translateX\((-?\d+(?:\.\d+)?)px\)/);
+                startTranslateX = match ? parseFloat(match[1]) : 0;
+                
+                container.style.cursor = 'grabbing';
+                e.preventDefault();
+            });
+            
+            container.addEventListener('mousemove', (e) => {
+                if (!isPanning) return;
+                
+                const deltaX = e.clientX - startX;
+                currentTranslateX = startTranslateX + deltaX;
+                
+                // Limit panning range
+                const maxTranslate = 0;
+                const minTranslate = -(contentWrapper.scrollWidth - container.clientWidth);
+                currentTranslateX = Math.max(minTranslate, Math.min(maxTranslate, currentTranslateX));
+                
+                contentWrapper.style.transform = `translateX(${currentTranslateX}px)`;
+                contentWrapper.style.transition = 'none';
+            });
+            
+            container.addEventListener('mouseup', () => {
+                if (isPanning) {
+                    isPanning = false;
+                    container.style.cursor = 'grab';
+                    contentWrapper.style.transition = 'transform 0.1s ease-out';
+                }
+            });
+            
+            container.addEventListener('mouseleave', () => {
+                if (isPanning) {
+                    isPanning = false;
+                    container.style.cursor = 'grab';
+                    contentWrapper.style.transition = 'transform 0.1s ease-out';
+                }
+            });
+            
+            // Prevent text selection while panning
+            container.addEventListener('selectstart', (e) => {
+                if (isPanning) e.preventDefault();
             });
         }
         
