@@ -1213,7 +1213,7 @@
                         </svg>
                         Timeline
                     </a>
-                    <a href="milo-roadmap.html" class="sidebar-item" id="roadmapLink">
+                    <a href="milo-roadmap.html" class="sidebar-item" id="roadmapLink" onclick="console.log('Roadmap link clicked'); return true;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                         </svg>
@@ -1411,15 +1411,25 @@
                 </div>
 
                 <!-- Timeline View (Hidden by default) -->
-                <div class="timeline-view" id="timelineView" style="display: none; flex: 1; flex-direction: column; overflow: hidden;">
+                <div class="timeline-view" id="timelineView" style="display: none; flex: 1; flex-direction: column; overflow: hidden; background: #FAFBFC;">
+                    <!-- Timeline Header -->
+                    <div style="background: white; border-bottom: 1px solid #DFE1E6; padding: 16px 24px;">
+                        <h2 style="font-size: 24px; font-weight: 600; color: #172B4D; margin: 0;">Timeline</h2>
+                        <p style="font-size: 14px; color: #6B778C; margin: 4px 0 0 0;">Project timeline and task scheduling</p>
+                    </div>
+                    
                     <div class="timeline-container-board">
                         <div class="timeline-task-list">
                             <div class="timeline-task-list-header">Tasks</div>
-                            <div id="timelineTaskList"></div>
+                            <div id="timelineTaskList">
+                                <div style="padding: 24px; text-align: center; color: #6B778C;">Loading timeline...</div>
+                            </div>
                         </div>
                         <div class="timeline-gantt-area">
                             <div class="timeline-gantt-header">
-                                <div class="timeline-gantt-months" id="timelineMonths"></div>
+                                <div class="timeline-gantt-months" id="timelineMonths">
+                                    <div style="padding: 12px; text-align: center; color: #6B778C;">Loading months...</div>
+                                </div>
                             </div>
                             <div class="timeline-gantt-grid" id="timelineGrid">
                                 <svg id="timelineDependencySvg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;"></svg>
@@ -1800,12 +1810,27 @@
         function showTimelineView() {
             console.log('showTimelineView called');
             currentBoardView = 'timeline';
-            document.querySelector('.board-content').style.display = 'none';
+            
+            // Hide other views
+            const boardContent = document.querySelector('.board-content');
             const timelineView = document.getElementById('timelineView');
-            timelineView.style.display = 'flex';
-            timelineView.style.flexDirection = 'column';
-            document.getElementById('roadmapView').style.display = 'none';
-            document.getElementById('dashboardView').style.display = 'none';
+            const roadmapView = document.getElementById('roadmapView');
+            const dashboardView = document.getElementById('dashboardView');
+            
+            console.log('Timeline view element found:', !!timelineView);
+            
+            if (boardContent) boardContent.style.display = 'none';
+            if (roadmapView) roadmapView.style.display = 'none';
+            if (dashboardView) dashboardView.style.display = 'none';
+            
+            if (timelineView) {
+                timelineView.style.display = 'flex';
+                timelineView.style.flexDirection = 'column';
+                console.log('Timeline view should now be visible');
+            } else {
+                console.error('Timeline view element not found!');
+                return;
+            }
             
             // Update sidebar links with error handling
             const boardLink = document.getElementById('boardLink');
@@ -2258,17 +2283,31 @@
         }
 
         function renderTimelineMonths() {
+            console.log('renderTimelineMonths called');
             const months = ['FEB', 'MAR', 'APR', 'MAY', 'JUN'];
             const container = document.getElementById('timelineMonths');
-            container.innerHTML = months.map(m => `<div class="timeline-gantt-month">${m}</div>`).join('');
+            if (container) {
+                container.innerHTML = months.map(m => `<div class="timeline-gantt-month">${m}</div>`).join('');
+                console.log('Timeline months rendered');
+            } else {
+                console.error('Timeline months container not found');
+            }
         }
 
         function renderTimelineTaskList() {
+            console.log('renderTimelineTaskList called, tasks:', timelineTasks ? timelineTasks.length : 'undefined');
             const container = document.getElementById('timelineTaskList');
             
+            if (!container) {
+                console.error('Timeline task list container not found');
+                return;
+            }
+            
             if (!timelineTasks || timelineTasks.length === 0) {
-                container.innerHTML = '<div style="padding: 24px; text-align: center; color: #6B778C;">No tasks to display in timeline. Create some tasks first.</div>';
-                document.getElementById('timelineBars').innerHTML = '';
+                container.innerHTML = '<div style="padding: 24px; text-align: center; color: #6B778C; background: white; border-radius: 3px; margin: 8px;">No tasks to display in timeline. Create some tasks first.</div>';
+                const barsContainer = document.getElementById('timelineBars');
+                if (barsContainer) barsContainer.innerHTML = '';
+                console.log('Timeline showing empty state');
                 return;
             }
             
@@ -2281,12 +2320,15 @@
             `).join('');
 
             const ganttGrid = document.getElementById('timelineGrid');
-            ganttGrid.querySelectorAll('.timeline-gantt-row').forEach(row => row.remove());
-            timelineTasks.forEach(() => {
-                const row = document.createElement('div');
-                row.className = 'timeline-gantt-row';
-                ganttGrid.appendChild(row);
-            });
+            if (ganttGrid) {
+                ganttGrid.querySelectorAll('.timeline-gantt-row').forEach(row => row.remove());
+                timelineTasks.forEach(() => {
+                    const row = document.createElement('div');
+                    row.className = 'timeline-gantt-row';
+                    ganttGrid.appendChild(row);
+                });
+            }
+            console.log('Timeline task list rendered with', timelineTasks.length, 'tasks');
         }
 
         function renderTimelineGanttBars() {
