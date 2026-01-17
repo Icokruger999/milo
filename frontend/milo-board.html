@@ -1419,8 +1419,8 @@
                             <p style="font-size: 14px; color: #6B778C; margin: 4px 0 0 0;">Drag sub-projects to timeline • Click and drag to pan calendar</p>
                         </div>
                         <div style="display: flex; gap: 12px;">
-                            <button onclick="loadTimelineData(); return false;" style="background: #0052CC; color: white; border: none; padding: 8px 16px; border-radius: 3px; font-size: 14px; font-weight: 500; cursor: pointer;">
-                                🔄 Refresh Data
+                            <button onclick="showCreateTaskOnTimelineModal(); return false;" style="background: #36B37E; color: white; border: none; padding: 8px 16px; border-radius: 3px; font-size: 14px; font-weight: 500; cursor: pointer;">
+                                + Create Task
                             </button>
                         </div>
                     </div>
@@ -1442,13 +1442,13 @@
                         <div class="timeline-gantt-container" id="timelineGanttContainer" style="flex: 1; overflow: hidden; background: #FAFBFC; position: relative; cursor: grab;">
                             <!-- Timeline Header with Months -->
                             <div style="position: sticky; top: 0; background: white; border-bottom: 2px solid #DFE1E6; z-index: 10;">
-                                <div style="display: flex; height: 40px; min-width: 1200px;" id="timelineMonths">
+                                <div style="display: flex; height: 40px; min-width: 1800px;" id="timelineMonths">
                                     <div style="padding: 12px; text-align: center; color: #6B778C; flex: 1;">Loading months...</div>
                                 </div>
                             </div>
                             
                             <!-- Timeline Content Wrapper for Panning -->
-                            <div id="timelineContentWrapper" style="position: relative; min-width: 1200px; min-height: 100%; transform: translateX(0px); transition: transform 0.1s ease-out;">
+                            <div id="timelineContentWrapper" style="position: relative; min-width: 1800px; min-height: 100%; transform: translateX(0px); transition: transform 0.1s ease-out;">
                                 <!-- Timeline Rows (Sub-projects as swim lanes) -->
                                 <div id="timelineRows" style="position: relative; min-height: 400px;">
                                     <!-- Timeline rows will be generated here -->
@@ -1479,9 +1479,6 @@
                     <div style="max-width: 1200px; margin: 0 auto;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                             <h2 style="font-size: 24px; font-weight: 600; color: #172B4D;">Dashboard</h2>
-                            <button onclick="loadDashboardData(); return false;" style="background: #0052CC; color: white; border: none; padding: 8px 16px; border-radius: 3px; font-size: 14px; font-weight: 500; cursor: pointer;">
-                                🔄 Refresh Data
-                            </button>
                         </div>
                         
                         <!-- Stats Cards -->
@@ -2795,47 +2792,87 @@
             console.log('Creating timeline bar for:', subProject.name, 'at date:', startDate);
             
             const container = document.getElementById('timelineRows');
+            if (!container) {
+                console.error('Timeline rows container not found');
+                return;
+            }
+            
+            // Remove any existing bar for this sub-project
+            const existingBar = container.querySelector(`[data-project-id="${subProject.id}"]`);
+            if (existingBar) {
+                existingBar.remove();
+            }
+            
             const bar = document.createElement('div');
             
-            // Default 30-day duration
-            const duration = 30;
+            // Calculate proper position based on timeline months
+            const baseDate = new Date('2024-02-01');
             const monthWidth = 150;
-            const width = (duration / 30) * monthWidth;
+            const daysSinceBase = Math.floor((startDate - baseDate) / (1000 * 60 * 60 * 24));
+            const calculatedX = Math.max(0, (daysSinceBase / 30) * monthWidth);
+            
+            // Default 60-day duration for better visibility
+            const duration = 60;
+            const width = Math.max(100, (duration / 30) * monthWidth);
+            
+            // Position in a swim lane (each sub-project gets its own row)
+            const subProjectIndex = Array.from(container.parentElement.querySelectorAll('.timeline-subproject-item')).findIndex(
+                item => item.getAttribute('data-project-id') === subProject.id
+            );
+            const swimLaneY = 20 + (subProjectIndex * 50); // 50px per swim lane
             
             bar.className = 'timeline-project-bar';
             bar.style.cssText = `
                 position: absolute;
-                left: ${x}px;
-                top: ${Math.max(10, y - 15)}px;
-                width: ${Math.max(width, 100)}px;
-                height: 30px;
+                left: ${calculatedX}px;
+                top: ${swimLaneY}px;
+                width: ${width}px;
+                height: 32px;
                 background: ${subProject.color};
-                border-radius: 4px;
+                border-radius: 6px;
                 color: white;
-                font-size: 12px;
+                font-size: 13px;
                 font-weight: 500;
-                padding: 0 8px;
+                padding: 0 12px;
                 display: flex;
                 align-items: center;
                 cursor: move;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
                 z-index: 10;
                 border: 2px solid white;
+                transition: transform 0.2s ease;
             `;
             
             bar.textContent = subProject.name;
-            bar.title = `${subProject.name} - ${startDate.toLocaleDateString()}`;
+            bar.title = `${subProject.name}\nStart: ${startDate.toLocaleDateString()}\nDuration: ${duration} days`;
             bar.setAttribute('data-project-id', subProject.id);
+            
+            // Add hover effect
+            bar.addEventListener('mouseenter', () => {
+                bar.style.transform = 'translateY(-2px)';
+                bar.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+            });
+            
+            bar.addEventListener('mouseleave', () => {
+                bar.style.transform = 'translateY(0)';
+                bar.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+            });
             
             // Make the bar draggable within the timeline
             bar.draggable = true;
             bar.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('text/plain', subProject.id);
-                bar.style.opacity = '0.5';
+                bar.style.opacity = '0.6';
             });
             
             bar.addEventListener('dragend', (e) => {
                 bar.style.opacity = '1';
+            });
+            
+            // Add click to create task functionality
+            bar.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showCreateTaskForSubProject(subProject);
             });
             
             container.appendChild(bar);
@@ -2843,33 +2880,44 @@
             // Update sub-project with timeline position (mock storage)
             const currentProject = projectSelector.getCurrentProject();
             const mockSubProjects = JSON.parse(localStorage.getItem('mockSubProjects_' + currentProject.id) || '[]');
-            const subProjectIndex = mockSubProjects.findIndex(sp => sp.id === subProject.id);
-            if (subProjectIndex >= 0) {
-                mockSubProjects[subProjectIndex].timelineStartDate = startDate.toISOString();
-                mockSubProjects[subProjectIndex].timelineX = x;
-                mockSubProjects[subProjectIndex].timelineY = y;
+            const subProjectIndex2 = mockSubProjects.findIndex(sp => sp.id === subProject.id);
+            if (subProjectIndex2 >= 0) {
+                mockSubProjects[subProjectIndex2].timelineStartDate = startDate.toISOString();
+                mockSubProjects[subProjectIndex2].timelineX = calculatedX;
+                mockSubProjects[subProjectIndex2].timelineY = swimLaneY;
+                mockSubProjects[subProjectIndex2].onTimeline = true;
                 localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(mockSubProjects));
             }
+            
+            console.log('Timeline bar created successfully at position:', calculatedX, swimLaneY);
         }
         
         // Add timeline panning functionality
         function initializeTimelinePanning() {
+            console.log('Initializing timeline panning...');
             const container = document.getElementById('timelineGanttContainer');
             const contentWrapper = document.getElementById('timelineContentWrapper');
             
-            if (!container || !contentWrapper) return;
+            if (!container || !contentWrapper) {
+                console.error('Timeline panning containers not found:', { container: !!container, contentWrapper: !!contentWrapper });
+                return;
+            }
             
             let isPanning = false;
             let startX = 0;
             let startTranslateX = 0;
             let currentTranslateX = 0;
             
+            // Set initial cursor
+            container.style.cursor = 'grab';
+            
             container.addEventListener('mousedown', (e) => {
-                // Only start panning if not clicking on a draggable element
-                if (e.target.draggable || e.target.closest('[draggable="true"]')) {
+                // Only start panning if not clicking on a draggable element or button
+                if (e.target.draggable || e.target.closest('[draggable="true"]') || e.target.tagName === 'BUTTON') {
                     return;
                 }
                 
+                console.log('Starting timeline pan');
                 isPanning = true;
                 startX = e.clientX;
                 
@@ -2888,9 +2936,9 @@
                 const deltaX = e.clientX - startX;
                 currentTranslateX = startTranslateX + deltaX;
                 
-                // Limit panning range
-                const maxTranslate = 0;
-                const minTranslate = -(contentWrapper.scrollWidth - container.clientWidth);
+                // Limit panning range (allow scrolling to see future dates)
+                const maxTranslate = 200; // Allow panning right to see past dates
+                const minTranslate = -2000; // Allow panning left to see future dates
                 currentTranslateX = Math.max(minTranslate, Math.min(maxTranslate, currentTranslateX));
                 
                 contentWrapper.style.transform = `translateX(${currentTranslateX}px)`;
@@ -2899,6 +2947,7 @@
             
             container.addEventListener('mouseup', () => {
                 if (isPanning) {
+                    console.log('Ending timeline pan at:', currentTranslateX);
                     isPanning = false;
                     container.style.cursor = 'grab';
                     contentWrapper.style.transition = 'transform 0.1s ease-out';
@@ -2917,6 +2966,232 @@
             container.addEventListener('selectstart', (e) => {
                 if (isPanning) e.preventDefault();
             });
+            
+            console.log('Timeline panning initialized successfully');
+        }
+        
+        // Task creation on timeline
+        function showCreateTaskOnTimelineModal() {
+            const currentProject = projectSelector.getCurrentProject();
+            if (!currentProject) {
+                alert('Please select a project first');
+                return;
+            }
+            
+            // Get sub-projects for selection
+            const mockSubProjects = JSON.parse(localStorage.getItem('mockSubProjects_' + currentProject.id) || '[]');
+            
+            let subProjectOptions = '<option value="">Main Project</option>';
+            mockSubProjects.forEach(sp => {
+                subProjectOptions += `<option value="${sp.id}">${sp.name}</option>`;
+            });
+            
+            const modalHtml = `
+                <div id="createTaskTimelineModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; border-radius: 8px; padding: 24px; width: 500px; max-width: 90vw;">
+                        <h3 style="margin: 0 0 20px 0; color: #172B4D;">Create Task on Timeline</h3>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500; color: #172B4D;">Task Title *</label>
+                            <input type="text" id="timelineTaskTitle" placeholder="Enter task title..." style="width: 100%; padding: 8px 12px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px;">
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500; color: #172B4D;">Description</label>
+                            <textarea id="timelineTaskDescription" placeholder="Enter task description..." style="width: 100%; padding: 8px 12px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px; height: 80px; resize: vertical;"></textarea>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500; color: #172B4D;">Assign to Sub-Project</label>
+                            <select id="timelineTaskSubProject" style="width: 100%; padding: 8px 12px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px;">
+                                ${subProjectOptions}
+                            </select>
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-weight: 500; color: #172B4D;">Priority</label>
+                                <select id="timelineTaskPriority" style="width: 100%; padding: 8px 12px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px;">
+                                    <option value="0">Low</option>
+                                    <option value="1" selected>Medium</option>
+                                    <option value="2">High</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-weight: 500; color: #172B4D;">Type</label>
+                                <select id="timelineTaskType" style="width: 100%; padding: 8px 12px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px;">
+                                    <option value="task">Task</option>
+                                    <option value="story">Story</option>
+                                    <option value="bug">Bug</option>
+                                    <option value="epic">Epic</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+                            <button onclick="closeCreateTaskTimelineModal()" style="padding: 8px 16px; background: #6B778C; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer;">
+                                Cancel
+                            </button>
+                            <button onclick="createTaskOnTimeline()" style="padding: 8px 16px; background: #36B37E; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer;">
+                                Create Task
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            document.getElementById('timelineTaskTitle').focus();
+        }
+        
+        function showCreateTaskForSubProject(subProject) {
+            const currentProject = projectSelector.getCurrentProject();
+            if (!currentProject) {
+                alert('Please select a project first');
+                return;
+            }
+            
+            const modalHtml = `
+                <div id="createTaskTimelineModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; border-radius: 8px; padding: 24px; width: 500px; max-width: 90vw;">
+                        <h3 style="margin: 0 0 20px 0; color: #172B4D;">Create Task for ${subProject.name}</h3>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500; color: #172B4D;">Task Title *</label>
+                            <input type="text" id="timelineTaskTitle" placeholder="Enter task title..." style="width: 100%; padding: 8px 12px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px;">
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 4px; font-weight: 500; color: #172B4D;">Description</label>
+                            <textarea id="timelineTaskDescription" placeholder="Enter task description..." style="width: 100%; padding: 8px 12px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px; height: 80px; resize: vertical;"></textarea>
+                        </div>
+                        
+                        <input type="hidden" id="timelineTaskSubProject" value="${subProject.id}">
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-weight: 500; color: #172B4D;">Priority</label>
+                                <select id="timelineTaskPriority" style="width: 100%; padding: 8px 12px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px;">
+                                    <option value="0">Low</option>
+                                    <option value="1" selected>Medium</option>
+                                    <option value="2">High</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 4px; font-weight: 500; color: #172B4D;">Type</label>
+                                <select id="timelineTaskType" style="width: 100%; padding: 8px 12px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px;">
+                                    <option value="task">Task</option>
+                                    <option value="story">Story</option>
+                                    <option value="bug">Bug</option>
+                                    <option value="epic">Epic</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+                            <button onclick="closeCreateTaskTimelineModal()" style="padding: 8px 16px; background: #6B778C; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer;">
+                                Cancel
+                            </button>
+                            <button onclick="createTaskOnTimeline()" style="padding: 8px 16px; background: #36B37E; color: white; border: none; border-radius: 3px; font-size: 14px; cursor: pointer;">
+                                Create Task
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            document.getElementById('timelineTaskTitle').focus();
+        }
+        
+        function closeCreateTaskTimelineModal() {
+            const modal = document.getElementById('createTaskTimelineModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+        
+        async function createTaskOnTimeline() {
+            const title = document.getElementById('timelineTaskTitle').value.trim();
+            const description = document.getElementById('timelineTaskDescription').value.trim();
+            const subProjectId = document.getElementById('timelineTaskSubProject').value;
+            const priority = parseInt(document.getElementById('timelineTaskPriority').value);
+            const type = document.getElementById('timelineTaskType').value;
+            
+            if (!title) {
+                alert('Please enter a task title');
+                document.getElementById('timelineTaskTitle').focus();
+                return;
+            }
+            
+            const currentProject = projectSelector.getCurrentProject();
+            if (!currentProject) {
+                alert('No project selected');
+                return;
+            }
+            
+            try {
+                // Create task via API
+                const taskData = {
+                    title: title,
+                    description: description,
+                    projectId: currentProject.id,
+                    priority: priority,
+                    type: type,
+                    status: 'todo',
+                    subProjectId: subProjectId || null // Store sub-project association
+                };
+                
+                console.log('Creating task on timeline:', taskData);
+                
+                const response = await apiClient.post('/tasks', taskData);
+                
+                if (response.ok) {
+                    const newTask = await response.json();
+                    console.log('Task created successfully:', newTask);
+                    
+                    // Close modal
+                    closeCreateTaskTimelineModal();
+                    
+                    // Refresh both timeline and board
+                    if (typeof loadTasks === 'function') {
+                        loadTasks(); // Refresh board
+                    }
+                    loadTimelineData(); // Refresh timeline
+                    
+                    // Show success message
+                    const successMsg = document.createElement('div');
+                    successMsg.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #36B37E;
+                        color: white;
+                        padding: 12px 20px;
+                        border-radius: 4px;
+                        z-index: 1001;
+                        font-size: 14px;
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                    `;
+                    successMsg.textContent = `Task "${title}" created successfully!`;
+                    document.body.appendChild(successMsg);
+                    
+                    setTimeout(() => {
+                        if (successMsg.parentNode) {
+                            successMsg.remove();
+                        }
+                    }, 3000);
+                    
+                } else {
+                    const errorText = await response.text();
+                    console.error('Failed to create task:', response.status, errorText);
+                    alert('Failed to create task. Please try again.');
+                }
+                
+            } catch (error) {
+                console.error('Error creating task:', error);
+                alert('Error creating task. Please check your connection and try again.');
+            }
         }
         
         function renderTaskBarsForProject(rowElement, tasks, subProject) {
@@ -2993,10 +3268,15 @@
 
         function renderTimelineMonths() {
             console.log('renderTimelineMonths called');
-            const months = ['FEB', 'MAR', 'APR', 'MAY', 'JUN'];
+            // Show more months to accommodate future projects
+            const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
             const container = document.getElementById('timelineMonths');
             if (container) {
-                container.innerHTML = months.map(m => `<div class="timeline-gantt-month">${m}</div>`).join('');
+                container.innerHTML = months.map(m => `
+                    <div class="timeline-gantt-month" style="flex: 1; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; color: #42526E; min-width: 150px; border-right: 1px solid #DFE1E6;">
+                        ${m}
+                    </div>
+                `).join('');
                 console.log('Timeline months rendered');
             } else {
                 console.error('Timeline months container not found');
