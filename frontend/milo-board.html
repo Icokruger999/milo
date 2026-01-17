@@ -2788,6 +2788,28 @@
                 const projectTasks = tasks.filter(task => task.subProjectId === subProject.id);
                 renderTaskBarsForProject(row, projectTasks, subProject);
             });
+            
+            // Load and restore existing timeline bars that were placed on the timeline
+            const currentProject = projectSelector.getCurrentProject();
+            if (currentProject) {
+                const mockSubProjects = JSON.parse(localStorage.getItem('mockSubProjects_' + currentProject.id) || '[]');
+                
+                console.log('Checking for existing timeline bars to restore...');
+                
+                mockSubProjects.forEach((storedSubProject, index) => {
+                    if (storedSubProject.onTimeline && storedSubProject.timelineStartDate && storedSubProject.timelineX !== undefined) {
+                        console.log('Restoring timeline bar for:', storedSubProject.name, 'at position:', storedSubProject.timelineX, storedSubProject.timelineY);
+                        const startDate = new Date(storedSubProject.timelineStartDate);
+                        const x = storedSubProject.timelineX;
+                        const y = storedSubProject.timelineY || (50 + index * 60);
+                        
+                        // Use a slight delay to ensure the timeline is fully rendered
+                        setTimeout(() => {
+                            createTimelineBar(storedSubProject, x, y, startDate);
+                        }, 100);
+                    }
+                });
+            }
         }
         
         function createTimelineBar(subProject, x, y, startDate) {
@@ -2864,10 +2886,10 @@
                 <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.3); border-radius: 0 0 6px 6px;">
                     <div style="height: 100%; width: 35%; background: rgba(255,255,255,0.8); border-radius: 0 0 6px 6px; transition: width 0.3s ease;"></div>
                 </div>
-                <div class="resize-handle" style="position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; cursor: se-resize; background: rgba(255,255,255,0.3); border-radius: 0 0 6px 0;"></div>
+                <div class="resize-handle" style="position: absolute; bottom: 0; right: 0; width: 20px; height: 20px; cursor: se-resize; background: rgba(255,255,255,0.6); border-radius: 0 0 6px 0; display: flex; align-items: center; justify-content: center; font-size: 10px; color: rgba(0,0,0,0.5);">⟲</div>
             `;
             
-            bar.title = `${subProject.name}\nStart: ${startDate.toLocaleDateString()}\nEnd: ${endDate.toLocaleDateString()}\nDuration: ${duration} days\n${customText ? 'Notes: ' + customText + '\n' : ''}Progress: 35%\n\nDrag to move • Right-click for options • Resize from bottom-right corner`;
+            bar.title = `${subProject.name}\nStart: ${startDate.toLocaleDateString()}\nEnd: ${endDate.toLocaleDateString()}\nDuration: ${duration} days\n${customText ? 'Notes: ' + customText + '\n' : ''}Progress: 35%\n\nDrag to move • Right-click for options • Double-click to create task\nResize from bottom-right corner (⟲)`;
             bar.setAttribute('data-project-id', subProject.id);
             
             // Add hover effect
@@ -2887,11 +2909,26 @@
                 }
             });
             
-            // Add click to create task functionality (only if not dragging)
+            // Add click functionality - only for double-click to avoid conflicts
+            let clickTimeout;
             bar.addEventListener('click', (e) => {
+                if (e.target.classList.contains('resize-handle')) return;
+                
+                // Clear any existing timeout
+                clearTimeout(clickTimeout);
+                
+                // Set a timeout to distinguish between single click (drag) and double click (create task)
+                clickTimeout = setTimeout(() => {
+                    // Single click - do nothing (allow dragging)
+                }, 300);
+            });
+            
+            // Double-click to create task
+            bar.addEventListener('dblclick', (e) => {
+                clearTimeout(clickTimeout);
                 if (!bar.classList.contains('dragging') && !e.target.classList.contains('resize-handle')) {
                     e.stopPropagation();
-                    console.log('Timeline bar clicked for:', subProject.name);
+                    console.log('Timeline bar double-clicked for:', subProject.name);
                     showCreateTaskForSubProject(subProject);
                 }
             });
@@ -3062,12 +3099,12 @@
             
             const menuItems = [
                 {
-                    label: '📝 Create Task',
-                    action: () => showCreateTaskForSubProject(subProject)
+                    label: '✏️ Add/Edit Text',
+                    action: () => editTimelineBarText(subProject, barElement)
                 },
                 {
-                    label: '✏️ Add/Edit Notes',
-                    action: () => editTimelineBarText(subProject, barElement)
+                    label: '📝 Create Task',
+                    action: () => showCreateTaskForSubProject(subProject)
                 },
                 {
                     label: '📊 View Details',
