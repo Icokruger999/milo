@@ -1206,7 +1206,7 @@
                 </div>
                 <div class="sidebar-section">
                     <div class="sidebar-section-title">Planning</div>
-                    <a href="#timeline" class="sidebar-item" id="timelineLink">
+                    <a href="#timeline" class="sidebar-item" id="timelineLink" onclick="console.log('Timeline link clicked'); return true;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"></circle>
                             <polyline points="12 6 12 12 16 14"></polyline>
@@ -1732,26 +1732,37 @@
         
         // Hash detection for direct navigation
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded - checking hash:', window.location.hash);
             const hash = window.location.hash.substring(1); // Remove the # symbol
             if (hash === 'timeline') {
+                console.log('Hash is timeline, showing timeline view in 100ms');
                 setTimeout(() => showTimelineView(), 100);
             } else if (hash === 'roadmap') {
+                console.log('Hash is roadmap, showing roadmap view in 100ms');
                 setTimeout(() => showRoadmapView(), 100);
             } else if (hash === 'dashboard') {
+                console.log('Hash is dashboard, showing dashboard view in 100ms');
                 setTimeout(() => showDashboardView(), 100);
+            } else {
+                console.log('No matching hash, showing board view');
             }
         });
 
         // Listen for hash changes
         window.addEventListener('hashchange', function() {
+            console.log('Hash changed to:', window.location.hash);
             const hash = window.location.hash.substring(1);
             if (hash === 'timeline') {
+                console.log('Hashchange: showing timeline view');
                 showTimelineView();
             } else if (hash === 'roadmap') {
+                console.log('Hashchange: showing roadmap view');
                 showRoadmapView();
             } else if (hash === 'dashboard') {
+                console.log('Hashchange: showing dashboard view');
                 showDashboardView();
             } else if (hash === 'board' || hash === '') {
+                console.log('Hashchange: showing board view');
                 showBoardView();
             }
         });
