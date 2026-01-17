@@ -2312,37 +2312,40 @@
             }
 
             try {
-                // Load both sub-projects and tasks
-                console.log('Loading program timeline data for project:', currentProject.id);
+                // Load sub-projects from localStorage (mock data for now)
+                let subProjects = JSON.parse(localStorage.getItem('mockSubProjects_' + currentProject.id) || '[]');
                 
-                // For now, create mock sub-projects structure
-                // TODO: Replace with actual API calls when backend supports sub-projects
-                const mockSubProjects = [
-                    {
-                        id: 'fabric-migration',
-                        name: 'Fabric Migration',
-                        parentId: currentProject.id,
-                        color: '#0052CC',
-                        startDate: '2024-02-01',
-                        endDate: '2024-05-31'
-                    },
-                    {
-                        id: 'server-migration', 
-                        name: 'Server Migration',
-                        parentId: currentProject.id,
-                        color: '#36B37E',
-                        startDate: '2024-03-01',
-                        endDate: '2024-07-31'
-                    },
-                    {
-                        id: 'ux-experience',
-                        name: 'UX Experience Redesign',
-                        parentId: currentProject.id,
-                        color: '#FFAB00',
-                        startDate: '2024-04-01',
-                        endDate: '2024-08-31'
-                    }
-                ];
+                // If no sub-projects exist, create default ones
+                if (subProjects.length === 0) {
+                    subProjects = [
+                        {
+                            id: 'fabric-migration',
+                            name: 'Fabric Migration',
+                            parentId: currentProject.id,
+                            color: '#0052CC',
+                            startDate: '2024-02-01',
+                            endDate: '2024-05-31'
+                        },
+                        {
+                            id: 'server-migration', 
+                            name: 'Server Migration',
+                            parentId: currentProject.id,
+                            color: '#36B37E',
+                            startDate: '2024-03-01',
+                            endDate: '2024-07-31'
+                        },
+                        {
+                            id: 'ux-experience',
+                            name: 'UX Experience Redesign',
+                            parentId: currentProject.id,
+                            color: '#FFAB00',
+                            startDate: '2024-04-01',
+                            endDate: '2024-08-31'
+                        }
+                    ];
+                    // Save default sub-projects
+                    localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(subProjects));
+                }
                 
                 // Load tasks from API
                 const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
@@ -2369,10 +2372,10 @@
                 }
                 
                 console.log('Processed tasks:', tasks.length, tasks);
-                console.log('Mock sub-projects:', mockSubProjects.length, mockSubProjects);
+                console.log('Sub-projects:', subProjects.length, subProjects);
                 
                 // Render the program timeline
-                renderProgramTimeline(currentProject, mockSubProjects, tasks);
+                renderProgramTimeline(currentProject, subProjects, tasks);
                 
             } catch (error) {
                 console.error('Failed to load program timeline:', error);
@@ -2416,42 +2419,193 @@
                 <!-- Sub-Projects -->
             `;
             
-            if (subProjects.length === 0) {
+            subProjects.forEach(subProject => {
                 html += `
-                    <div style="padding: 24px; text-align: center; color: #6B778C;">
-                        No sub-projects yet.<br>
-                        <button onclick="showCreateSubProjectModal(); return false;" style="background: #36B37E; color: white; border: none; padding: 6px 12px; border-radius: 3px; font-size: 12px; margin-top: 8px; cursor: pointer;">
-                            ➕ Add Sub-Project
-                        </button>
+                    <div class="timeline-subproject-item" data-project-id="${subProject.id}" style="padding: 12px 16px 12px 32px; border-bottom: 1px solid #F4F5F7; cursor: pointer; transition: background 0.15s; position: relative;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="width: 12px; height: 12px; background: ${subProject.color}; border-radius: 2px;"></div>
+                            <span class="subproject-name" style="font-size: 14px; color: #172B4D; font-weight: 500; flex: 1;">${subProject.name}</span>
+                            <button class="delete-subproject-btn" onclick="deleteSubProject('${subProject.id}'); return false;" style="display: none; background: #DE350B; color: white; border: none; border-radius: 3px; padding: 2px 6px; font-size: 10px; cursor: pointer;" title="Delete sub-project">
+                                ✕
+                            </button>
+                        </div>
+                        <div style="font-size: 11px; color: #6B778C; margin-top: 4px; margin-left: 20px;">
+                            ${new Date(subProject.startDate).toLocaleDateString()} - ${new Date(subProject.endDate).toLocaleDateString()}
+                        </div>
                     </div>
                 `;
-            } else {
-                subProjects.forEach(subProject => {
-                    html += `
-                        <div class="timeline-subproject-item" data-project-id="${subProject.id}" style="padding: 12px 16px 12px 32px; border-bottom: 1px solid #F4F5F7; cursor: pointer; transition: background 0.15s;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <div style="width: 12px; height: 12px; background: ${subProject.color}; border-radius: 2px;"></div>
-                                <span style="font-size: 14px; color: #172B4D; font-weight: 500;">${subProject.name}</span>
-                            </div>
-                            <div style="font-size: 11px; color: #6B778C; margin-top: 4px; margin-left: 20px;">
-                                ${new Date(subProject.startDate).toLocaleDateString()} - ${new Date(subProject.endDate).toLocaleDateString()}
-                            </div>
+            });
+            
+            // Add "Add Sub-Project" inline input
+            html += `
+                <div id="addSubProjectContainer" style="padding: 12px 16px 12px 32px; border-bottom: 1px solid #F4F5F7;">
+                    <div id="addSubProjectButton" style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #36B37E; font-size: 14px; font-weight: 500;" onclick="showAddSubProjectInput()">
+                        <div style="width: 12px; height: 12px; border: 2px dashed #36B37E; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 10px;">+</div>
+                        Add Sub-Project
+                    </div>
+                    <div id="addSubProjectInput" style="display: none; margin-top: 8px;">
+                        <input type="text" id="newSubProjectName" placeholder="Enter sub-project name..." style="width: 100%; padding: 6px 8px; border: 1px solid #DFE1E6; border-radius: 3px; font-size: 14px;" onkeypress="handleAddSubProjectKeypress(event)">
+                        <div style="margin-top: 8px; display: flex; gap: 8px;">
+                            <button onclick="addSubProject()" style="background: #36B37E; color: white; border: none; padding: 4px 12px; border-radius: 3px; font-size: 12px; cursor: pointer;">Add</button>
+                            <button onclick="cancelAddSubProject()" style="background: #6B778C; color: white; border: none; padding: 4px 12px; border-radius: 3px; font-size: 12px; cursor: pointer;">Cancel</button>
                         </div>
-                    `;
-                });
-            }
+                    </div>
+                </div>
+            `;
             
             container.innerHTML = html;
             
-            // Add hover effects
+            // Add hover effects and edit functionality
             container.querySelectorAll('.timeline-subproject-item').forEach(item => {
+                // Hover effects
                 item.addEventListener('mouseenter', () => {
                     item.style.background = '#F4F5F7';
+                    const deleteBtn = item.querySelector('.delete-subproject-btn');
+                    if (deleteBtn) deleteBtn.style.display = 'block';
                 });
                 item.addEventListener('mouseleave', () => {
                     item.style.background = 'white';
+                    const deleteBtn = item.querySelector('.delete-subproject-btn');
+                    if (deleteBtn) deleteBtn.style.display = 'none';
+                });
+                
+                // Click to edit name
+                const nameSpan = item.querySelector('.subproject-name');
+                nameSpan.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    editSubProjectName(item, nameSpan);
                 });
             });
+        }
+        
+        function showAddSubProjectInput() {
+            document.getElementById('addSubProjectButton').style.display = 'none';
+            document.getElementById('addSubProjectInput').style.display = 'block';
+            document.getElementById('newSubProjectName').focus();
+        }
+        
+        function cancelAddSubProject() {
+            document.getElementById('addSubProjectButton').style.display = 'flex';
+            document.getElementById('addSubProjectInput').style.display = 'none';
+            document.getElementById('newSubProjectName').value = '';
+        }
+        
+        function handleAddSubProjectKeypress(event) {
+            if (event.key === 'Enter') {
+                addSubProject();
+            } else if (event.key === 'Escape') {
+                cancelAddSubProject();
+            }
+        }
+        
+        function addSubProject() {
+            const nameInput = document.getElementById('newSubProjectName');
+            const name = nameInput.value.trim();
+            
+            if (!name) {
+                nameInput.focus();
+                return;
+            }
+            
+            console.log('Adding sub-project:', name);
+            
+            // Generate random color
+            const colors = ['#0052CC', '#36B37E', '#FFAB00', '#DE350B', '#6554C0', '#00B8D9'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            // Create new sub-project (mock for now)
+            const newSubProject = {
+                id: 'subproject-' + Date.now(),
+                name: name,
+                parentId: projectSelector.getCurrentProject().id,
+                color: color,
+                startDate: new Date().toISOString().split('T')[0],
+                endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+            };
+            
+            // Add to mock data and re-render
+            // TODO: Replace with API call when backend supports sub-projects
+            const currentProject = projectSelector.getCurrentProject();
+            const mockSubProjects = JSON.parse(localStorage.getItem('mockSubProjects_' + currentProject.id) || '[]');
+            mockSubProjects.push(newSubProject);
+            localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(mockSubProjects));
+            
+            // Reload timeline
+            loadTimelineData();
+            
+            cancelAddSubProject();
+        }
+        
+        function deleteSubProject(subProjectId) {
+            if (!confirm('Delete this sub-project? Tasks will be unassigned.')) {
+                return;
+            }
+            
+            console.log('Deleting sub-project:', subProjectId);
+            
+            // Remove from mock data
+            const currentProject = projectSelector.getCurrentProject();
+            const mockSubProjects = JSON.parse(localStorage.getItem('mockSubProjects_' + currentProject.id) || '[]');
+            const updatedSubProjects = mockSubProjects.filter(sp => sp.id !== subProjectId);
+            localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(updatedSubProjects));
+            
+            // Reload timeline
+            loadTimelineData();
+        }
+        
+        function editSubProjectName(itemElement, nameSpan) {
+            const currentName = nameSpan.textContent;
+            const subProjectId = itemElement.getAttribute('data-project-id');
+            
+            // Create input field
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentName;
+            input.style.cssText = 'font-size: 14px; font-weight: 500; border: 1px solid #0052CC; border-radius: 3px; padding: 2px 4px; background: white;';
+            
+            // Replace span with input
+            nameSpan.style.display = 'none';
+            nameSpan.parentNode.insertBefore(input, nameSpan);
+            input.focus();
+            input.select();
+            
+            function saveEdit() {
+                const newName = input.value.trim();
+                if (newName && newName !== currentName) {
+                    console.log('Updating sub-project name:', subProjectId, newName);
+                    
+                    // Update mock data
+                    const currentProject = projectSelector.getCurrentProject();
+                    const mockSubProjects = JSON.parse(localStorage.getItem('mockSubProjects_' + currentProject.id) || '[]');
+                    const subProject = mockSubProjects.find(sp => sp.id === subProjectId);
+                    if (subProject) {
+                        subProject.name = newName;
+                        localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(mockSubProjects));
+                    }
+                    
+                    nameSpan.textContent = newName;
+                }
+                
+                // Restore span
+                input.remove();
+                nameSpan.style.display = 'inline';
+            }
+            
+            function cancelEdit() {
+                input.remove();
+                nameSpan.style.display = 'inline';
+            }
+            
+            input.addEventListener('blur', saveEdit);
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') saveEdit();
+                else if (e.key === 'Escape') cancelEdit();
+            });
+        }
+        
+        function showCreateSubProjectModal() {
+            // This function is now replaced by inline editing
+            showAddSubProjectInput();
         }
         
         function renderTimelineRows(subProjects, tasks) {
