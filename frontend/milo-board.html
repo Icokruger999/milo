@@ -2734,11 +2734,13 @@
                     
                     console.log('Sub-project dropped on timeline:', subProjectData.name, 'at position:', x, y);
                     
-                    // Calculate timeline position
-                    const baseDate = new Date('2024-02-01');
+                    // Calculate timeline position based on months (starting from January)
+                    const baseDate = new Date('2024-01-01'); // Start from January
                     const monthWidth = 150;
-                    const daysFromStart = Math.floor((x / monthWidth) * 30);
-                    const dropDate = new Date(baseDate.getTime() + daysFromStart * 24 * 60 * 60 * 1000);
+                    const monthIndex = Math.floor(x / monthWidth);
+                    const dropDate = new Date(2024, monthIndex, 15); // Middle of the month
+                    
+                    console.log('Calculated drop date:', dropDate.toLocaleDateString(), 'for month index:', monthIndex);
                     
                     // Create timeline bar for the sub-project
                     createTimelineBar(subProjectData, x, y, dropDate);
@@ -2789,7 +2791,7 @@
         }
         
         function createTimelineBar(subProject, x, y, startDate) {
-            console.log('Creating timeline bar for:', subProject.name, 'at date:', startDate);
+            console.log('Creating timeline bar for:', subProject.name, 'at date:', startDate, 'at position:', x, y);
             
             const container = document.getElementById('timelineRows');
             if (!container) {
@@ -2798,64 +2800,62 @@
             }
             
             // Remove any existing bar for this sub-project
-            const existingBar = container.querySelector(`[data-project-id="${subProject.id}"]`);
-            if (existingBar) {
-                existingBar.remove();
-            }
+            const existingBars = container.querySelectorAll(`[data-project-id="${subProject.id}"]`);
+            existingBars.forEach(bar => bar.remove());
             
             const bar = document.createElement('div');
             
-            // Calculate proper position based on timeline months
-            const baseDate = new Date('2024-02-01');
-            const monthWidth = 150;
-            const daysSinceBase = Math.floor((startDate - baseDate) / (1000 * 60 * 60 * 24));
-            const calculatedX = Math.max(0, (daysSinceBase / 30) * monthWidth);
+            // Use the actual drop position for better user experience
+            const actualX = Math.max(10, x);
+            const actualY = Math.max(10, y);
             
-            // Default 60-day duration for better visibility
-            const duration = 60;
-            const width = Math.max(100, (duration / 30) * monthWidth);
-            
-            // Position in a swim lane (each sub-project gets its own row)
-            const subProjectIndex = Array.from(container.parentElement.querySelectorAll('.timeline-subproject-item')).findIndex(
-                item => item.getAttribute('data-project-id') === subProject.id
-            );
-            const swimLaneY = 20 + (subProjectIndex * 50); // 50px per swim lane
+            // Default 90-day duration for better visibility
+            const duration = 90;
+            const width = Math.max(120, duration * 2); // 2px per day
             
             bar.className = 'timeline-project-bar';
             bar.style.cssText = `
                 position: absolute;
-                left: ${calculatedX}px;
-                top: ${swimLaneY}px;
+                left: ${actualX}px;
+                top: ${actualY}px;
                 width: ${width}px;
-                height: 32px;
+                height: 36px;
                 background: ${subProject.color};
                 border-radius: 6px;
                 color: white;
                 font-size: 13px;
-                font-weight: 500;
+                font-weight: 600;
                 padding: 0 12px;
                 display: flex;
                 align-items: center;
-                cursor: move;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-                z-index: 10;
+                cursor: pointer;
+                box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+                z-index: 100;
                 border: 2px solid white;
-                transition: transform 0.2s ease;
+                transition: all 0.2s ease;
+                user-select: none;
             `;
             
             bar.textContent = subProject.name;
-            bar.title = `${subProject.name}\nStart: ${startDate.toLocaleDateString()}\nDuration: ${duration} days`;
+            bar.title = `${subProject.name}\nStart: ${startDate.toLocaleDateString()}\nDuration: ${duration} days\nClick to create tasks`;
             bar.setAttribute('data-project-id', subProject.id);
             
             // Add hover effect
             bar.addEventListener('mouseenter', () => {
-                bar.style.transform = 'translateY(-2px)';
-                bar.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                bar.style.transform = 'translateY(-3px) scale(1.02)';
+                bar.style.boxShadow = '0 6px 20px rgba(0,0,0,0.25)';
             });
             
             bar.addEventListener('mouseleave', () => {
-                bar.style.transform = 'translateY(0)';
-                bar.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+                bar.style.transform = 'translateY(0) scale(1)';
+                bar.style.boxShadow = '0 3px 12px rgba(0,0,0,0.15)';
+            });
+            
+            // Add click to create task functionality
+            bar.addEventListener('click', (e) => {
+                e.stopPropagation();
+                console.log('Timeline bar clicked for:', subProject.name);
+                showCreateTaskForSubProject(subProject);
             });
             
             // Make the bar draggable within the timeline
@@ -2863,16 +2863,11 @@
             bar.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('text/plain', subProject.id);
                 bar.style.opacity = '0.6';
+                e.stopPropagation();
             });
             
             bar.addEventListener('dragend', (e) => {
                 bar.style.opacity = '1';
-            });
-            
-            // Add click to create task functionality
-            bar.addEventListener('click', (e) => {
-                e.stopPropagation();
-                showCreateTaskForSubProject(subProject);
             });
             
             container.appendChild(bar);
@@ -2880,16 +2875,16 @@
             // Update sub-project with timeline position (mock storage)
             const currentProject = projectSelector.getCurrentProject();
             const mockSubProjects = JSON.parse(localStorage.getItem('mockSubProjects_' + currentProject.id) || '[]');
-            const subProjectIndex2 = mockSubProjects.findIndex(sp => sp.id === subProject.id);
-            if (subProjectIndex2 >= 0) {
-                mockSubProjects[subProjectIndex2].timelineStartDate = startDate.toISOString();
-                mockSubProjects[subProjectIndex2].timelineX = calculatedX;
-                mockSubProjects[subProjectIndex2].timelineY = swimLaneY;
-                mockSubProjects[subProjectIndex2].onTimeline = true;
+            const subProjectIndex = mockSubProjects.findIndex(sp => sp.id === subProject.id);
+            if (subProjectIndex >= 0) {
+                mockSubProjects[subProjectIndex].timelineStartDate = startDate.toISOString();
+                mockSubProjects[subProjectIndex].timelineX = actualX;
+                mockSubProjects[subProjectIndex].timelineY = actualY;
+                mockSubProjects[subProjectIndex].onTimeline = true;
                 localStorage.setItem('mockSubProjects_' + currentProject.id, JSON.stringify(mockSubProjects));
             }
             
-            console.log('Timeline bar created successfully at position:', calculatedX, swimLaneY);
+            console.log('Timeline bar created successfully at position:', actualX, actualY);
         }
         
         // Add timeline panning functionality
@@ -2908,16 +2903,28 @@
             let startTranslateX = 0;
             let currentTranslateX = 0;
             
-            // Set initial cursor
+            // Set initial cursor and ensure container is ready for panning
             container.style.cursor = 'grab';
+            container.style.overflow = 'hidden';
+            contentWrapper.style.transform = 'translateX(0px)';
+            
+            console.log('Timeline container dimensions:', {
+                containerWidth: container.clientWidth,
+                contentWidth: contentWrapper.scrollWidth,
+                contentMinWidth: contentWrapper.style.minWidth
+            });
             
             container.addEventListener('mousedown', (e) => {
-                // Only start panning if not clicking on a draggable element or button
-                if (e.target.draggable || e.target.closest('[draggable="true"]') || e.target.tagName === 'BUTTON') {
+                // Only start panning if not clicking on a draggable element, button, or timeline bar
+                if (e.target.draggable || 
+                    e.target.closest('[draggable="true"]') || 
+                    e.target.tagName === 'BUTTON' ||
+                    e.target.classList.contains('timeline-project-bar') ||
+                    e.target.closest('.timeline-project-bar')) {
                     return;
                 }
                 
-                console.log('Starting timeline pan');
+                console.log('Starting timeline pan from:', e.clientX);
                 isPanning = true;
                 startX = e.clientX;
                 
@@ -2936,35 +2943,50 @@
                 const deltaX = e.clientX - startX;
                 currentTranslateX = startTranslateX + deltaX;
                 
-                // Limit panning range (allow scrolling to see future dates)
-                const maxTranslate = 200; // Allow panning right to see past dates
-                const minTranslate = -2000; // Allow panning left to see future dates
+                // More generous panning range to see all months
+                const maxTranslate = 300; // Allow panning right to see past dates
+                const minTranslate = -1200; // Allow panning left to see future dates (up to December)
                 currentTranslateX = Math.max(minTranslate, Math.min(maxTranslate, currentTranslateX));
                 
                 contentWrapper.style.transform = `translateX(${currentTranslateX}px)`;
                 contentWrapper.style.transition = 'none';
             });
             
-            container.addEventListener('mouseup', () => {
+            const endPanning = () => {
                 if (isPanning) {
                     console.log('Ending timeline pan at:', currentTranslateX);
                     isPanning = false;
                     container.style.cursor = 'grab';
-                    contentWrapper.style.transition = 'transform 0.1s ease-out';
+                    contentWrapper.style.transition = 'transform 0.2s ease-out';
                 }
-            });
+            };
             
-            container.addEventListener('mouseleave', () => {
-                if (isPanning) {
-                    isPanning = false;
-                    container.style.cursor = 'grab';
-                    contentWrapper.style.transition = 'transform 0.1s ease-out';
-                }
-            });
+            container.addEventListener('mouseup', endPanning);
+            container.addEventListener('mouseleave', endPanning);
             
             // Prevent text selection while panning
             container.addEventListener('selectstart', (e) => {
                 if (isPanning) e.preventDefault();
+            });
+            
+            // Add scroll wheel support for horizontal scrolling
+            container.addEventListener('wheel', (e) => {
+                if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+                    e.preventDefault();
+                    
+                    const scrollAmount = e.deltaX || e.deltaY;
+                    const transform = contentWrapper.style.transform;
+                    const match = transform.match(/translateX\((-?\d+(?:\.\d+)?)px\)/);
+                    const currentX = match ? parseFloat(match[1]) : 0;
+                    
+                    const newX = currentX - scrollAmount;
+                    const maxTranslate = 300;
+                    const minTranslate = -1200;
+                    const clampedX = Math.max(minTranslate, Math.min(maxTranslate, newX));
+                    
+                    contentWrapper.style.transform = `translateX(${clampedX}px)`;
+                    contentWrapper.style.transition = 'transform 0.1s ease-out';
+                }
             });
             
             console.log('Timeline panning initialized successfully');
