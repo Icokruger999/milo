@@ -1258,7 +1258,7 @@
                 </div>
                 <div class="sidebar-section">
                     <div class="sidebar-section-title">Planning</div>
-                    <a href="#timeline" class="sidebar-item" id="timelineLink" onclick="console.log('Timeline link clicked'); showTimelineView(); return false;">
+                    <a href="#timeline" class="sidebar-item" id="timelineLink" onclick="console.log('Timeline link clicked'); event.preventDefault(); showTimelineView(); return false;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"></circle>
                             <polyline points="12 6 12 12 16 14"></polyline>
@@ -1661,6 +1661,7 @@
 
         // Load projects and setup selector
         async function setupProjectSelector() {
+            console.log('setupProjectSelector called');
             try {
                 const user = authService.getCurrentUser();
                 if (!user || !user.id) {
@@ -1669,7 +1670,10 @@
                     return;
                 }
                 
+                console.log('Loading projects for user:', user.id);
                 const projects = await projectSelector.loadProjects(user.id);
+                console.log('Projects loaded:', projects.length);
+                
                 const selector = document.getElementById('projectSelector');
                 const currentProject = projectSelector.getCurrentProject();
                 
@@ -1678,7 +1682,10 @@
                     return;
                 }
                 
+                console.log('Current project:', currentProject);
+                
                 if (projects.length === 0) {
+                    console.log('No projects found, showing create option');
                     selector.innerHTML = '<option value="create">+ Create New Project</option>';
                     selector.value = 'create';
                     const projectNameEl = document.getElementById('currentProjectName');
@@ -1698,6 +1705,7 @@
                     return;
                 }
 
+                console.log('Populating project selector with', projects.length, 'projects');
                 selector.innerHTML = projects.map(p => 
                     `<option value="${p.id}" ${currentProject && p.id === currentProject.id ? 'selected' : ''}>${p.name}${p.key ? ` (${p.key})` : ''}</option>`
                 ).join('') + '<option value="create" style="font-weight: 600; color: #0052CC;">+ Create New Project</option>';
@@ -1776,10 +1784,23 @@
         }
 
         // Setup project selector (use enhanced if available, otherwise fallback)
-        if (typeof setupProjectSelectorEnhanced === 'function') {
-            setupProjectSelectorEnhanced();
-        } else {
-            setupProjectSelector();
+        console.log('Setting up project selector...');
+        try {
+            if (typeof setupProjectSelectorEnhanced === 'function') {
+                console.log('Using enhanced project selector');
+                await setupProjectSelectorEnhanced();
+            } else {
+                console.log('Using basic project selector');
+                await setupProjectSelector();
+            }
+            console.log('Project selector setup complete');
+        } catch (error) {
+            console.error('Failed to setup project selector:', error);
+            // Fallback: Show error in selector
+            const selector = document.getElementById('projectSelector');
+            if (selector) {
+                selector.innerHTML = '<option value="">⚠️ Failed to load projects</option>';
+            }
         }
         
         // Make Create button work
@@ -1886,6 +1907,11 @@
             console.log('showTimelineView called');
             currentBoardView = 'timeline';
             
+            // Update URL hash without triggering hashchange event
+            if (window.location.hash !== '#timeline') {
+                history.replaceState(null, null, '#timeline');
+            }
+            
             // Hide other views
             const boardContent = document.querySelector('.board-content');
             const timelineView = document.getElementById('timelineView');
@@ -1893,15 +1919,26 @@
             const dashboardView = document.getElementById('dashboardView');
             
             console.log('Timeline view element found:', !!timelineView);
+            console.log('Board content element found:', !!boardContent);
             
-            if (boardContent) boardContent.style.display = 'none';
-            if (roadmapView) roadmapView.style.display = 'none';
-            if (dashboardView) dashboardView.style.display = 'none';
+            if (boardContent) {
+                boardContent.style.display = 'none';
+                console.log('Board content hidden');
+            }
+            if (roadmapView) {
+                roadmapView.style.display = 'none';
+                console.log('Roadmap view hidden');
+            }
+            if (dashboardView) {
+                dashboardView.style.display = 'none';
+                console.log('Dashboard view hidden');
+            }
             
             if (timelineView) {
                 timelineView.style.display = 'flex';
                 timelineView.style.flexDirection = 'column';
                 console.log('Timeline view should now be visible');
+                console.log('Timeline view display style:', timelineView.style.display);
             } else {
                 console.error('Timeline view element not found!');
                 return;
@@ -1938,6 +1975,12 @@
         function showDashboardView() {
             console.log('showDashboardView called');
             currentBoardView = 'dashboard';
+            
+            // Update URL hash without triggering hashchange event
+            if (window.location.hash !== '#dashboard') {
+                history.replaceState(null, null, '#dashboard');
+            }
+            
             document.querySelector('.board-content').style.display = 'none';
             document.getElementById('timelineView').style.display = 'none';
             document.getElementById('roadmapView').style.display = 'none';
@@ -1955,7 +1998,19 @@
             if (dashboardLink) dashboardLink.classList.add('active');
             
             console.log('Loading dashboard data...');
-            loadDashboardData();
+            
+            // Ensure tasks are loaded first, then load dashboard
+            if (typeof loadTasks === 'function') {
+                loadTasks().then(() => {
+                    console.log('Tasks loaded, now loading dashboard data');
+                    loadDashboardData();
+                }).catch(error => {
+                    console.error('Failed to load tasks for dashboard:', error);
+                    loadDashboardData(); // Try to load dashboard anyway
+                });
+            } else {
+                loadDashboardData();
+            }
         }
 
         async function loadRoadmapData() {
@@ -3418,7 +3473,7 @@
                 <div class="timeline-bar-title" style="font-size: 16px; font-weight: 700; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2;">
                     ${subProject.name}
                 </div>
-                <div class="timeline-bar-text" style="font-size: 14px; opacity: 0.95; margin-bottom: 8px; line-height: 1.4; overflow-wrap: break-word; flex: 1; min-height: 20px; ${!customText ? 'display: none;' : ''}" data-placeholder="Click 'Edit Text' to add notes...">${customText || ''}</div>
+                <div class="timeline-bar-text" style="font-size: 16px; opacity: 0.95; margin-bottom: 8px; line-height: 1.4; overflow-wrap: break-word; flex: 1; min-height: 20px; ${!customText ? 'display: none;' : ''}" data-placeholder="Click 'Edit Text' to add notes...">${customText || ''}</div>
                 <div class="timeline-bar-dates" style="font-size: 12px; opacity: 0.9; display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.2);">
                     <span>${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                     <span style="font-size: 11px; opacity: 0.8; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 10px;">${duration}d</span>
