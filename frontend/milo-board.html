@@ -919,6 +919,58 @@
             height: 100%;
         }
 
+        /* Dashboard View Styles */
+        .dashboard-view {
+            background: #F4F5F7 !important;
+            min-height: 100%;
+        }
+        
+        .dashboard-view h2 {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .dashboard-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .dashboard-stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #DFE1E6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .dashboard-charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 16px;
+        }
+        
+        .dashboard-chart-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #DFE1E6;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .dashboard-chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #172B4D;
+            margin-bottom: 16px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .dashboard-chart-container {
+            position: relative;
+            height: 300px;
+        }
+
         /* Timeline View Styles */
         .timeline-view {
             flex: 1;
@@ -1478,64 +1530,64 @@
                 <div class="dashboard-view" id="dashboardView" style="display: none; flex: 1; overflow: auto; padding: 24px;">
                     <div style="max-width: 1200px; margin: 0 auto;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                            <h2 style="font-size: 24px; font-weight: 600; color: #172B4D;">Dashboard</h2>
+                            <h2 style="font-size: 24px; font-weight: 600; color: #172B4D; margin: 0;">Dashboard</h2>
                         </div>
                         
                         <!-- Stats Cards -->
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
-                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #DFE1E6;">
+                        <div class="dashboard-stats-grid">
+                            <div class="dashboard-stat-card">
                                 <div style="font-size: 13px; color: #6B778C; margin-bottom: 8px;">Total Tasks</div>
                                 <div id="dashTotalTasks" style="font-size: 32px; font-weight: 700; color: #172B4D;">0</div>
                             </div>
-                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #DFE1E6;">
+                            <div class="dashboard-stat-card">
                                 <div style="font-size: 13px; color: #6B778C; margin-bottom: 8px;">In Progress</div>
                                 <div id="dashInProgress" style="font-size: 32px; font-weight: 700; color: #FFAB00;">0</div>
                             </div>
-                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #DFE1E6;">
+                            <div class="dashboard-stat-card">
                                 <div style="font-size: 13px; color: #6B778C; margin-bottom: 8px;">Completed</div>
                                 <div id="dashCompleted" style="font-size: 32px; font-weight: 700; color: #36B37E;">0</div>
                             </div>
-                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #DFE1E6;">
+                            <div class="dashboard-stat-card">
                                 <div style="font-size: 13px; color: #6B778C; margin-bottom: 8px;">Completion Rate</div>
                                 <div id="dashCompletionRate" style="font-size: 32px; font-weight: 700; color: #0052CC;">0%</div>
                             </div>
                         </div>
 
                         <!-- Charts -->
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 16px;">
-                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #DFE1E6;">
-                                <div style="font-size: 16px; font-weight: 600; color: #172B4D; margin-bottom: 16px;">Tasks by Status</div>
-                                <div style="position: relative; height: 300px;">
+                        <div class="dashboard-charts-grid">
+                            <div class="dashboard-chart-card">
+                                <div class="dashboard-chart-title">Tasks by Status</div>
+                                <div class="dashboard-chart-container">
                                     <canvas id="dashStatusChart"></canvas>
                                 </div>
                             </div>
-                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #DFE1E6;">
-                                <div style="font-size: 16px; font-weight: 600; color: #172B4D; margin-bottom: 16px;">Tasks by Priority</div>
-                                <div style="position: relative; height: 300px;">
+                            <div class="dashboard-chart-card">
+                                <div class="dashboard-chart-title">Tasks by Priority</div>
+                                <div class="dashboard-chart-container">
                                     <canvas id="dashPriorityChart"></canvas>
                                 </div>
                             </div>
-                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #DFE1E6;">
-                                <div style="font-size: 16px; font-weight: 600; color: #172B4D; margin-bottom: 16px;">Tasks by Assignee</div>
-                                <div style="position: relative; height: 300px;">
+                            <div class="dashboard-chart-card">
+                                <div class="dashboard-chart-title">Tasks by Assignee</div>
+                                <div class="dashboard-chart-container">
                                     <canvas id="dashAssigneeChart"></canvas>
                                 </div>
                             </div>
-                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #DFE1E6;">
-                                <div style="font-size: 16px; font-weight: 600; color: #172B4D; margin-bottom: 16px;">Task Completion Over Time</div>
-                                <div style="position: relative; height: 300px;">
+                            <div class="dashboard-chart-card">
+                                <div class="dashboard-chart-title">Task Completion Over Time</div>
+                                <div class="dashboard-chart-container">
                                     <canvas id="dashCompletionChart"></canvas>
                                 </div>
                             </div>
-                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #DFE1E6;">
-                                <div style="font-size: 16px; font-weight: 600; color: #172B4D; margin-bottom: 16px;">Tasks by Label</div>
-                                <div style="position: relative; height: 300px;">
+                            <div class="dashboard-chart-card">
+                                <div class="dashboard-chart-title">Tasks by Label</div>
+                                <div class="dashboard-chart-container">
                                     <canvas id="dashLabelChart"></canvas>
                                 </div>
                             </div>
-                            <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #DFE1E6;">
-                                <div style="font-size: 16px; font-weight: 600; color: #172B4D; margin-bottom: 16px;">Average Task Age by Status</div>
-                                <div style="position: relative; height: 300px;">
+                            <div class="dashboard-chart-card">
+                                <div class="dashboard-chart-title">Average Task Age by Status</div>
+                                <div class="dashboard-chart-container">
                                     <canvas id="dashAgeChart"></canvas>
                                 </div>
                             </div>
