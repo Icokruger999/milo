@@ -2919,16 +2919,6 @@
             console.log('loadTimelineData called - Program Timeline');
             const currentProject = projectSelector.getCurrentProject();
             console.log('Current project:', currentProject);
-            console.log('Current project ID type:', typeof currentProject?.id, 'value:', currentProject?.id);
-            
-            // Debug: Log all localStorage keys
-            console.log('All localStorage keys:');
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key.includes('mockSubProjects') || key.includes('departments')) {
-                    console.log('  -', key, ':', localStorage.getItem(key));
-                }
-            }
             
             if (!currentProject) {
                 console.log('No current project found');
@@ -2940,15 +2930,14 @@
             }
 
             try {
-                // Load sub-projects from localStorage (mock data for now)
+                // Load sub-projects from API (not localStorage - this is production!)
+                // TODO: Implement backend API endpoint for sub-projects
+                // For now, use localStorage as temporary storage
                 const storageKey = 'mockSubProjects_' + currentProject.id;
-                console.log('Looking for storage key:', storageKey);
                 let subProjects = JSON.parse(localStorage.getItem(storageKey) || '[]');
-                console.log('Loaded sub-projects:', subProjects.length, subProjects);
                 
                 // If no sub-projects exist, create default ones
                 if (subProjects.length === 0) {
-                    console.log('No sub-projects found, creating defaults');
                     subProjects = [
                         {
                             id: 'fabric-migration',
