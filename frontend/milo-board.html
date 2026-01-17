@@ -1213,7 +1213,7 @@
                         </svg>
                         Timeline
                     </a>
-                    <a href="milo-roadmap.html" class="sidebar-item">
+                    <a href="milo-roadmap.html" class="sidebar-item" id="roadmapLink">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                         </svg>
@@ -1767,15 +1767,23 @@
         };
 
         function showBoardView() {
+            console.log('showBoardView called');
             currentBoardView = 'board';
             document.querySelector('.board-content').style.display = 'block';
             document.getElementById('timelineView').style.display = 'none';
             document.getElementById('roadmapView').style.display = 'none';
             document.getElementById('dashboardView').style.display = 'none';
-            document.getElementById('boardLink').classList.add('active');
-            document.getElementById('timelineLink').classList.remove('active');
-            document.getElementById('roadmapLink').classList.remove('active');
-            document.getElementById('dashboardLink').classList.remove('active');
+            
+            // Update sidebar links with error handling
+            const boardLink = document.getElementById('boardLink');
+            const timelineLink = document.getElementById('timelineLink');
+            const roadmapLink = document.getElementById('roadmapLink');
+            const dashboardLink = document.getElementById('dashboardLink');
+            
+            if (boardLink) boardLink.classList.add('active');
+            if (timelineLink) timelineLink.classList.remove('active');
+            if (roadmapLink) roadmapLink.classList.remove('active');
+            if (dashboardLink) dashboardLink.classList.remove('active');
         }
 
         function showTimelineView() {
@@ -1787,10 +1795,18 @@
             timelineView.style.flexDirection = 'column';
             document.getElementById('roadmapView').style.display = 'none';
             document.getElementById('dashboardView').style.display = 'none';
-            document.getElementById('boardLink').classList.remove('active');
-            document.getElementById('timelineLink').classList.add('active');
-            document.getElementById('roadmapLink').classList.remove('active');
-            document.getElementById('dashboardLink').classList.remove('active');
+            
+            // Update sidebar links with error handling
+            const boardLink = document.getElementById('boardLink');
+            const timelineLink = document.getElementById('timelineLink');
+            const roadmapLink = document.getElementById('roadmapLink');
+            const dashboardLink = document.getElementById('dashboardLink');
+            
+            if (boardLink) boardLink.classList.remove('active');
+            if (timelineLink) timelineLink.classList.add('active');
+            if (roadmapLink) roadmapLink.classList.remove('active');
+            if (dashboardLink) dashboardLink.classList.remove('active');
+            
             console.log('Loading timeline data...');
             loadTimelineData();
         }
@@ -1809,15 +1825,25 @@
         }
 
         function showDashboardView() {
+            console.log('showDashboardView called');
             currentBoardView = 'dashboard';
             document.querySelector('.board-content').style.display = 'none';
             document.getElementById('timelineView').style.display = 'none';
             document.getElementById('roadmapView').style.display = 'none';
             document.getElementById('dashboardView').style.display = 'block';
-            document.getElementById('boardLink').classList.remove('active');
-            document.getElementById('timelineLink').classList.remove('active');
-            document.getElementById('roadmapLink').classList.remove('active');
-            document.getElementById('dashboardLink').classList.add('active');
+            
+            // Update sidebar links with error handling
+            const boardLink = document.getElementById('boardLink');
+            const timelineLink = document.getElementById('timelineLink');
+            const roadmapLink = document.getElementById('roadmapLink');
+            const dashboardLink = document.getElementById('dashboardLink');
+            
+            if (boardLink) boardLink.classList.remove('active');
+            if (timelineLink) timelineLink.classList.remove('active');
+            if (roadmapLink) roadmapLink.classList.remove('active');
+            if (dashboardLink) dashboardLink.classList.add('active');
+            
+            console.log('Loading dashboard data...');
             loadDashboardData();
         }
 
@@ -1877,27 +1903,23 @@
 
         // Dashboard Functions
         async function loadDashboardData() {
+            console.log('loadDashboardData called');
             const currentProject = projectSelector.getCurrentProject();
-            if (!currentProject) return;
+            if (!currentProject) {
+                console.log('No current project found');
+                return;
+            }
 
             try {
-                // Check if tasks are already loaded from the board
-                if (window.tasks && (window.tasks.todo || window.tasks.progress || window.tasks.review || window.tasks.done)) {
-                    // Use existing tasks from board
-                    const allTasks = [
-                        ...(window.tasks.todo || []),
-                        ...(window.tasks.progress || []),
-                        ...(window.tasks.review || []),
-                        ...(window.tasks.done || [])
-                    ];
-                    renderDashboard(allTasks);
+                // Always load fresh data from API for dashboard
+                console.log('Loading tasks from API for project:', currentProject.id);
+                const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
+                if (response.ok) {
+                    const tasks = await response.json();
+                    console.log('Loaded tasks:', tasks.length);
+                    renderDashboard(tasks);
                 } else {
-                    // Load tasks from API
-                    const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
-                    if (response.ok) {
-                        const tasks = await response.json();
-                        renderDashboard(tasks);
-                    }
+                    console.error('Failed to load tasks, status:', response.status);
                 }
             } catch (error) {
                 console.error('Failed to load dashboard:', error);
@@ -2195,14 +2217,22 @@
         }
 
         async function loadTimelineData() {
+            console.log('loadTimelineData called');
             const currentProject = projectSelector.getCurrentProject();
-            if (!currentProject) return;
+            if (!currentProject) {
+                console.log('No current project found');
+                return;
+            }
 
             try {
+                console.log('Loading tasks from API for timeline, project:', currentProject.id);
                 const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
                 if (response.ok) {
                     timelineTasks = await response.json();
+                    console.log('Loaded timeline tasks:', timelineTasks.length);
                     renderTimeline();
+                } else {
+                    console.error('Failed to load timeline tasks, status:', response.status);
                 }
             } catch (error) {
                 console.error('Failed to load timeline:', error);
