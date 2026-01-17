@@ -225,7 +225,82 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
     }, 1000); // Check every second
+
+    // Handle hash changes for view switching
+    handleHashChange();
 });
+
+// Handle hash-based view switching (Timeline, Dashboard, Board)
+function handleHashChange() {
+    const hash = window.location.hash.substring(1) || 'board'; // Default to board
+    
+    // Update sidebar active state
+    const sidebarItems = document.querySelectorAll('.sidebar-item');
+    sidebarItems.forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    if (hash === 'timeline') {
+        const timelineLink = document.getElementById('timelineLink');
+        if (timelineLink) timelineLink.classList.add('active');
+        showTimelineView();
+    } else if (hash === 'dashboard') {
+        const dashboardLink = document.getElementById('dashboardLink');
+        if (dashboardLink) dashboardLink.classList.add('active');
+        showDashboardView();
+    } else {
+        // Default to board view
+        const boardLink = document.getElementById('boardLink');
+        if (boardLink) boardLink.classList.add('active');
+        showBoardView();
+    }
+}
+
+// Listen for hash changes
+window.addEventListener('hashchange', handleHashChange);
+
+// Show board view
+function showBoardView() {
+    const boardContent = document.querySelector('.board-content');
+    const dashboardView = document.getElementById('dashboardView');
+    const timelineView = document.getElementById('timelineView');
+    
+    if (boardContent) boardContent.style.display = 'flex';
+    if (dashboardView) dashboardView.style.display = 'none';
+    if (timelineView) timelineView.style.display = 'none';
+    
+    renderBoard();
+}
+
+// Show dashboard view
+function showDashboardView() {
+    const boardContent = document.querySelector('.board-content');
+    const dashboardView = document.getElementById('dashboardView');
+    const timelineView = document.getElementById('timelineView');
+    
+    if (boardContent) boardContent.style.display = 'none';
+    if (dashboardView) dashboardView.style.display = 'block';
+    if (timelineView) timelineView.style.display = 'none';
+    
+    if (typeof loadDashboardData === 'function') {
+        loadDashboardData();
+    }
+}
+
+// Show timeline view
+function showTimelineView() {
+    const boardContent = document.querySelector('.board-content');
+    const dashboardView = document.getElementById('dashboardView');
+    const timelineView = document.getElementById('timelineView');
+    
+    if (boardContent) boardContent.style.display = 'none';
+    if (dashboardView) dashboardView.style.display = 'none';
+    if (timelineView) timelineView.style.display = 'flex';
+    
+    if (typeof loadTimelineData === 'function') {
+        loadTimelineData();
+    }
+}
 
 function setupUserMenu() {
     // Use globalUserAvatar as the clickable user menu element
