@@ -10,6 +10,7 @@
 4. **NEVER TOUCH DLL files directly** - Always rebuild from source code
 5. **NEVER DELETE production files** - Copy over, never delete first
 6. **ALWAYS use PgBouncer** - We don't use Supabase anymore, use local database
+7. **INSTANCE i-06bc5b2218c041802 IS MILO ONLY** - NO Summit on this instance
 
 ### **IF YOU NEED TO DEPLOY:**
 - ✅ Rebuild DLL from source with correct local database settings
@@ -59,7 +60,8 @@
    - **NEVER CHANGE**
 
 4. **Nginx Configuration**: Must proxy to **localhost:8080**
-   - Files: `/etc/nginx/conf.d/milo-api.conf` (HTTPS) and `/etc/nginx/conf.d/00-summit-api.conf` (HTTP)
+   - Files: `/etc/nginx/conf.d/milo-api.conf` (HTTPS) - ONLY this file should exist
+   - **REMOVE**: `/etc/nginx/conf.d/00-summit-api.conf` - Summit should NOT be on this instance
    - **DO NOT CHANGE proxy_pass TO ANY OTHER PORT**
 
 ## 🚫 PROTECTED FILES - NEVER OVERWRITE
@@ -82,8 +84,8 @@
    - **DO NOT MODIFY** - Only change if explicitly requested for service configuration
 
 3. **Nginx Configuration Files** (on EC2 server)
-   - `/etc/nginx/conf.d/milo-api.conf`
-   - `/etc/nginx/conf.d/00-summit-api.conf`
+   - `/etc/nginx/conf.d/milo-api.conf` - HTTPS proxy for Milo (KEEP)
+   - **REMOVE**: `/etc/nginx/conf.d/00-summit-api.conf` - Summit config (DELETE - not needed on this instance)
    - Proxy configurations
    - SSL settings
    - **DO NOT MODIFY** - Only change if explicitly requested for nginx updates
@@ -209,7 +211,7 @@
 - **Connection String**: `Host=localhost;Port=6432;Database=milo;Username=postgres`
 
 ### Nginx
-- **HTTP Config**: `/etc/nginx/conf.d/00-summit-api.conf` → proxies to `localhost:8080`
+- **HTTP Config**: REMOVED - `/etc/nginx/conf.d/00-summit-api.conf` (Summit not on this instance)
 - **HTTPS Config**: `/etc/nginx/conf.d/milo-api.conf` → proxies to `localhost:8080`
 - **SSL Certificates**: `/etc/letsencrypt/live/api.codingeverest.com/`
 
