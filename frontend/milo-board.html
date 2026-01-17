@@ -2301,8 +2301,27 @@
                 console.log('Timeline API response status:', response.status);
                 
                 if (response.ok) {
-                    timelineTasks = await response.json();
-                    console.log('Loaded timeline tasks:', timelineTasks.length, timelineTasks);
+                    const tasksData = await response.json();
+                    console.log('Raw API response:', tasksData);
+                    
+                    // Ensure we have an array
+                    if (Array.isArray(tasksData)) {
+                        timelineTasks = tasksData;
+                    } else if (tasksData && Array.isArray(tasksData.tasks)) {
+                        timelineTasks = tasksData.tasks;
+                    } else if (tasksData && typeof tasksData === 'object') {
+                        // If it's an object with task arrays, combine them
+                        timelineTasks = [];
+                        Object.keys(tasksData).forEach(key => {
+                            if (Array.isArray(tasksData[key])) {
+                                timelineTasks = timelineTasks.concat(tasksData[key]);
+                            }
+                        });
+                    } else {
+                        timelineTasks = [];
+                    }
+                    
+                    console.log('Processed timeline tasks:', timelineTasks.length, timelineTasks);
                     renderTimeline();
                 } else {
                     console.error('Failed to load timeline tasks, status:', response.status);
@@ -2321,6 +2340,14 @@
         }
 
         function renderTimeline() {
+            console.log('renderTimeline called, timelineTasks:', timelineTasks);
+            
+            // Ensure timelineTasks is an array
+            if (!Array.isArray(timelineTasks)) {
+                console.error('timelineTasks is not an array:', typeof timelineTasks, timelineTasks);
+                timelineTasks = [];
+            }
+            
             renderTimelineMonths();
             renderTimelineTaskList();
             renderTimelineGanttBars();
@@ -2377,42 +2404,61 @@
         }
 
         function renderTimelineGanttBars() {
+            console.log('renderTimelineGanttBars called, timelineTasks:', timelineTasks ? timelineTasks.length : 'undefined');
             const container = document.getElementById('timelineBars');
+            if (!container) {
+                console.error('Timeline bars container not found');
+                return;
+            }
+            
             container.innerHTML = '';
+            
+            // Ensure timelineTasks is an array
+            if (!Array.isArray(timelineTasks) || timelineTasks.length === 0) {
+                console.log('No timeline tasks to render bars for');
+                return;
+            }
+            
             const baseDate = new Date('2024-02-01');
             
             timelineTasks.forEach((task, index) => {
-                const startDate = task.startDate ? new Date(task.startDate) : new Date(baseDate.getTime() + Math.random() * 90 * 24 * 60 * 60 * 1000);
-                const duration = task.estimatedHours ? Math.max(task.estimatedHours / 8, 3) : Math.floor(Math.random() * 20) + 5;
-                const endDate = new Date(startDate.getTime() + duration * 24 * 60 * 60 * 1000);
-                
-                const daysSinceBase = (startDate - baseDate) / (1000 * 60 * 60 * 24);
-                const durationDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
-                
-                const left = (daysSinceBase / 30) * monthWidth;
-                const width = (durationDays / 30) * monthWidth;
-                const top = index * 41 + 6;
-                
-                const statusClass = task.status ? `status-${task.status.toLowerCase().replace(' ', '-')}` : 'status-todo';
-                
-                const bar = document.createElement('div');
-                bar.className = `timeline-task-bar ${statusClass}`;
-                bar.style.left = `${left}px`;
-                bar.style.width = `${Math.max(width, 40)}px`;
-                bar.style.top = `${top}px`;
-                bar.textContent = task.title.substring(0, 20);
-                bar.title = task.title;
-                
-                container.appendChild(bar);
+                try {
+                    const startDate = task.startDate ? new Date(task.startDate) : new Date(baseDate.getTime() + Math.random() * 90 * 24 * 60 * 60 * 1000);
+                    const duration = task.estimatedHours ? Math.max(task.estimatedHours / 8, 3) : Math.floor(Math.random() * 20) + 5;
+                    const endDate = new Date(startDate.getTime() + duration * 24 * 60 * 60 * 1000);
+                    
+                    const daysSinceBase = (startDate - baseDate) / (1000 * 60 * 60 * 24);
+                    const durationDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
+                    
+                    const left = (daysSinceBase / 30) * monthWidth;
+                    const width = (durationDays / 30) * monthWidth;
+                    const top = index * 41 + 6;
+                    
+                    const statusClass = task.status ? `status-${task.status.toLowerCase().replace(' ', '-')}` : 'status-todo';
+                    
+                    const bar = document.createElement('div');
+                    bar.className = `timeline-task-bar ${statusClass}`;
+                    bar.style.left = `${left}px`;
+                    bar.style.width = `${Math.max(width, 40)}px`;
+                    bar.style.top = `${top}px`;
+                    bar.textContent = (task.title || 'Untitled Task').substring(0, 20);
+                    bar.title = task.title || 'Untitled Task';
+                    
+                    container.appendChild(bar);
 
-                if (Math.random() > 0.7) {
-                    const milestone = document.createElement('div');
-                    milestone.className = 'timeline-milestone';
-                    milestone.style.left = `${left + width}px`;
-                    milestone.style.top = `${top + 6}px`;
-                    container.appendChild(milestone);
+                    if (Math.random() > 0.7) {
+                        const milestone = document.createElement('div');
+                        milestone.className = 'timeline-milestone';
+                        milestone.style.left = `${left + width}px`;
+                        milestone.style.top = `${top + 6}px`;
+                        container.appendChild(milestone);
+                    }
+                } catch (error) {
+                    console.error('Error rendering timeline bar for task:', task, error);
                 }
             });
+            
+            console.log('Timeline bars rendered for', timelineTasks.length, 'tasks');
         }
 
         function renderTimelineTodayLine() {
