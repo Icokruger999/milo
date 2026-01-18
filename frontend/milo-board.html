@@ -3037,14 +3037,18 @@
                 }
                 
                 // Load sub-projects from API
+                console.log('Loading sub-projects for project:', currentProject.id);
                 const subProjectsResponse = await apiClient.get(`/subprojects?projectId=${currentProject.id}`);
                 let subProjects = [];
                 if (subProjectsResponse.ok) {
                     subProjects = await subProjectsResponse.json();
-                    console.log('Loaded sub-projects:', subProjects.length);
+                    console.log('Loaded sub-projects:', subProjects.length, subProjects);
+                } else {
+                    console.warn('Failed to load sub-projects, status:', subProjectsResponse.status);
                 }
                 
                 // Render the timeline with departments and sub-projects
+                console.log('Calling renderProjectTree with', subProjects.length, 'sub-projects');
                 await renderProjectTree(currentProject, subProjects);
                 
                 console.log('Timeline loaded successfully');
