@@ -3016,7 +3016,7 @@
             try {
                 // Load sub-projects from API (database only)
                 console.log('Loading sub-projects from API for project:', currentProject.id);
-                const subProjectsResponse = await apiClient.get(`/api/subprojects?projectId=${currentProject.id}`);
+                const subProjectsResponse = await apiClient.get(`/subprojects?projectId=${currentProject.id}`);
                 
                 if (!subProjectsResponse.ok) {
                     throw new Error(`Failed to load sub-projects: ${subProjectsResponse.status}`);
@@ -3096,7 +3096,7 @@
             
             try {
                 // Load departments from API
-                const deptResponse = await apiClient.get(`/api/departments?projectId=${currentProject.id}`);
+                const deptResponse = await apiClient.get(`/departments?projectId=${currentProject.id}`);
                 if (!deptResponse.ok) {
                     throw new Error(`Failed to load departments: ${deptResponse.status}`);
                 }
@@ -3119,7 +3119,7 @@
                 // Create default departments via API
                 for (const dept of defaultDepartments) {
                     try {
-                        const response = await apiClient.post('/api/departments', dept);
+                        const response = await apiClient.post('/departments', dept);
                         if (response.ok) {
                             const created = await response.json();
                             departments.push(created);
