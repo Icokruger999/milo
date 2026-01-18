@@ -1839,10 +1839,14 @@
             try {
                 const project = JSON.parse(storedProjectData);
                 const selector = document.getElementById('projectSelector');
-                console.log('📦 Selector element:', selector);
+                console.log('📦 Selector element found:', !!selector);
+                console.log('📦 Selector element ID:', selector?.id);
+                console.log('📦 Selector current HTML:', selector?.innerHTML);
                 if (selector && project.name) {
-                    selector.innerHTML = `<option value="${project.id}" selected>${project.name}</option><option value="create">+ Create New Project</option>`;
+                    const newHTML = `<option value="${project.id}" selected>${project.name}</option><option value="create">+ Create New Project</option>`;
+                    selector.innerHTML = newHTML;
                     console.log('✅ Selector populated immediately from storage:', project.name);
+                    console.log('✅ Selector new HTML:', selector.innerHTML);
                 }
             } catch (e) {
                 console.error('Failed to parse stored project:', e);
