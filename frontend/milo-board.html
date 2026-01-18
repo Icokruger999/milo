@@ -511,17 +511,18 @@
             flex: 1;
             overflow-y: auto;
             background: #F4F5F7;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Assignee Row */
         .assignee-row {
             display: grid;
             grid-template-columns: 200px repeat(4, 1fr);
-            grid-auto-rows: 180px;
             border-bottom: 1px solid #DFE1E6;
             background: white;
-            min-height: 180px;
             height: 180px;
+            flex-shrink: 0;
         }
 
         /* Alternating row colors */
@@ -535,8 +536,7 @@
 
         .assignee-row.collapsed {
             height: auto;
-            min-height: auto;
-            grid-auto-rows: auto;
+            flex-shrink: 0;
         }
 
         .assignee-row.collapsed .status-cell {
