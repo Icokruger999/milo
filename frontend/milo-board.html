@@ -1833,11 +1833,11 @@
         console.log('Setting up project selector...');
         
         // Immediate fallback: populate from localStorage if available
-        const storedProject = localStorage.getItem('milo_current_project');
-        console.log('📦 Stored project from localStorage:', storedProject);
-        if (storedProject) {
+        let storedProjectData = localStorage.getItem('milo_current_project');
+        console.log('📦 Stored project from localStorage:', storedProjectData);
+        if (storedProjectData) {
             try {
-                const project = JSON.parse(storedProject);
+                const project = JSON.parse(storedProjectData);
                 const selector = document.getElementById('projectSelector');
                 console.log('📦 Selector element:', selector);
                 if (selector && project.name) {
