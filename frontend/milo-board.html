@@ -1369,6 +1369,24 @@
                                 <select id="projectSelector" style="padding: 6px 32px 6px 12px; border: 1px solid #DFE1E6; border-radius: 3px; background: white; font-size: 14px; color: #42526E; cursor: pointer; appearance: none; min-width: 200px;">
                                     <option value="">Loading projects...</option>
                                 </select>
+                                <script>
+                                    // Immediately populate selector from localStorage
+                                    (function() {
+                                        try {
+                                            const stored = localStorage.getItem('milo_current_project');
+                                            if (stored) {
+                                                const project = JSON.parse(stored);
+                                                const selector = document.getElementById('projectSelector');
+                                                if (selector && project.name) {
+                                                    selector.innerHTML = `<option value="${project.id}" selected>${project.name}</option><option value="create">+ Create New Project</option>`;
+                                                    console.log('✅ [INLINE] Selector populated:', project.name);
+                                                }
+                                            }
+                                        } catch (e) {
+                                            console.error('Inline selector setup failed:', e);
+                                        }
+                                    })();
+                                </script>
                                 <div id="projectDropdown" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 4px; background: white; border: 1px solid #DFE1E6; border-radius: 3px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 200px; max-height: 300px; overflow-y: auto;">
                                     <div id="projectDropdownItems"></div>
                                     <div style="border-top: 1px solid #DFE1E6; padding: 8px;">
