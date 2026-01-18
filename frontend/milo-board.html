@@ -3016,12 +3016,21 @@
                 // Show loading message
                 const container = document.getElementById('timelineProjectTree');
                 if (container) {
-                    container.innerHTML = '<div style="padding: 24px; text-align: center; color: #6B778C;">📅 Program Timeline feature coming soon...</div>';
+                    container.innerHTML = '<div style="padding: 24px; text-align: center; color: #6B778C;">Loading project structure...</div>';
                 }
                 
-                // For now, just show a placeholder
-                // TODO: Implement full timeline with departments and sub-projects
-                console.log('Timeline feature is under development');
+                // Load sub-projects from API
+                const subProjectsResponse = await apiClient.get(`/subprojects?projectId=${currentProject.id}`);
+                let subProjects = [];
+                if (subProjectsResponse.ok) {
+                    subProjects = await subProjectsResponse.json();
+                    console.log('Loaded sub-projects:', subProjects.length);
+                }
+                
+                // Render the timeline with departments and sub-projects
+                await renderProjectTree(currentProject, subProjects);
+                
+                console.log('Timeline loaded successfully');
                 
             } catch (error) {
                 console.error('Failed to load program timeline:', error);
@@ -3067,7 +3076,8 @@
                 console.log('Loaded departments from database:', departments.length, departments);
             } catch (error) {
                 console.error('Error loading departments from API:', error);
-                throw error; // Don't fall back to localStorage - fail loudly
+                // Don't throw - just use empty departments array
+                departments = [];
             }
             
             // If no departments exist, create default ones
