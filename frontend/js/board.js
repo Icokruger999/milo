@@ -80,6 +80,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Load user info
     const user = authService.getCurrentUser();
+    if (!user) {
+        console.error('❌ No user found, redirecting to login');
+        window.location.href = 'milo-login.html';
+        return;
+    }
+    
+    console.log('✅ User authenticated:', user.name || user.email, 'ID:', user.id);
+    
     if (user) {
         const userName = user.name || user.email || 'User';
         const userNameEl = document.getElementById('userName');
@@ -101,11 +109,46 @@ document.addEventListener('DOMContentLoaded', async function() {
     let retryCount = 0;
     const MAX_RETRIES = 3;
     
+    // Wait for project selector to be ready (ensure setupProjectSelectorEnhanced has been called)
+    async function waitForProjectSelectorReady() {
+        let attempts = 0;
+        const maxAttempts = 50; // 5 seconds max wait (50 * 100ms)
+        
+        while (attempts < maxAttempts) {
+            // Check if projectSelector has projects loaded
+            if (projectSelector && projectSelector.projects && projectSelector.projects.length > 0) {
+                console.log('✅ Project selector ready with', projectSelector.projects.length, 'projects');
+                return true;
+            }
+            
+            // Check if we have a current project set
+            const currentProj = projectSelector.getCurrentProject();
+            if (currentProj) {
+                console.log('✅ Current project already set:', currentProj.name);
+                return true;
+            }
+            
+            attempts++;
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        console.warn('⚠️ Project selector not ready after 5 seconds, proceeding anyway');
+        return false;
+    }
+    
+    // Wait for project selector to be ready
+    await waitForProjectSelectorReady();
+    
     async function loadAndValidateProject() {
         // Step 1: Always load fresh projects from API first (force refresh on page load)
         try {
-            console.log('🔄 Loading projects from API...');
-            await projectSelector.loadProjects(user.id); // Use cache if available
+            console.log('🔄 Loading projects from API for user ID:', user.id);
+            console.log('🔄 API Base URL:', apiClient.baseURL);
+            console.log('🔄 Full URL will be:', apiClient.baseURL + '/projects?userId=' + user.id);
+            
+            const projects = await projectSelector.loadProjects(user.id); // Use cache if available
+            console.log('📦 Projects loaded:', projects.length, 'projects');
+            console.log('📦 Projects data:', projects);
             
             // Step 2: Try to get stored project
             const stored = localStorage.getItem('milo_current_project');
@@ -196,17 +239,36 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     console.log('✅ Project loaded successfully:', currentProject.name, 'ID:', currentProject.id);
 
+    // Update project name in breadcrumb
+    setTimeout(() => {
+        const projectNameEl = document.getElementById('currentProjectName');
+        console.log('🔍 Looking for currentProjectName element:', projectNameEl);
+        if (projectNameEl) {
+            if (currentProject && currentProject.name) {
+                projectNameEl.textContent = currentProject.name;
+                console.log('✅ Updated breadcrumb to:', currentProject.name);
+            } else {
+                projectNameEl.textContent = 'No Project Selected';
+                console.warn('⚠️ No current project available');
+            }
+        } else {
+            console.warn('⚠️ currentProjectName element not found');
+        }
+    }, 100);
+
     // Render board immediately with empty state
     renderBoard();
 
-    // Load tasks from API asynchronously
-    // Don't show error toast on initial load - errors are handled gracefully in loadTasks()
-    loadTasks().catch(error => {
-        console.error('Failed to load tasks:', error);
-        // Only show error if it's a real failure (not timeout or network issues that might resolve)
-        // Errors are already handled gracefully in loadTasksFromAPI - empty board is shown
-        // Don't show toast here to avoid flash errors on page refresh
-    });
+    // Load tasks from API asynchronously - AFTER project is loaded
+    // Wait a bit to ensure project is fully set in projectSelector
+    setTimeout(() => {
+        loadTasks().catch(error => {
+            console.error('Failed to load tasks:', error);
+            // Only show error if it's a real failure (not timeout or network issues that might resolve)
+            // Errors are already handled gracefully in loadTasksFromAPI - empty board is shown
+            // Don't show toast here to avoid flash errors on page refresh
+        });
+    }, 300);
     
     // Listen for status changes from backlog page
     setInterval(() => {

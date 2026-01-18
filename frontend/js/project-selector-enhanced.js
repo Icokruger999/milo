@@ -16,6 +16,7 @@ window.selectProjectFromDropdown = function(projectId) {
 // Enhanced setup function
 async function setupProjectSelectorEnhanced() {
     try {
+        console.log('🔄 setupProjectSelectorEnhanced starting...');
         const user = authService.getCurrentUser();
         if (!user || !user.id) {
             console.error('User not authenticated for project selector setup.');
@@ -23,11 +24,17 @@ async function setupProjectSelectorEnhanced() {
             return;
         }
         
+        console.log('🔄 Loading projects for user:', user.id);
         const projects = await projectSelector.loadProjects(user.id);
+        console.log('🔄 Projects loaded:', projects.length, 'projects');
+        console.log('🔄 Projects data:', projects);
+        
         const selector = document.getElementById('projectSelector');
         const dropdown = document.getElementById('projectDropdown');
         const dropdownItems = document.getElementById('projectDropdownItems');
         const currentProject = projectSelector.getCurrentProject();
+        
+        console.log('🔄 Current project from storage:', currentProject);
         
         if (!selector) {
             console.error('Project selector element not found.');
@@ -79,6 +86,7 @@ async function setupProjectSelectorEnhanced() {
         const currentProjectNameEl = document.getElementById('currentProjectName');
         if (currentProjectNameEl && currentProject) {
             currentProjectNameEl.textContent = currentProject.name;
+            console.log('✅ Breadcrumb updated to:', currentProject.name);
         } else if (projects.length > 0 && !currentProject) {
             // If no current project but projects exist, select first one
             const firstProject = projects[0];
@@ -86,7 +94,11 @@ async function setupProjectSelectorEnhanced() {
             selector.value = firstProject.id;
             if (currentProjectNameEl) {
                 currentProjectNameEl.textContent = firstProject.name;
+                console.log('✅ Breadcrumb updated to first project:', firstProject.name);
             }
+        } else if (currentProjectNameEl && !currentProject) {
+            currentProjectNameEl.textContent = 'No projects';
+            console.warn('⚠️ No projects available');
         }
         
         // Update project sidebar
@@ -138,8 +150,11 @@ async function setupProjectSelectorEnhanced() {
                 }
             });
         }
+        
+        console.log('✅ setupProjectSelectorEnhanced completed successfully');
     } catch (error) {
         console.error('Failed to setup project selector:', error);
+        console.error('Error stack:', error.stack);
     }
 }
 

@@ -1,0 +1,18 @@
+{
+  "Comment": "Update api.codingeverest.com to point to Milo instance",
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "api.codingeverest.com",
+        "Type": "A",
+        "TTL": 300,
+        "ResourceRecords": [
+          {
+            "Value": "34.246.3.141"
+          }
+        ]
+      }
+    }
+  ]
+}

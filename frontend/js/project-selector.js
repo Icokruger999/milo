@@ -36,9 +36,16 @@ class ProjectSelectorService {
             if (userId) {
                 url += `?userId=${userId}`;
             }
+            console.log('🌐 Making API call to:', url);
+            console.log('🌐 Full URL:', apiClient.baseURL + url);
+            
             const response = await apiClient.get(url);
+            console.log('🌐 API Response status:', response.status);
+            console.log('🌐 API Response ok:', response.ok);
+            
             if (response.ok) {
                 this.projects = await response.json();
+                console.log('🌐 Raw projects from API:', this.projects);
                 // Role is now provided by the backend, but ensure it exists
                 const currentUser = authService.getCurrentUser();
                 if (currentUser) {
@@ -59,6 +66,15 @@ class ProjectSelectorService {
             }
         } catch (error) {
             console.error('Failed to load projects:', error);
+            console.error('Error details:', error.message, error.stack);
+            
+            // Show user-friendly error message
+            const projectNameEl = document.getElementById('currentProjectName');
+            if (projectNameEl) {
+                projectNameEl.textContent = 'Error loading projects';
+                projectNameEl.style.color = '#DE350B';
+            }
+            
             // Return cached data if available, even if expired
             if (this.projectsCache.data) {
                 console.log('API failed, using stale cache');
