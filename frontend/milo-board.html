@@ -1364,7 +1364,7 @@
                     </div>
                     <div class="board-title-row">
                         <div style="display: flex; align-items: center; gap: 12px; position: relative;">
-                            <div class="board-title">Board</div>
+                            <div class="board-title" id="pageTitle">Board</div>
                             <div style="position: relative;">
                                 <select id="projectSelector" style="padding: 6px 32px 6px 12px; border: 1px solid #DFE1E6; border-radius: 3px; background: white; font-size: 14px; color: #42526E; cursor: pointer; appearance: none; min-width: 200px;">
                                     <option value="">Loading projects...</option>
@@ -2100,6 +2100,10 @@
             console.log('showBoardView called');
             currentBoardView = 'board';
             
+            // Update page title
+            const pageTitle = document.getElementById('pageTitle');
+            if (pageTitle) pageTitle.textContent = 'Board';
+            
             // Update URL hash without triggering hashchange event
             if (window.location.hash !== '#board' && window.location.hash !== '') {
                 history.replaceState(null, null, '#board');
@@ -2132,6 +2136,10 @@
             
             try {
                 currentBoardView = 'timeline';
+                
+                // Update page title
+                const pageTitle = document.getElementById('pageTitle');
+                if (pageTitle) pageTitle.textContent = 'Timeline';
                 
                 // Update URL hash without triggering hashchange event
                 if (window.location.hash !== '#timeline') {
@@ -2218,6 +2226,11 @@
 
         function showRoadmapView() {
             currentBoardView = 'roadmap';
+            
+            // Update page title
+            const pageTitle = document.getElementById('pageTitle');
+            if (pageTitle) pageTitle.textContent = 'Roadmap';
+            
             document.querySelector('.board-content').style.display = 'none';
             document.getElementById('timelineView').style.display = 'none';
             document.getElementById('roadmapView').style.display = 'block';
@@ -2234,6 +2247,10 @@
             
             try {
                 currentBoardView = 'dashboard';
+                
+                // Update page title
+                const pageTitle = document.getElementById('pageTitle');
+                if (pageTitle) pageTitle.textContent = 'Dashboard';
                 
                 // Update URL hash without triggering hashchange event
                 if (window.location.hash !== '#dashboard') {
