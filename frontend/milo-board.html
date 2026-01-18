@@ -439,7 +439,7 @@
 
         .board-grid-header {
             display: grid;
-            grid-template-columns: 280px repeat(4, 1fr);
+            grid-template-columns: 200px repeat(4, 1fr);
             background: #FFFFFF;
             border-bottom: 2px solid #DFE1E6;
             position: sticky;
@@ -516,12 +516,12 @@
         /* Assignee Row */
         .assignee-row {
             display: grid;
-            grid-template-columns: 280px repeat(4, 1fr);
-            grid-auto-rows: 280px;
+            grid-template-columns: 200px repeat(4, 1fr);
+            grid-auto-rows: 180px;
             border-bottom: 1px solid #DFE1E6;
             background: white;
-            min-height: 280px;
-            height: 280px;
+            min-height: 180px;
+            height: 180px;
         }
 
         /* Alternating row colors */
@@ -531,6 +531,12 @@
 
         .assignee-row:nth-child(even) {
             background: #FFFFFF;
+        }
+
+        .assignee-row.collapsed {
+            height: auto;
+            min-height: auto;
+            grid-auto-rows: auto;
         }
 
         .assignee-row.collapsed .status-cell {
@@ -598,7 +604,7 @@
         .status-cell {
             padding: 8px;
             border-right: 1px solid #DFE1E6;
-            height: 280px;
+            height: 180px;
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -1654,6 +1660,18 @@
                 // No project stored - redirect to selector immediately
                 window.location.href = 'milo-select-project.html';
                 return;
+            }
+            
+            // Update breadcrumb immediately from stored project (before async operations)
+            try {
+                const storedProjectData = JSON.parse(storedProject);
+                const projectNameEl = document.getElementById('currentProjectName');
+                if (projectNameEl && storedProjectData.name) {
+                    projectNameEl.textContent = storedProjectData.name;
+                    console.log('✅ Breadcrumb updated immediately from storage:', storedProjectData.name);
+                }
+            } catch (e) {
+                console.error('Failed to parse stored project:', e);
             }
 
         // Make logout accessible globally
