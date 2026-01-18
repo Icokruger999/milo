@@ -439,7 +439,7 @@
 
         .board-grid-header {
             display: grid;
-            grid-template-columns: 150px repeat(4, 1fr);
+            grid-template-columns: 120px repeat(4, 1fr);
             background: #FFFFFF;
             border-bottom: 2px solid #DFE1E6;
             position: sticky;
@@ -518,7 +518,7 @@
         /* Assignee Row */
         .assignee-row {
             display: grid;
-            grid-template-columns: 150px repeat(4, 1fr);
+            grid-template-columns: 120px repeat(4, 1fr);
             border-bottom: 1px solid #DFE1E6;
             background: white;
             height: 120px;
@@ -537,10 +537,19 @@
         .assignee-row.collapsed {
             height: auto;
             flex-shrink: 0;
+            background: transparent;
+            border-bottom: none;
         }
 
         .assignee-row.collapsed .status-cell {
             display: none;
+        }
+
+        .assignee-row.collapsed .assignee-info {
+            border-right: none;
+            background: transparent;
+            padding: 8px 12px;
+            height: auto;
         }
 
         .assignee-info {
