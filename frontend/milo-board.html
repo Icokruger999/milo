@@ -435,16 +435,18 @@
             flex-direction: column;
             height: 100%;
             overflow: hidden;
+            min-width: min-content;
         }
 
         .board-grid-header {
             display: grid;
-            grid-template-columns: 120px repeat(4, 1fr);
+            grid-template-columns: 80px repeat(4, 250px);
             background: #FFFFFF;
             border-bottom: 2px solid #DFE1E6;
             position: sticky;
             top: 0;
             z-index: 10;
+            flex-shrink: 0;
         }
 
         .board-grid-assignee-col {
@@ -510,15 +512,17 @@
         .board-grid-body {
             flex: 1;
             overflow-y: auto;
+            overflow-x: auto;
             background: #F4F5F7;
             display: flex;
             flex-direction: column;
+            min-width: min-content;
         }
 
         /* Assignee Row */
         .assignee-row {
             display: grid;
-            grid-template-columns: 120px repeat(4, 1fr);
+            grid-template-columns: 80px repeat(4, 250px);
             border-bottom: 1px solid #DFE1E6;
             background: white;
             height: 120px;
