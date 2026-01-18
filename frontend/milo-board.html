@@ -3047,9 +3047,20 @@
                     console.warn('Failed to load sub-projects, status:', subProjectsResponse.status);
                 }
                 
-                // Render the timeline with departments and sub-projects
-                console.log('Calling renderProjectTree with', subProjects.length, 'sub-projects');
-                await renderProjectTree(currentProject, subProjects);
+                // Load departments from API
+                console.log('Loading departments for project:', currentProject.id);
+                const deptResponse = await apiClient.get(`/departments?projectId=${currentProject.id}`);
+                let departments = [];
+                if (deptResponse.ok) {
+                    departments = await deptResponse.json();
+                    console.log('Loaded departments:', departments.length, departments);
+                } else {
+                    console.warn('Failed to load departments, status:', deptResponse.status);
+                }
+                
+                // Render the timeline
+                console.log('Rendering timeline with', departments.length, 'departments and', subProjects.length, 'sub-projects');
+                renderTimelineProjectTree(container, currentProject, departments, subProjects);
                 
                 console.log('Timeline loaded successfully');
                 
@@ -3060,6 +3071,97 @@
                     container.innerHTML = '<div style="padding: 24px; text-align: center; color: #DE350B;">❌ Error loading program timeline: ' + error.message + '</div>';
                 }
             }
+        }
+        
+        function renderTimelineProjectTree(container, project, departments, subProjects) {
+            console.log('renderTimelineProjectTree called');
+            
+            if (!container) return;
+            
+            // If no departments, create a simple list of sub-projects
+            if (departments.length === 0 && subProjects.length === 0) {
+                container.innerHTML = '<div style="padding: 24px; text-align: center; color: #6B778C;">No departments or sub-projects yet. Create one to get started.</div>';
+                return;
+            }
+            
+            let html = `
+                <!-- Department Management -->
+                <div style="padding: 12px 16px; background: #F4F5F7; border-bottom: 1px solid #DFE1E6; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-weight: 600; color: #172B4D; font-size: 14px;">DEPARTMENTS (${departments.length})</div>
+                    <button onclick="addNewDepartment()" style="background: #36B37E; color: white; border: none; border-radius: 3px; padding: 4px 8px; font-size: 11px; cursor: pointer;">+ Add</button>
+                </div>
+            `;
+            
+            // Render each department with its sub-projects
+            if (departments.length > 0) {
+                departments.forEach(department => {
+                    const deptSubProjects = subProjects.filter(sp => sp.departmentId === department.id);
+                    
+                    html += `
+                        <!-- Department Header -->
+                        <div style="padding: 12px 16px; background: #FAFBFC; border-bottom: 1px solid #DFE1E6; display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 16px; height: 16px; background: ${department.color || '#6554C0'}; border-radius: 3px;"></div>
+                                <span style="font-weight: 600; color: #172B4D;">${department.name}</span>
+                                <span style="font-size: 11px; color: #6B778C;">(${deptSubProjects.length})</span>
+                            </div>
+                            <div style="display: flex; gap: 4px;">
+                                <button onclick="editDepartment('${department.id}')" style="background: transparent; border: none; color: #6B778C; cursor: pointer; padding: 2px;" title="Edit Department">✏️</button>
+                                <button onclick="deleteDepartment('${department.id}')" style="background: transparent; border: none; color: #DE350B; cursor: pointer; padding: 2px;" title="Delete Department">🗑️</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Department Sub-Projects -->
+                    `;
+                    
+                    deptSubProjects.forEach(subProject => {
+                        html += `
+                            <div style="padding: 12px 16px 12px 32px; border-bottom: 1px solid #F4F5F7; cursor: grab; transition: background 0.15s; position: relative;" onmouseover="this.style.background='#F4F5F7'" onmouseout="this.style.background='white'">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="width: 12px; height: 12px; background: ${subProject.color || '#0052CC'}; border-radius: 2px;"></div>
+                                    <span style="font-size: 14px; color: #172B4D; font-weight: 500; flex: 1;">${subProject.name}</span>
+                                </div>
+                                <div style="font-size: 11px; color: #6B778C; margin-top: 4px; margin-left: 20px;">
+                                    ${subProject.startDate ? new Date(subProject.startDate).toLocaleDateString() : 'No start'} - ${subProject.endDate ? new Date(subProject.endDate).toLocaleDateString() : 'No end'}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    // Add "Add Sub-Project" for this department
+                    html += `
+                        <div style="padding: 8px 16px 8px 32px; border-bottom: 1px solid #F4F5F7;">
+                            <div onclick="showAddSubProjectInput('${department.id}')" style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #36B37E; font-size: 13px; font-weight: 500;">
+                                <div style="width: 12px; height: 12px; border: 2px dashed #36B37E; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 10px;">+</div>
+                                Add Sub-Project
+                            </div>
+                        </div>
+                    `;
+                });
+            } else if (subProjects.length > 0) {
+                // Show sub-projects without departments
+                html += `
+                    <div style="padding: 12px 16px; background: #FAFBFC; border-bottom: 1px solid #DFE1E6;">
+                        <span style="font-weight: 600; color: #172B4D;">Unassigned Sub-Projects (${subProjects.length})</span>
+                    </div>
+                `;
+                
+                subProjects.forEach(subProject => {
+                    html += `
+                        <div style="padding: 12px 16px; border-bottom: 1px solid #F4F5F7; cursor: grab; transition: background 0.15s;" onmouseover="this.style.background='#F4F5F7'" onmouseout="this.style.background='white'">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="width: 12px; height: 12px; background: ${subProject.color || '#0052CC'}; border-radius: 2px;"></div>
+                                <span style="font-size: 14px; color: #172B4D; font-weight: 500; flex: 1;">${subProject.name}</span>
+                            </div>
+                            <div style="font-size: 11px; color: #6B778C; margin-top: 4px; margin-left: 20px;">
+                                ${subProject.startDate ? new Date(subProject.startDate).toLocaleDateString() : 'No start'} - ${subProject.endDate ? new Date(subProject.endDate).toLocaleDateString() : 'No end'}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            
+            container.innerHTML = html;
         }
 
         function renderProgramTimeline(mainProject, subProjects, tasks) {
@@ -3078,10 +3180,9 @@
             renderTimelineTodayLine();
         }
         
-        async function renderProjectTree(mainProject, subProjects) {
-            console.log('renderProjectTree called');
-            const container = document.getElementById('timelineProjectTree');
-            if (!container) return;
+        // OLD FUNCTION - REPLACED BY renderTimelineProjectTree
+        // async function renderProjectTree(mainProject, subProjects) { ... }
+        // This function has been replaced with renderTimelineProjectTree which is simpler and more reliable
             
             // Load departments from API (database only)
             const currentProject = projectSelector.getCurrentProject();
