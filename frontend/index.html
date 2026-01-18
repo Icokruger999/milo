@@ -444,6 +444,52 @@
     <script src="js/api-client.js"></script>
     <script src="js/main.js"></script>
     <script>
+        // Interactive circle message cycling
+        const textInput = document.getElementById('textInput');
+        const circleText = document.getElementById('circleText');
+        
+        const messages = [
+            'Build better software, faster',
+            'Professional software development solutions that help teams deliver exceptional results.',
+            'From concept to deployment, we''ve got you covered.'
+        ];
+
+        let currentMessageIndex = 0;
+        let isUserTyping = false;
+        let messageInterval;
+
+        // Cycle through messages every 5 seconds
+        function cycleMessages() {
+            if (isUserTyping) return;
+
+            circleText.classList.add('fade-out');
+            
+            setTimeout(() => {
+                currentMessageIndex = (currentMessageIndex + 1) % messages.length;
+                circleText.textContent = messages[currentMessageIndex];
+                circleText.classList.remove('fade-out');
+            }, 500);
+        }
+
+        messageInterval = setInterval(cycleMessages, 5000);
+
+        textInput.addEventListener('focus', () => {
+            isUserTyping = true;
+            clearInterval(messageInterval);
+        });
+
+        textInput.addEventListener('input', (e) => {
+            const inputValue = e.target.value.trim();
+            circleText.textContent = inputValue || messages[currentMessageIndex];
+            circleText.classList.remove('fade-out');
+        });
+
+        textInput.addEventListener('blur', () => {
+            if (!textInput.value.trim()) {
+                isUserTyping = false;
+                messageInterval = setInterval(cycleMessages, 5000);
+            }
+        });
         // WhatsApp QR Code functions
         function showWhatsAppQR() {
             // Check if user is on mobile device
@@ -484,3 +530,4 @@
     </script>
 </body>
 </html>
+
