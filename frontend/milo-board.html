@@ -1834,10 +1834,12 @@
         
         // Immediate fallback: populate from localStorage if available
         const storedProject = localStorage.getItem('milo_current_project');
+        console.log('📦 Stored project from localStorage:', storedProject);
         if (storedProject) {
             try {
                 const project = JSON.parse(storedProject);
                 const selector = document.getElementById('projectSelector');
+                console.log('📦 Selector element:', selector);
                 if (selector && project.name) {
                     selector.innerHTML = `<option value="${project.id}" selected>${project.name}</option><option value="create">+ Create New Project</option>`;
                     console.log('✅ Selector populated immediately from storage:', project.name);
@@ -1845,20 +1847,27 @@
             } catch (e) {
                 console.error('Failed to parse stored project:', e);
             }
+        } else {
+            console.warn('⚠️ No stored project found in localStorage');
         }
         
         // Wait a bit to ensure all scripts are loaded
         setTimeout(async () => {
             try {
+                console.log('🔄 Attempting to setup project selector (async)...');
                 // Check if functions exist before calling them
                 if (typeof setupProjectSelectorEnhanced === 'function') {
+                    console.log('✅ setupProjectSelectorEnhanced function found');
                     console.log('Using enhanced project selector');
                     await setupProjectSelectorEnhanced();
                 } else if (typeof setupProjectSelector === 'function') {
+                    console.log('✅ setupProjectSelector function found');
                     console.log('Using basic project selector');
                     await setupProjectSelector();
                 } else {
-                    console.error('No project selector function available - functions not loaded');
+                    console.error('❌ No project selector function available - functions not loaded');
+                    console.error('setupProjectSelectorEnhanced:', typeof setupProjectSelectorEnhanced);
+                    console.error('setupProjectSelector:', typeof setupProjectSelector);
                     // Try to set up a basic fallback
                     const selector = document.getElementById('projectSelector');
                     if (selector) {
@@ -1882,9 +1891,10 @@
                         }
                     }
                 }
-                console.log('Project selector setup complete');
+                console.log('✅ Project selector setup complete');
             } catch (error) {
-                console.error('Failed to setup project selector:', error);
+                console.error('❌ Failed to setup project selector:', error);
+                console.error('Error details:', error.message, error.stack);
                 // Fallback: Show error in selector
                 const selector = document.getElementById('projectSelector');
                 if (selector) {
