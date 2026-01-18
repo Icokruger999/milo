@@ -65,6 +65,8 @@ async function setupProjectSelectorEnhanced() {
         selector.innerHTML = projects.map(p => 
             `<option value="${p.id}" ${currentProject && p.id === currentProject.id ? 'selected' : ''}>${p.name}${p.key ? ` (${p.key})` : ''}</option>`
         ).join('') + '<option value="create" style="font-weight: 600;">+ Create New Project</option>';
+        
+        console.log('✅ Selector populated with', projects.length, 'projects');
 
         // Populate custom dropdown if it exists
         if (dropdownItems) {

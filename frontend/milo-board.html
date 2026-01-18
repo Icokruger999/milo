@@ -1832,6 +1832,21 @@
         // Setup project selector (use enhanced if available, otherwise fallback)
         console.log('Setting up project selector...');
         
+        // Immediate fallback: populate from localStorage if available
+        const storedProject = localStorage.getItem('milo_current_project');
+        if (storedProject) {
+            try {
+                const project = JSON.parse(storedProject);
+                const selector = document.getElementById('projectSelector');
+                if (selector && project.name) {
+                    selector.innerHTML = `<option value="${project.id}" selected>${project.name}</option><option value="create">+ Create New Project</option>`;
+                    console.log('✅ Selector populated immediately from storage:', project.name);
+                }
+            } catch (e) {
+                console.error('Failed to parse stored project:', e);
+            }
+        }
+        
         // Wait a bit to ensure all scripts are loaded
         setTimeout(async () => {
             try {
