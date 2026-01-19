@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Jira-type project management application",
   "scripts": {
-    "start": "npx http-server frontend -p 3000 -o",
+    "start": "npx http-server frontend -p 5000 -a 0.0.0.0",
     "build": "echo 'No build step required for static files'"
   },
   "keywords": [
