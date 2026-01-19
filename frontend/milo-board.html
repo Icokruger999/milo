@@ -522,7 +522,8 @@
             grid-template-columns: 180px repeat(4, minmax(280px, 1fr));
             border-bottom: 1px solid #DFE1E6;
             background: white;
-            height: 120px;
+            min-height: 120px;
+            height: auto;
             flex-shrink: 0;
         }
 
@@ -614,11 +615,12 @@
         .status-cell {
             padding: 8px;
             border-right: 1px solid #DFE1E6;
-            height: 120px;
+            min-height: 120px;
+            height: auto;
             display: flex;
             flex-direction: column;
             gap: 8px;
-            overflow-y: auto;
+            overflow: visible;
         }
 
         /* Status column background colors - darker to match roadmap */

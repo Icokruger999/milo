@@ -2347,6 +2347,8 @@ function renderBoardGrid() {
         
         const row = document.createElement('div');
         row.className = `assignee-row ${isCollapsed ? 'collapsed' : ''}`;
+        row.style.height = 'auto';
+        row.style.minHeight = '120px';
         row.dataset.assignee = assigneeName;
         
         row.innerHTML = `
