@@ -27,6 +27,7 @@ public class MiloDbContext : DbContext
     public DbSet<TeamMember> TeamMembers { get; set; }
     public DbSet<Incident> Incidents { get; set; }
     public DbSet<ReportRecipient> ReportRecipients { get; set; }
+    public DbSet<ReportSchedule> ReportSchedules { get; set; }
     public DbSet<IncidentAssignee> IncidentAssignees { get; set; }
     public DbSet<IncidentRequester> IncidentRequesters { get; set; }
     public DbSet<IncidentGroup> IncidentGroups { get; set; }

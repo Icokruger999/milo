@@ -514,6 +514,7 @@ function updateCounts() {
     document.getElementById('todoCount').textContent = tasks.todo.length;
     document.getElementById('progressCount').textContent = tasks.progress.length;
     document.getElementById('reviewCount').textContent = tasks.review.length;
+    document.getElementById('blockedCount').textContent = tasks.blocked.length;
     document.getElementById('doneCount').textContent = tasks.done.length;
 }
 
@@ -1853,6 +1854,7 @@ async function loadTasksFromAPI() {
                 todo: [],
                 progress: [],
                 review: [],
+                blocked: [],
                 done: []
             };
             
@@ -1902,6 +1904,7 @@ async function loadTasksFromAPI() {
                 let boardStatus = 'todo';
                 if (task.status === 'progress' || task.status === 'in-progress') boardStatus = 'progress';
                 else if (task.status === 'review' || task.status === 'in-review') boardStatus = 'review';
+                else if (task.status === 'blocked') boardStatus = 'blocked';
                 else if (task.status === 'done' || task.status === 'completed') boardStatus = 'done';
                 else if (task.status === 'backlog') boardStatus = 'todo'; // Backlog tasks show in todo column
                 else boardStatus = 'todo';
@@ -1938,6 +1941,7 @@ async function loadTasksFromAPI() {
                     todo: [],
                     progress: [],
                     review: [],
+                    blocked: [],
                     done: []
                 };
                 window.tasks = [];
@@ -1951,6 +1955,7 @@ async function loadTasksFromAPI() {
                 todo: [],
                 progress: [],
                 review: [],
+                blocked: [],
                 done: []
             };
             window.tasks = [];
@@ -2296,6 +2301,7 @@ function renderBoardGrid() {
         ...(tasks.todo || []),
         ...(tasks.progress || []),
         ...(tasks.review || []),
+        ...(tasks.blocked || []),
         ...(tasks.done || [])
     ];
     
@@ -2309,7 +2315,7 @@ function renderBoardGrid() {
             assigneeGroups[assigneeName] = {
                 name: assigneeName,
                 id: assigneeId,
-                tasks: { todo: [], progress: [], review: [], done: [] }
+                tasks: { todo: [], progress: [], review: [], blocked: [], done: [] }
             };
         }
         
@@ -2319,6 +2325,8 @@ function renderBoardGrid() {
             assigneeGroups[assigneeName].tasks.progress.push(task);
         } else if (status.includes('review')) {
             assigneeGroups[assigneeName].tasks.review.push(task);
+        } else if (status === 'blocked') {
+            assigneeGroups[assigneeName].tasks.blocked.push(task);
         } else if (status === 'done') {
             assigneeGroups[assigneeName].tasks.done.push(task);
         } else {
@@ -2338,7 +2346,7 @@ function renderBoardGrid() {
     sortedAssignees.forEach(assigneeName => {
         const group = assigneeGroups[assigneeName];
         const totalTasks = group.tasks.todo.length + group.tasks.progress.length + 
-                          group.tasks.review.length + group.tasks.done.length;
+                          group.tasks.review.length + group.tasks.blocked.length + group.tasks.done.length;
         
         const isCollapsed = collapsedAssignees[assigneeName] || false;
         const initials = assigneeName === 'Unassigned' ? 'UN' : 
@@ -2369,13 +2377,14 @@ function renderBoardGrid() {
             <div class="status-cell" data-status="todo" data-assignee="${assigneeName}"></div>
             <div class="status-cell" data-status="progress" data-assignee="${assigneeName}"></div>
             <div class="status-cell" data-status="review" data-assignee="${assigneeName}"></div>
+            <div class="status-cell" data-status="blocked" data-assignee="${assigneeName}"></div>
             <div class="status-cell" data-status="done" data-assignee="${assigneeName}"></div>
         `;
         
         container.appendChild(row);
         
         // Add tasks to cells
-        ['todo', 'progress', 'review', 'done'].forEach(status => {
+        ['todo', 'progress', 'review', 'blocked', 'done'].forEach(status => {
             const cell = row.querySelector(`.status-cell[data-status="${status}"]`);
             group.tasks[status].forEach(task => {
                 const card = createTaskCard(task);
@@ -2446,6 +2455,7 @@ async function handleGridDrop(e) {
         'todo': 'To Do',
         'progress': 'In Progress',
         'review': 'In Review',
+        'blocked': 'Blocked',
         'done': 'Done'
     };
     

@@ -283,100 +283,143 @@ public class ReportsController : ControllerBase
     {
         try
         {
-            // Get recipients
-            var recipientsQuery = _context.ReportRecipients.Where(r => r.IsActive);
-            
-            if (projectId.HasValue)
-            {
-                recipientsQuery = recipientsQuery.Where(r => r.ProjectId == projectId.Value);
-            }
-
-            var recipients = await recipientsQuery.ToListAsync();
-
-            if (!recipients.Any())
-            {
-                return Ok(new { message = "No active recipients found", sent = 0 });
-            }
-
-            // Get report data
-            var today = DateTime.UtcNow.Date;
-            var tomorrow = today.AddDays(1);
-
-            var query = _context.Incidents
-                .Include(i => i.Requester)
-                .Include(i => i.Assignee)
-                .Where(i => i.CreatedAt >= today && i.CreatedAt < tomorrow);
-
-            if (projectId.HasValue)
-            {
-                query = query.Where(i => i.ProjectId == projectId.Value);
-            }
-
-            var incidents = await query
-                .OrderByDescending(i => i.CreatedAt)
-                .ToListAsync();
-
-            // Prepare report data
-            var incidentsList2 = incidents.ToList(); // Ensure it's a list
-            var reportData = new DailyReportData
-            {
-                Date = today,
-                TotalCount = incidentsList2.Count,
-                NewCount = incidentsList2.Count(i => i.Status == "New"),
-                OpenCount = incidentsList2.Count(i => i.Status == "Open"),
-                ResolvedCount = incidentsList2.Count(i => i.Status == "Resolved"),
-                HighPriorityCount = incidentsList2.Count(i => i.Priority == "High" || i.Priority == "Urgent"),
-                Incidents = incidents.Select(i => new IncidentSummary
-                {
-                    IncidentNumber = i.IncidentNumber,
-                    Subject = i.Subject,
-                    Status = i.Status,
-                    Priority = i.Priority,
-                    RequesterName = i.Requester?.Name ?? "Unknown",
-                    AssigneeName = i.Assignee?.Name ?? "Unassigned",
-                    ResolutionTime = i.ResolvedAt.HasValue && i.CreatedAt != default 
-                        ? i.ResolvedAt.Value - i.CreatedAt 
-                        : null
-                }).ToList()
-            };
-
-            // Send emails
-            int successCount = 0;
-            var failedRecipients = new List<string>();
-
-            foreach (var recipient in recipients)
-            {
-                var sent = await _emailService.SendDailyIncidentReportAsync(
-                    recipient.Email, 
-                    recipient.Name, 
-                    reportData
-                );
-
-                if (sent)
-                {
-                    recipient.LastSentAt = DateTime.UtcNow;
-                    successCount++;
-                }
-                else
-                {
-                    failedRecipients.Add(recipient.Email);
-                }
-            }
-
-            await _context.SaveChangesAsync();
+            // Use the email service method that sends to all recipients
+            int sent = await _emailService.SendDailyIncidentReportsToAllRecipientsAsync(projectId);
 
             return Ok(new
             {
-                message = $"Daily report sent to {successCount} of {recipients.Count} recipients",
-                sent = successCount,
-                failed = failedRecipients.Count,
-                failedRecipients = failedRecipients.Any() ? failedRecipients : null
+                message = $"Daily report sent to {sent} recipient(s)",
+                sent = sent
             });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error sending daily report");
             return StatusCode(500, new { message = "Error sending report", error = ex.Message });
+        }
+    }
+
+    // GET: api/reports/schedule
+    [HttpGet("schedule")]
+    public async Task<IActionResult> GetSchedule([FromQuery] int? projectId)
+    {
+        try
+        {
+            var query = _context.ReportSchedules.AsQueryable();
+
+            if (projectId.HasValue)
+            {
+                query = query.Where(s => s.ProjectId == projectId.Value);
+            }
+            else
+            {
+                query = query.Where(s => s.ProjectId == null);
+            }
+
+            var schedule = await query.FirstOrDefaultAsync();
+
+            if (schedule == null)
+            {
+                // Return default settings
+                return Ok(new
+                {
+                    frequency = "manual",
+                    time = "09:00",
+                    weekday = 1,
+                    monthDay = 1,
+                    isActive = false
+                });
+            }
+
+            return Ok(new
+            {
+                id = schedule.Id,
+                frequency = schedule.Frequency,
+                time = schedule.Time,
+                weekday = schedule.Weekday,
+                monthDay = schedule.MonthDay,
+                isActive = schedule.IsActive,
+                lastRunAt = schedule.LastRunAt
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching schedule");
+            return StatusCode(500, new { message = "Error fetching schedule", error = ex.Message });
+        }
+    }
+
+    // POST: api/reports/schedule
+    [HttpPost("schedule")]
+    public async Task<IActionResult> SaveSchedule([FromBody] SaveScheduleRequest request)
+    {
+        try
+        {
+            if (request == null)
+            {
+                return BadRequest(new { message = "Request body is required" });
+            }
+
+            var query = _context.ReportSchedules.AsQueryable();
+
+            if (request.ProjectId.HasValue)
+            {
+                query = query.Where(s => s.ProjectId == request.ProjectId.Value);
+            }
+            else
+            {
+                query = query.Where(s => s.ProjectId == null);
+            }
+
+            var schedule = await query.FirstOrDefaultAsync();
+
+            if (schedule == null)
+            {
+                // Create new schedule
+                schedule = new ReportSchedule
+                {
+                    ProjectId = request.ProjectId,
+                    Frequency = request.Frequency ?? "manual",
+                    Time = request.Time ?? "09:00",
+                    Weekday = request.Weekday,
+                    MonthDay = request.MonthDay,
+                    IsActive = request.Frequency != "manual",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.ReportSchedules.Add(schedule);
+            }
+            else
+            {
+                // Update existing schedule
+                schedule.Frequency = request.Frequency ?? schedule.Frequency;
+                schedule.Time = request.Time ?? schedule.Time;
+                schedule.Weekday = request.Weekday;
+                schedule.MonthDay = request.MonthDay;
+                schedule.IsActive = request.Frequency != "manual";
+                schedule.UpdatedAt = DateTime.UtcNow;
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Schedule settings saved successfully",
+                schedule = new
+                {
+                    id = schedule.Id,
+                    frequency = schedule.Frequency,
+                    time = schedule.Time,
+                    weekday = schedule.Weekday,
+                    monthDay = schedule.MonthDay,
+                    isActive = schedule.IsActive
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving schedule");
+            return StatusCode(500, new { message = "Error saving schedule", error = ex.Message });
         }
     }
 }
@@ -396,4 +439,13 @@ public class UpdateRecipientRequest
     public string? Email { get; set; }
     public string? Name { get; set; }
     public bool? IsActive { get; set; }
+}
+
+public class SaveScheduleRequest
+{
+    public string? Frequency { get; set; }
+    public string? Time { get; set; }
+    public int? Weekday { get; set; }
+    public int? MonthDay { get; set; }
+    public int? ProjectId { get; set; }
 }
