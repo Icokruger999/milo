@@ -4,6 +4,8 @@ using System.Text;
 using Milo.API.Models;
 using Milo.API.Data;
 using Microsoft.EntityFrameworkCore;
+using Amazon.SimpleEmail;
+using Amazon.SimpleEmail.Model;
 
 namespace Milo.API.Services;
 
@@ -28,6 +30,8 @@ public class EmailService : IEmailService
     private readonly IConfiguration _configuration;
     private readonly ILogger<EmailService> _logger;
     private readonly IServiceProvider _serviceProvider;
+    private readonly bool _useSes;
+    private readonly IAmazonSimpleEmailService? _sesClient;
 
     public EmailService(IConfiguration configuration, ILogger<EmailService> logger, IServiceProvider serviceProvider)
     {
@@ -35,8 +39,19 @@ public class EmailService : IEmailService
         _logger = logger;
         _serviceProvider = serviceProvider;
         
-        // Always use SMTP (SES support removed)
-        _logger.LogInformation("EmailService initialized with SMTP");
+        // Check if SES is enabled
+        _useSes = bool.TryParse(_configuration["Email:UseSes"], out var useSes) && useSes;
+        
+        if (_useSes)
+        {
+            var region = _configuration["Email:SesRegion"] ?? "eu-west-1";
+            _sesClient = new AmazonSimpleEmailServiceClient(Amazon.RegionEndpoint.GetBySystemName(region));
+            _logger.LogInformation("EmailService initialized with AWS SES in region {Region}", region);
+        }
+        else
+        {
+            _logger.LogInformation("EmailService initialized with SMTP");
+        }
     }
 
     public async Task<bool> SendDailyIncidentReportAsync(string recipientEmail, string recipientName, DailyReportData reportData)
@@ -82,12 +97,64 @@ public class EmailService : IEmailService
                 return false;
             }
 
-            // Use SMTP only
-            return await SendEmailViaSmtpAsync(to, subject, htmlBody, plainTextBody, fromEmail, fromName);
+            // Use SES or SMTP based on configuration
+            if (_useSes && _sesClient != null)
+            {
+                return await SendEmailViaSesAsync(to, subject, htmlBody, plainTextBody, fromEmail, fromName);
+            }
+            else
+            {
+                return await SendEmailViaSmtpAsync(to, subject, htmlBody, plainTextBody, fromEmail, fromName);
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error sending email to {To}", to);
+            return false;
+        }
+    }
+
+    private async Task<bool> SendEmailViaSesAsync(string to, string subject, string htmlBody, string plainTextBody, string fromEmail, string fromName)
+    {
+        try
+        {
+            var fromAddress = string.IsNullOrEmpty(fromName) ? fromEmail : $"{fromName} <{fromEmail}>";
+            
+            // Check if htmlBody contains HTML tags
+            var containsHtmlTags = htmlBody.Contains("<", StringComparison.Ordinal) && 
+                                   htmlBody.Contains(">", StringComparison.Ordinal);
+            
+            var body = new Body();
+            if (containsHtmlTags)
+            {
+                body.Html = new Content { Charset = "UTF-8", Data = htmlBody };
+                body.Text = new Content { Charset = "UTF-8", Data = plainTextBody };
+                _logger.LogInformation("Sending HTML email via SES to {To}", to);
+            }
+            else
+            {
+                body.Text = new Content { Charset = "UTF-8", Data = plainTextBody };
+                _logger.LogInformation("Sending plain text email via SES to {To}", to);
+            }
+
+            var sendRequest = new SendEmailRequest
+            {
+                Source = fromAddress,
+                Destination = new Destination { ToAddresses = new List<string> { to } },
+                Message = new Message
+                {
+                    Subject = new Content { Charset = "UTF-8", Data = subject },
+                    Body = body
+                }
+            };
+
+            var response = await _sesClient!.SendEmailAsync(sendRequest);
+            _logger.LogInformation("Email sent successfully via SES to {To}, MessageId: {MessageId}", to, response.MessageId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending email via SES to {To}", to);
             return false;
         }
     }
@@ -114,19 +181,11 @@ public class EmailService : IEmailService
             };
 
             // Check if htmlBody actually contains HTML by looking for HTML tags
-            var containsHtmlTags = htmlBody.Contains("<html", StringComparison.OrdinalIgnoreCase) || 
-                                   htmlBody.Contains("<!DOCTYPE", StringComparison.OrdinalIgnoreCase) ||
-                                   htmlBody.Contains("<body", StringComparison.OrdinalIgnoreCase) ||
-                                   htmlBody.Contains("<p>", StringComparison.OrdinalIgnoreCase) ||
-                                   htmlBody.Contains("<div", StringComparison.OrdinalIgnoreCase) ||
-                                   htmlBody.Contains("<table", StringComparison.OrdinalIgnoreCase);
+            var containsHtmlTags = htmlBody.Contains("<", StringComparison.Ordinal) && 
+                                   htmlBody.Contains(">", StringComparison.Ordinal);
             
-            // If htmlBody contains HTML tags, always send as HTML
-            // Only send as plain text if htmlBody equals plainTextBody AND contains no HTML tags
-            var isPlainTextOnly = (htmlBody == plainTextBody || htmlBody.Trim() == plainTextBody.Trim()) && !containsHtmlTags;
-            
-            _logger.LogInformation("Sending email to {To}: IsPlainTextOnly={IsPlainTextOnly}, ContainsHtmlTags={ContainsHtmlTags}", 
-                to, isPlainTextOnly, containsHtmlTags);
+            _logger.LogInformation("Sending email to {To}: ContainsHtmlTags={ContainsHtmlTags}", 
+                to, containsHtmlTags);
             
             using var message = new MailMessage
             {
@@ -139,11 +198,10 @@ public class EmailService : IEmailService
 
             message.To.Add(new MailAddress(to));
 
-            // CRITICAL FIX: Always set IsBodyHtml BEFORE setting Body
-            // This ensures the Content-Type header is set correctly
-            if (!isPlainTextOnly)
+            // Set IsBodyHtml based on whether HTML tags are present
+            if (containsHtmlTags)
             {
-                // HTML email - MUST set IsBodyHtml = true
+                // HTML email - set IsBodyHtml = true
                 message.IsBodyHtml = true;
                 message.Body = htmlBody;
                 _logger.LogInformation("Email configured as HTML (Content-Type: text/html)");
@@ -153,7 +211,7 @@ public class EmailService : IEmailService
                 // Plain text only
                 message.IsBodyHtml = false;
                 message.Body = plainTextBody;
-                _logger.LogInformation("Email configured as plain text only (Content-Type: text/plain)");
+                _logger.LogInformation("Email configured as plain text (Content-Type: text/plain)");
             }
 
             await client.SendMailAsync(message);

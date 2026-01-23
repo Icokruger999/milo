@@ -516,6 +516,17 @@
             flex-direction: column;
         }
 
+        /* Hide scrollbar but keep functionality */
+        .board-grid-body::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+        
+        .board-grid-body {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+
         /* Assignee Row */
         .assignee-row {
             display: grid;
