@@ -160,7 +160,18 @@ window.openCreateTeamModal = async function() {
     addMemberToTeam();
     addMemberToTeam();
     
-    document.getElementById('createTeamModal').style.display = 'flex';
+    // Update modal title
+    const modalTitle = document.getElementById('taskModalTitle');
+    if (modalTitle) {
+        modalTitle.textContent = 'Create Team';
+    }
+    
+    // Set mode to create
+    const modal = document.getElementById('createTeamModal');
+    modal.dataset.mode = 'create';
+    delete modal.dataset.teamId;
+    
+    modal.style.display = 'flex';
 }
 
 // Close create team modal - make it global
@@ -201,9 +212,13 @@ function updateMemberSelection(select) {
     // Could add logic to prevent duplicate selections
 }
 
-// Handle create team - make it global
+// Handle create/edit team - make it global
 window.handleCreateTeam = async function(event) {
     event.preventDefault();
+    
+    const modal = document.getElementById('createTeamModal');
+    const mode = modal.dataset.mode || 'create';
+    const teamId = modal.dataset.teamId;
     
     const name = document.getElementById('teamName').value.trim();
     const description = document.getElementById('teamDescription').value.trim();
@@ -224,42 +239,152 @@ window.handleCreateTeam = async function(event) {
         const titleInput = item.querySelector('input[type="text"]');
         
         if (userSelect && userSelect.value) {
-            members.push({
+            const memberData = {
                 userId: parseInt(userSelect.value),
                 title: titleInput ? titleInput.value.trim() || null : null,
                 role: roleSelect ? roleSelect.value : 'member'
-            });
+            };
+            
+            // Include member ID if editing existing member
+            const memberId = item.dataset.memberId;
+            if (memberId) {
+                memberData.id = parseInt(memberId);
+            }
+            
+            members.push(memberData);
         }
     });
     
     try {
-        const response = await apiClient.post('/teams', {
-            name,
-            description: description || null,
-            projectId: projectId ? parseInt(projectId) : null,
-            createdById: currentUser.id,
-            members
-        });
-        
-        if (response.ok) {
-            showToast('Team created successfully!', 'success');
-            closeCreateTeamModal();
-            await loadTeams();
+        if (mode === 'edit' && teamId) {
+            // Update existing team
+            const updateResponse = await apiClient.put(`/teams/${teamId}`, {
+                name,
+                description: description || null,
+                projectId: projectId ? parseInt(projectId) : null
+            });
+            
+            if (!updateResponse.ok) {
+                const error = await updateResponse.json();
+                showToast(error.message || 'Failed to update team', 'error');
+                return;
+            }
+            
+            // Get current team members
+            const teamResponse = await apiClient.get(`/teams/${teamId}`);
+            const currentTeam = await teamResponse.json();
+            const currentMemberIds = currentTeam.members.map(m => m.userId);
+            
+            // Add new members
+            for (const member of members) {
+                if (!member.id && !currentMemberIds.includes(member.userId)) {
+                    await apiClient.post(`/teams/${teamId}/members`, {
+                        userId: member.userId,
+                        title: member.title,
+                        role: member.role
+                    });
+                }
+            }
+            
+            showToast('Team updated successfully!', 'success');
         } else {
-            const error = await response.json();
-            showToast(error.message || 'Failed to create team', 'error');
+            // Create new team
+            const response = await apiClient.post('/teams', {
+                name,
+                description: description || null,
+                projectId: projectId ? parseInt(projectId) : null,
+                createdById: currentUser.id,
+                members
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                showToast(error.message || 'Failed to create team', 'error');
+                return;
+            }
+            
+            showToast('Team created successfully!', 'success');
         }
+        
+        closeCreateTeamModal();
+        await loadTeams();
     } catch (error) {
-        console.error('Error creating team:', error);
-        showToast('Error creating team', 'error');
+        console.error('Error saving team:', error);
+        showToast('Error saving team', 'error');
     }
 }
 
 // View team - make it global
-window.viewTeam = function(teamId) {
-    // For now, just show a toast - could open a detail modal
-    showToast('Team details view - Coming soon!', 'info');
-    console.log('View team:', teamId);
+window.viewTeam = async function(teamId) {
+    try {
+        // Load team details
+        const response = await apiClient.get(`/teams/${teamId}`);
+        if (!response.ok) {
+            showToast('Failed to load team details', 'error');
+            return;
+        }
+        
+        const team = await response.json();
+        
+        // Open edit modal
+        await openEditTeamModal(team);
+    } catch (error) {
+        console.error('Error loading team:', error);
+        showToast('Error loading team', 'error');
+    }
+}
+
+// Open edit team modal
+async function openEditTeamModal(team) {
+    // Load project members first
+    await loadProjectMembers();
+    
+    // Set form values
+    document.getElementById('teamName').value = team.name || '';
+    document.getElementById('teamDescription').value = team.description || '';
+    document.getElementById('teamProject').value = team.projectId || '';
+    
+    // Clear and populate members list
+    const membersList = document.getElementById('membersList');
+    membersList.innerHTML = '';
+    
+    // Add existing members
+    if (team.members && team.members.length > 0) {
+        team.members.forEach(member => {
+            const memberItem = document.createElement('div');
+            memberItem.className = 'member-item';
+            memberItem.dataset.memberId = member.id;
+            memberItem.innerHTML = `
+                <select class="form-select" style="flex: 2;" onchange="updateMemberSelection(this)">
+                    <option value="">Select user</option>
+                    ${allUsers.map(user => `<option value="${user.id}" ${user.id === member.userId ? 'selected' : ''}>${escapeHtml(user.name)} (${escapeHtml(user.email)})</option>`).join('')}
+                </select>
+                <input type="text" class="form-input" placeholder="Title (e.g., Developer)" style="flex: 1;" value="${escapeHtml(member.title || '')}">
+                <select class="form-select" style="flex: 1;">
+                    <option value="member" ${member.role === 'member' ? 'selected' : ''}>Member</option>
+                    <option value="lead" ${member.role === 'lead' ? 'selected' : ''}>Lead</option>
+                    <option value="admin" ${member.role === 'admin' ? 'selected' : ''}>Admin</option>
+                </select>
+                <button type="button" class="btn-remove" onclick="removeMemberFromList(this)">Remove</button>
+            `;
+            membersList.appendChild(memberItem);
+        });
+    }
+    
+    // Add two empty rows for adding new members
+    addMemberToTeam();
+    addMemberToTeam();
+    
+    // Update modal title and button
+    document.getElementById('taskModalTitle').textContent = 'Edit Team';
+    
+    // Store team ID for update
+    const modal = document.getElementById('createTeamModal');
+    modal.dataset.teamId = team.id;
+    modal.dataset.mode = 'edit';
+    
+    // Show modal
+    modal.style.display = 'flex';
 }
 
 // Load users and projects
