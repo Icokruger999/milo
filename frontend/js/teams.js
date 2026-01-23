@@ -146,12 +146,15 @@ function renderTeams() {
 }
 
 // Open create team modal - make it global
-window.openCreateTeamModal = function() {
+window.openCreateTeamModal = async function() {
     teamMembers = [];
     document.getElementById('teamName').value = '';
     document.getElementById('teamDescription').value = '';
     document.getElementById('teamProject').value = '';
     document.getElementById('membersList').innerHTML = '';
+    
+    // Load project members for the current project
+    await loadProjectMembers();
     
     // Add two initial member rows
     addMemberToTeam();
@@ -262,14 +265,7 @@ window.viewTeam = function(teamId) {
 // Load users and projects
 async function loadUsersAndProjects() {
     try {
-        const [usersResponse, projectsResponse] = await Promise.all([
-            apiClient.get('/auth/users'),
-            apiClient.get('/projects')
-        ]);
-        
-        if (usersResponse.ok) {
-            allUsers = await usersResponse.json();
-        }
+        const projectsResponse = await apiClient.get('/projects');
         
         if (projectsResponse.ok) {
             allProjects = await projectsResponse.json();
@@ -280,7 +276,37 @@ async function loadUsersAndProjects() {
                 allProjects.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
         }
     } catch (error) {
-        console.error('Error loading users/projects:', error);
+        console.error('Error loading projects:', error);
+    }
+}
+
+// Load project members for the current project
+async function loadProjectMembers() {
+    try {
+        const currentProject = projectSelector.getCurrentProject();
+        
+        if (!currentProject) {
+            // No project selected, load all users as fallback
+            const usersResponse = await apiClient.get('/auth/users');
+            if (usersResponse.ok) {
+                allUsers = await usersResponse.json();
+            }
+            return;
+        }
+        
+        // Load members for the current project
+        const response = await apiClient.get(`/projects/${currentProject.id}/members`);
+        
+        if (response.ok) {
+            allUsers = await response.json();
+            console.log(`Loaded ${allUsers.length} members for project ${currentProject.name}`);
+        } else {
+            console.error('Failed to load project members');
+            showToast('Failed to load project members', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading project members:', error);
+        showToast('Error loading project members', 'error');
     }
 }
 
