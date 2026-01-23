@@ -476,25 +476,25 @@
             border-right: 1px solid #DFE1E6;
         }
 
-        /* Status column header colors - match roadmap/timeline colors */
+        /* Status column header colors - lighter and more distinct */
         .board-grid-status-col:nth-child(2) {
-            background: #FFEBEE; /* Light red for TO DO */
+            background: #FFCDD2; /* Lighter red for TO DO */
         }
 
         .board-grid-status-col:nth-child(3) {
-            background: #E3F2FD; /* Light blue for IN PROGRESS */
+            background: #BBDEFB; /* Lighter blue for IN PROGRESS */
         }
 
         .board-grid-status-col:nth-child(4) {
-            background: #FFF8E1; /* Light yellow for IN REVIEW */
+            background: #FFE082; /* Lighter yellow for IN REVIEW */
         }
 
         .board-grid-status-col:nth-child(5) {
-            background: #E8F5E9; /* Light green for DONE */
+            background: #E1BEE7; /* Lighter purple for BLOCKED */
         }
 
         .board-grid-status-col:nth-child(6) {
-            background: #F3E5F5; /* Light purple for BLOCKED */
+            background: #A5D6A7; /* Light green for DONE */
         }
 
         .board-grid-status-col:last-child {
@@ -646,25 +646,25 @@
             overflow: visible;
         }
 
-        /* Status column background colors - darker to match roadmap */
+        /* Status column background colors - lighter and more distinct */
         .status-cell[data-status="todo"] {
-            background: linear-gradient(135deg, #FFCDD2 0%, rgba(255,205,210,0.4) 100%);
+            background: linear-gradient(135deg, #FFCDD2 0%, rgba(255,205,210,0.3) 100%);
         }
 
         .status-cell[data-status="progress"] {
-            background: linear-gradient(135deg, #BBDEFB 0%, rgba(187,222,251,0.4) 100%);
+            background: linear-gradient(135deg, #BBDEFB 0%, rgba(187,222,251,0.3) 100%);
         }
 
         .status-cell[data-status="review"] {
-            background: linear-gradient(135deg, #FFE082 0%, rgba(255,224,130,0.4) 100%);
-        }
-
-        .status-cell[data-status="done"] {
-            background: linear-gradient(135deg, #C8E6C9 0%, rgba(200,230,201,0.4) 100%);
+            background: linear-gradient(135deg, #FFE082 0%, rgba(255,224,130,0.3) 100%);
         }
 
         .status-cell[data-status="blocked"] {
-            background: linear-gradient(135deg, #E1BEE7 0%, rgba(225,190,231,0.4) 100%);
+            background: linear-gradient(135deg, #E1BEE7 0%, rgba(225,190,231,0.3) 100%);
+        }
+
+        .status-cell[data-status="done"] {
+            background: linear-gradient(135deg, #A5D6A7 0%, rgba(165,214,167,0.3) 100%);
         }
 
         .status-cell:last-child {
