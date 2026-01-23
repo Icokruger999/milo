@@ -1604,7 +1604,18 @@
                 </div>
 
                 <!-- Dashboard View (Hidden by default) -->
-                <div class="dashboard-view" id="dashboardView" style="display: none; flex: 1; overflow: auto; padding: 24px;">
+                <div class="dashboard-view" id="dashboardView" style="display: none; flex: 1; overflow-y: auto; padding: 24px;">
+                    <!-- Hide scrollbar but keep mouse wheel functionality -->
+                    <style>
+                        #dashboardView::-webkit-scrollbar {
+                            width: 0px;
+                            background: transparent;
+                        }
+                        #dashboardView {
+                            scrollbar-width: none;
+                            -ms-overflow-style: none;
+                        }
+                    </style>
                     <div style="max-width: 1200px; margin: 0 auto;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                             <h2 style="font-size: 24px; font-weight: 600; color: #172B4D; margin: 0;">Dashboard</h2>
@@ -1682,6 +1693,7 @@
     <script src="js/project-modals.js"></script>
     <script src="js/project-selector-enhanced.js"></script>
     <script src="js/board-filters.js"></script>
+    <script src="js/dashboard.js"></script>
     <script src="js/board.js"></script>
     <!-- <script src="js/board-grouping.js"></script> DISABLED - Tasks not displaying -->
     <script>
