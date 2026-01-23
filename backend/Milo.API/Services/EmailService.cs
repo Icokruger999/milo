@@ -231,6 +231,7 @@ public class EmailService : IEmailService
                         <th>Status</th>
                         <th>Priority</th>
                         <th>Created</th>
+                        <th>Closed</th>
                         <th>Resolution Time</th>
                     </tr>
                 </thead>
@@ -246,6 +247,9 @@ public class EmailService : IEmailService
                 var createdDate = incident.CreatedAt.HasValue 
                     ? incident.CreatedAt.Value.ToString("MMM dd, HH:mm")
                     : "-";
+                var closedDate = incident.ResolvedAt.HasValue 
+                    ? incident.ResolvedAt.Value.ToString("MMM dd, HH:mm")
+                    : "-";
                 
                 html.Append($@"
                     <tr>
@@ -256,6 +260,7 @@ public class EmailService : IEmailService
                         <td><span class='status-badge status-{statusClass}'>{incident.Status}</span></td>
                         <td class='priority-{priorityClass}'>{incident.Priority}</td>
                         <td style='font-size: 12px; color: #6B778C;'>{createdDate}</td>
+                        <td style='font-size: 12px; color: #6B778C;'>{closedDate}</td>
                         <td>{resolutionTimeText}</td>
                     </tr>");
             }
@@ -1017,6 +1022,7 @@ View in Milo: {link}";
                     RequesterName = i.Requester?.Name ?? "Unknown",
                     AssigneeName = i.Assignee?.Name ?? "Unassigned",
                     CreatedAt = i.CreatedAt,
+                    ResolvedAt = i.ResolvedAt,
                     ResolutionTime = i.ResolvedAt.HasValue && i.CreatedAt != default
                         ? i.ResolvedAt.Value - i.CreatedAt
                         : null
@@ -1108,4 +1114,5 @@ public class IncidentSummary
     public string AssigneeName { get; set; } = string.Empty;
     public TimeSpan? ResolutionTime { get; set; }
     public DateTime? CreatedAt { get; set; }
+    public DateTime? ResolvedAt { get; set; }
 }

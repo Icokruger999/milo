@@ -445,8 +445,8 @@
         .board-grid-wrapper {
             display: flex;
             flex-direction: column;
-            height: 100%;
-            overflow: hidden;
+            min-height: 100%;
+            height: auto; /* Allow it to grow */
         }
 
         .board-grid-header {
@@ -522,10 +522,10 @@
 
         .board-grid-body {
             flex: 1;
-            overflow-y: auto;
             background: #F4F5F7;
             display: flex;
             flex-direction: column;
+            min-height: 0; /* Allow shrinking */
         }
 
         /* Hide scrollbar but keep functionality */
