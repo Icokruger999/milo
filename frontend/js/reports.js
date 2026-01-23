@@ -458,8 +458,19 @@ function renderReportPreview() {
 // Send daily report
 async function sendDailyReport() {
     if (recipients.filter(r => r.isActive).length === 0) {
-        console.error('Please add at least one active recipient');
+        showError('Please add at least one active recipient');
         return;
+    }
+
+    // Prevent multiple clicks
+    const button = event?.target?.closest('button');
+    if (button && button.disabled) return;
+    if (button) {
+        button.disabled = true;
+        button.style.opacity = '0.6';
+        button.style.cursor = 'not-allowed';
+        const originalText = button.innerHTML;
+        button.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px; animation: spin 1s linear infinite;"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>Sending...';
     }
 
     try {
@@ -490,12 +501,20 @@ async function sendDailyReport() {
         }
         
         const result = await response.json();
-        showSuccess(`Report sent to ${result.sent} recipient(s)`);
+        showSuccess(`✓ Report sent successfully to ${result.sent} recipient(s)!`);
         await loadRecipients(); // Refresh to show updated lastSentAt
         await loadReportPreview();
     } catch (error) {
         console.error('Error sending report:', error);
-        showError('Failed to send report');
+        showError('Failed to send report. Please try again.');
+    } finally {
+        // Re-enable button
+        if (button) {
+            button.disabled = false;
+            button.style.opacity = '1';
+            button.style.cursor = 'pointer';
+            button.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>Send Report Now';
+        }
     }
 }
 
