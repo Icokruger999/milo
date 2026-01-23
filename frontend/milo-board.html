@@ -1508,6 +1508,9 @@
                             New Label
                         </button>
                     </div>
+                    <select class="board-filter" id="teamFilter" onchange="applyFilters()">
+                        <option value="">All Teams</option>
+                    </select>
                     <select class="board-filter" id="assigneeFilter" onchange="applyFilters()">
                         <option value="">Assignee</option>
                         <option value="unassigned">Unassigned</option>
@@ -1517,6 +1520,7 @@
                         <select class="board-filter" id="groupByFilter" onchange="applyGroupBy()">
                             <option value="none">None</option>
                             <option value="assignee">Assignee</option>
+                            <option value="team">Team</option>
                             <option value="priority">Priority</option>
                             <option value="label">Label</option>
                             <option value="product">Product</option>

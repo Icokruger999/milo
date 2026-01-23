@@ -643,7 +643,8 @@ async function showTaskModal(column, task = null) {
         taskDataPromise,
         Promise.all([
             loadUsersAndProducts(),
-            loadLabels()
+            loadLabels(),
+            loadTeams()
         ])
     ]);
     
@@ -1462,6 +1463,68 @@ async function loadUsersAndProducts() {
     }
 }
 
+// Load teams for filtering
+async function loadTeams() {
+    try {
+        const currentProject = projectSelector.getCurrentProject();
+        let url = '/teams';
+        if (currentProject && currentProject.id) {
+            url += `?projectId=${currentProject.id}`;
+        }
+        
+        const response = await apiClient.get(url);
+        if (response.ok) {
+            const teams = await response.json();
+            const teamFilter = document.getElementById('teamFilter');
+            const assigneeFilter = document.getElementById('assigneeFilter');
+            
+            if (teamFilter) {
+                // Clear and repopulate team filter
+                teamFilter.innerHTML = '<option value="">All Teams</option>';
+                teams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = team.id;
+                    option.textContent = team.name;
+                    teamFilter.appendChild(option);
+                });
+            }
+            
+            // Also populate assignee filter with team members
+            if (assigneeFilter && teams.length > 0) {
+                // Get all unique team members
+                const teamMembers = new Set();
+                teams.forEach(team => {
+                    if (team.members && Array.isArray(team.members)) {
+                        team.members.forEach(member => {
+                            if (member.userId) {
+                                teamMembers.add(member.userId);
+                            }
+                        });
+                    }
+                });
+                
+                // Load users and filter by team members
+                const usersResponse = await apiClient.get('/users');
+                if (usersResponse.ok) {
+                    const allUsers = await usersResponse.json();
+                    const currentOptions = Array.from(assigneeFilter.options).map(opt => opt.value);
+                    
+                    allUsers.forEach(user => {
+                        if (!currentOptions.includes(user.id.toString())) {
+                            const option = document.createElement('option');
+                            option.value = user.id;
+                            option.textContent = user.name || user.email;
+                            assigneeFilter.appendChild(option);
+                        }
+                    });
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load teams:', error);
+    }
+}
+
 async function loadLabels() {
     try {
         const currentProject = projectSelector.getCurrentProject();
@@ -1833,6 +1896,12 @@ async function loadTasksFromAPI() {
 
         // Build query with filters
         let queryUrl = `/tasks?projectId=${currentProject.id}`;
+        
+        // Check for team filter
+        const teamFilter = document.getElementById('teamFilter')?.value;
+        if (teamFilter && teamFilter !== '') {
+            queryUrl += `&teamId=${teamFilter}`;
+        }
         
         // Check for assignee filter from dropdown
         const assigneeFilter = document.getElementById('assigneeFilter')?.value;

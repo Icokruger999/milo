@@ -108,8 +108,7 @@ function renderTeams() {
                     <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                 </svg>
                 <h3>No teams found</h3>
-                <p>Create your first team to get started</p>
-                <button class="btn-primary" onclick="openCreateTeamModal()">Create Team</button>
+                <p>Create your first team using the button above</p>
             </div>
         `;
         return;
