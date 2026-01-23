@@ -419,6 +419,42 @@ public class TeamsController : ControllerBase
 
             await _context.SaveChangesAsync();
 
+            // Send email notification if team has a project assigned
+            var teamWithDetails = await _context.Teams
+                .Include(t => t.Project)
+                .Include(t => t.Members)
+                    .ThenInclude(m => m.User)
+                .FirstOrDefaultAsync(t => t.Id == id);
+
+            if (teamWithDetails?.Project != null)
+            {
+                var addedMember = teamWithDetails.Members.FirstOrDefault(m => m.UserId == request.UserId && m.IsActive);
+                if (addedMember?.User != null)
+                {
+                    _logger.LogInformation($"Sending project assignment email to {addedMember.User.Email} for team {teamWithDetails.Name}");
+                    
+                    // Send email in background
+                    _ = System.Threading.Tasks.Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _emailService.SendTeamProjectAssignmentEmailAsync(
+                                addedMember.User.Email,
+                                addedMember.User.Name ?? addedMember.User.Email,
+                                teamWithDetails.Name,
+                                teamWithDetails.Project.Name,
+                                teamWithDetails.Project.Key ?? teamWithDetails.Project.Name
+                            );
+                            _logger.LogInformation($"✓ Project assignment email sent to {addedMember.User.Email}");
+                        }
+                        catch (Exception emailEx)
+                        {
+                            _logger.LogError(emailEx, $"✗ Failed to send project assignment email to {addedMember.User.Email}");
+                        }
+                    });
+                }
+            }
+
             return Ok(new { message = "Team member added successfully" });
         }
         catch (Exception ex)
