@@ -1900,14 +1900,22 @@ async function loadTasksFromAPI() {
                     subtasks: Math.floor(Math.random() * 5) + 1 // Mock subtask count - replace with actual when available
                 };
                 
-                // Map API status to board columns
+                // Map API status to board columns (case-insensitive)
+                const statusLower = (task.status || '').toLowerCase();
                 let boardStatus = 'todo';
-                if (task.status === 'progress' || task.status === 'in-progress') boardStatus = 'progress';
-                else if (task.status === 'review' || task.status === 'in-review') boardStatus = 'review';
-                else if (task.status === 'blocked') boardStatus = 'blocked';
-                else if (task.status === 'done' || task.status === 'completed') boardStatus = 'done';
-                else if (task.status === 'backlog') boardStatus = 'todo'; // Backlog tasks show in todo column
-                else boardStatus = 'todo';
+                if (statusLower === 'progress' || statusLower === 'in-progress' || statusLower === 'in progress') {
+                    boardStatus = 'progress';
+                } else if (statusLower === 'review' || statusLower === 'in-review' || statusLower === 'in review') {
+                    boardStatus = 'review';
+                } else if (statusLower === 'blocked') {
+                    boardStatus = 'blocked';
+                } else if (statusLower === 'done' || statusLower === 'completed') {
+                    boardStatus = 'done';
+                } else if (statusLower === 'backlog' || statusLower === 'to do' || statusLower === 'todo') {
+                    boardStatus = 'todo';
+                } else {
+                    boardStatus = 'todo';
+                }
                 
                 if (tasks[boardStatus]) {
                     tasks[boardStatus].push(taskObj);
