@@ -1,11 +1,9 @@
-using System.Net;
-using System.Net.Mail;
 using System.Text;
 using Milo.API.Models;
 using Milo.API.Data;
 using Microsoft.EntityFrameworkCore;
-using Amazon.SimpleEmail;
-using Amazon.SimpleEmail.Model;
+using MailKit.Net.Smtp;
+using MimeKit;
 
 namespace Milo.API.Services;
 
@@ -30,8 +28,6 @@ public class EmailService : IEmailService
     private readonly IConfiguration _configuration;
     private readonly ILogger<EmailService> _logger;
     private readonly IServiceProvider _serviceProvider;
-    private readonly bool _useSes;
-    private readonly IAmazonSimpleEmailService? _sesClient;
 
     public EmailService(IConfiguration configuration, ILogger<EmailService> logger, IServiceProvider serviceProvider)
     {
@@ -39,19 +35,7 @@ public class EmailService : IEmailService
         _logger = logger;
         _serviceProvider = serviceProvider;
         
-        // Check if SES is enabled
-        _useSes = bool.TryParse(_configuration["Email:UseSes"], out var useSes) && useSes;
-        
-        if (_useSes)
-        {
-            var region = _configuration["Email:SesRegion"] ?? "eu-west-1";
-            _sesClient = new AmazonSimpleEmailServiceClient(Amazon.RegionEndpoint.GetBySystemName(region));
-            _logger.LogInformation("EmailService initialized with AWS SES in region {Region}", region);
-        }
-        else
-        {
-            _logger.LogInformation("EmailService initialized with SMTP");
-        }
+        _logger.LogInformation("EmailService initialized with MailKit SMTP");
     }
 
     public async Task<bool> SendDailyIncidentReportAsync(string recipientEmail, string recipientName, DailyReportData reportData)
@@ -97,15 +81,8 @@ public class EmailService : IEmailService
                 return false;
             }
 
-            // Use SES or SMTP based on configuration
-            if (_useSes && _sesClient != null)
-            {
-                return await SendEmailViaSesAsync(to, subject, htmlBody, plainTextBody, fromEmail, fromName);
-            }
-            else
-            {
-                return await SendEmailViaSmtpAsync(to, subject, htmlBody, plainTextBody, fromEmail, fromName);
-            }
+            // Use MailKit SMTP
+            return await SendEmailViaMailKitAsync(to, subject, htmlBody, plainTextBody, fromEmail, fromName);
         }
         catch (Exception ex)
         {
@@ -114,52 +91,7 @@ public class EmailService : IEmailService
         }
     }
 
-    private async Task<bool> SendEmailViaSesAsync(string to, string subject, string htmlBody, string plainTextBody, string fromEmail, string fromName)
-    {
-        try
-        {
-            var fromAddress = string.IsNullOrEmpty(fromName) ? fromEmail : $"{fromName} <{fromEmail}>";
-            
-            // Check if htmlBody contains HTML tags
-            var containsHtmlTags = htmlBody.Contains("<", StringComparison.Ordinal) && 
-                                   htmlBody.Contains(">", StringComparison.Ordinal);
-            
-            var body = new Body();
-            if (containsHtmlTags)
-            {
-                body.Html = new Content { Charset = "UTF-8", Data = htmlBody };
-                body.Text = new Content { Charset = "UTF-8", Data = plainTextBody };
-                _logger.LogInformation("Sending HTML email via SES to {To}", to);
-            }
-            else
-            {
-                body.Text = new Content { Charset = "UTF-8", Data = plainTextBody };
-                _logger.LogInformation("Sending plain text email via SES to {To}", to);
-            }
-
-            var sendRequest = new SendEmailRequest
-            {
-                Source = fromAddress,
-                Destination = new Destination { ToAddresses = new List<string> { to } },
-                Message = new Message
-                {
-                    Subject = new Content { Charset = "UTF-8", Data = subject },
-                    Body = body
-                }
-            };
-
-            var response = await _sesClient!.SendEmailAsync(sendRequest);
-            _logger.LogInformation("Email sent successfully via SES to {To}, MessageId: {MessageId}", to, response.MessageId);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error sending email via SES to {To}", to);
-            return false;
-        }
-    }
-
-    private async Task<bool> SendEmailViaSmtpAsync(string to, string subject, string htmlBody, string plainTextBody, string fromEmail, string fromName)
+    private async Task<bool> SendEmailViaMailKitAsync(string to, string subject, string htmlBody, string plainTextBody, string fromEmail, string fromName)
     {
         try
         {
@@ -174,53 +106,31 @@ public class EmailService : IEmailService
                 return false;
             }
 
-            using var client = new SmtpClient(smtpHost, smtpPort)
-            {
-                EnableSsl = true,
-                Credentials = new NetworkCredential(smtpUsername, smtpPassword)
-            };
+            // Use MailKit for proper HTML email support
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(fromName, fromEmail));
+            message.To.Add(new MailboxAddress("", to));
+            message.Subject = subject;
 
-            // Check if htmlBody actually contains HTML by looking for HTML tags
-            var containsHtmlTags = htmlBody.Contains("<", StringComparison.Ordinal) && 
-                                   htmlBody.Contains(">", StringComparison.Ordinal);
-            
-            _logger.LogInformation("Sending email to {To}: ContainsHtmlTags={ContainsHtmlTags}", 
-                to, containsHtmlTags);
-            
-            using var message = new MailMessage
-            {
-                From = new MailAddress(fromEmail, fromName),
-                Subject = subject,
-                BodyEncoding = System.Text.Encoding.UTF8,
-                SubjectEncoding = System.Text.Encoding.UTF8,
-                HeadersEncoding = System.Text.Encoding.UTF8
-            };
+            // Build multipart message with both HTML and plain text
+            var builder = new BodyBuilder();
+            builder.HtmlBody = htmlBody;
+            builder.TextBody = plainTextBody;
+            message.Body = builder.ToMessageBody();
 
-            message.To.Add(new MailAddress(to));
+            using var client = new SmtpClient();
+            await client.ConnectAsync(smtpHost, smtpPort, MailKit.Security.SecureSocketOptions.StartTls);
+            await client.AuthenticateAsync(smtpUsername, smtpPassword);
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
 
-            // Set IsBodyHtml based on whether HTML tags are present
-            if (containsHtmlTags)
-            {
-                // HTML email - set IsBodyHtml = true
-                message.IsBodyHtml = true;
-                message.Body = htmlBody;
-                _logger.LogInformation("Email configured as HTML (Content-Type: text/html)");
-            }
-            else
-            {
-                // Plain text only
-                message.IsBodyHtml = false;
-                message.Body = plainTextBody;
-                _logger.LogInformation("Email configured as plain text (Content-Type: text/plain)");
-            }
-
-            await client.SendMailAsync(message);
-            _logger.LogInformation("Email sent successfully via SMTP to {To}", to);
+            _logger.LogInformation("Email sent successfully via MailKit to {To}", to);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending email via SMTP to {To}", to);
+            _logger.LogError(ex, "Error sending email via MailKit to {To}. Host: {Host}, Port: {Port}", 
+                to, _configuration["Email:SmtpHost"], _configuration["Email:SmtpPort"]);
             return false;
         }
     }
@@ -237,13 +147,13 @@ public class EmailService : IEmailService
     <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 0; }
-        .container { max-width: 600px; margin: 0 auto; background-color: #FFFFFF; }
+        .container { max-width: 1200px; margin: 0 auto; background-color: #FFFFFF; }
         .header { background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 32px 24px; text-align: center; }
         .header h1 { margin: 0; font-size: 28px; font-weight: 600; }
         .header p { margin: 8px 0 0; font-size: 14px; opacity: 0.9; }
         .content { padding: 32px 24px; }
         .greeting { font-size: 16px; margin-bottom: 24px; }
-        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 32px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
         .stat-card { background: #F4F5F7; border-radius: 8px; padding: 20px; text-align: center; }
         .stat-value { font-size: 36px; font-weight: 700; margin-bottom: 4px; }
         .stat-label { font-size: 13px; color: #6B778C; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -251,24 +161,28 @@ public class EmailService : IEmailService
         .stat-resolved { color: #36B37E; }
         .stat-high { color: #FF991F; }
         .stat-new { color: #6554C0; }
-        .incidents-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-        .incidents-table th { background: #F4F5F7; padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #6B778C; text-transform: uppercase; border-bottom: 2px solid #DFE1E6; }
-        .incidents-table td { padding: 12px; border-bottom: 1px solid #DFE1E6; font-size: 14px; }
+        .incidents-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13px; }
+        .incidents-table th { background: #0052CC; color: #FFFFFF; padding: 12px 8px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; border: 1px solid #0747A6; }
+        .incidents-table td { padding: 10px 8px; border: 1px solid #DFE1E6; font-size: 13px; }
+        .incidents-table tr:nth-child(even) { background: #F9FAFB; }
+        .incidents-table tr:hover { background: #F4F5F7; }
         .incident-number { font-weight: 600; color: #0052CC; }
-        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; white-space: nowrap; }
         .status-new { background: #EAE6FF; color: #6554C0; }
         .status-open { background: #DEEBFF; color: #0052CC; }
         .status-resolved { background: #E3FCEF; color: #006644; }
+        .status-closed { background: #E3FCEF; color: #006644; }
         .priority-high, .priority-urgent { color: #DE350B; font-weight: 600; }
-        .priority-medium { color: #FF991F; }
+        .priority-medium { color: #FF991F; font-weight: 600; }
         .priority-low { color: #6B778C; }
         .footer { background: #F4F5F7; padding: 24px; text-align: center; font-size: 12px; color: #6B778C; }
         .footer a { color: #0052CC; text-decoration: none; }
         .cta-button { display: inline-block; background: #0052CC; color: #FFFFFF; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 16px 0; }
         @media only screen and (max-width: 600px) {
-            .stats-grid { grid-template-columns: 1fr; }
-            .incidents-table { font-size: 12px; }
-            .incidents-table th, .incidents-table td { padding: 8px; }
+            .container { max-width: 100%; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .incidents-table { font-size: 11px; }
+            .incidents-table th, .incidents-table td { padding: 6px 4px; }
         }
     </style>
 </head>
@@ -306,33 +220,42 @@ public class EmailService : IEmailService
         if (reportData.Incidents.Any())
         {
             html.Append(@"
-            <h3 style='margin-top: 32px; margin-bottom: 16px;'>Today's Incidents</h3>
+            <h3 style='margin-top: 32px; margin-bottom: 16px;'>All Incidents - Detailed View</h3>
             <table class='incidents-table'>
                 <thead>
                     <tr>
-                        <th>Incident</th>
+                        <th>Incident #</th>
                         <th>Subject</th>
+                        <th>Requester</th>
+                        <th>Assignee</th>
                         <th>Status</th>
                         <th>Priority</th>
+                        <th>Created</th>
                         <th>Resolution Time</th>
                     </tr>
                 </thead>
                 <tbody>");
 
-            foreach (var incident in reportData.Incidents.Take(20))
+            foreach (var incident in reportData.Incidents)
             {
                 var statusClass = incident.Status.ToLower().Replace(" ", "-");
                 var priorityClass = incident.Priority.ToLower();
                 var resolutionTimeText = incident.ResolutionTime.HasValue 
                     ? FormatDuration(incident.ResolutionTime.Value)
                     : "-";
+                var createdDate = incident.CreatedAt.HasValue 
+                    ? incident.CreatedAt.Value.ToString("MMM dd, HH:mm")
+                    : "-";
                 
                 html.Append($@"
                     <tr>
-                        <td class='incident-number'>{incident.IncidentNumber}</td>
-                        <td>{incident.Subject}</td>
+                        <td class='incident-number'>{System.Net.WebUtility.HtmlEncode(incident.IncidentNumber)}</td>
+                        <td>{System.Net.WebUtility.HtmlEncode(incident.Subject)}</td>
+                        <td>{System.Net.WebUtility.HtmlEncode(incident.RequesterName)}</td>
+                        <td>{System.Net.WebUtility.HtmlEncode(incident.AssigneeName)}</td>
                         <td><span class='status-badge status-{statusClass}'>{incident.Status}</span></td>
                         <td class='priority-{priorityClass}'>{incident.Priority}</td>
+                        <td style='font-size: 12px; color: #6B778C;'>{createdDate}</td>
                         <td>{resolutionTimeText}</td>
                     </tr>");
             }
@@ -340,15 +263,10 @@ public class EmailService : IEmailService
             html.Append(@"
                 </tbody>
             </table>");
-
-            if (reportData.Incidents.Count > 20)
-            {
-                html.Append($"<p style='color: #6B778C; font-size: 13px;'>... and {reportData.Incidents.Count - 20} more incidents</p>");
-            }
         }
         else
         {
-            html.Append("<p style='text-align: center; color: #6B778C; padding: 32px 0;'>No incidents reported today.</p>");
+            html.Append("<p style='text-align: center; color: #6B778C; padding: 32px 0;'>No incidents in the system.</p>");
         }
 
         html.Append(@"
@@ -1064,14 +982,11 @@ View in Milo: {link}";
 
             _logger.LogInformation($"Found {recipients.Count} active recipients. Generating daily incident report...");
 
-            // Get report data
-            var today = DateTime.UtcNow.Date;
-            var tomorrow = today.AddDays(1);
-
+            // Get ALL incidents (not just today's)
             var incidentsQuery = dbContext.Incidents
                 .Include(i => i.Requester)
                 .Include(i => i.Assignee)
-                .Where(i => i.CreatedAt >= today && i.CreatedAt < tomorrow);
+                .AsQueryable();
 
             if (projectId.HasValue)
             {
@@ -1082,7 +997,9 @@ View in Milo: {link}";
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
 
-            // Prepare report data
+            var today = DateTime.UtcNow.Date;
+
+            // Prepare report data with ALL incidents
             var reportData = new DailyReportData
             {
                 Date = today,
@@ -1099,6 +1016,7 @@ View in Milo: {link}";
                     Priority = i.Priority,
                     RequesterName = i.Requester?.Name ?? "Unknown",
                     AssigneeName = i.Assignee?.Name ?? "Unassigned",
+                    CreatedAt = i.CreatedAt,
                     ResolutionTime = i.ResolvedAt.HasValue && i.CreatedAt != default
                         ? i.ResolvedAt.Value - i.CreatedAt
                         : null
@@ -1189,4 +1107,5 @@ public class IncidentSummary
     public string RequesterName { get; set; } = string.Empty;
     public string AssigneeName { get; set; } = string.Empty;
     public TimeSpan? ResolutionTime { get; set; }
+    public DateTime? CreatedAt { get; set; }
 }
