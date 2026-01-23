@@ -184,7 +184,8 @@
         .main-content {
             margin-left: 64px;
             margin-top: 48px;
-            height: calc(100vh - 48px);
+            min-height: calc(100vh - 48px);
+            height: auto;
             display: flex;
             flex-direction: column;
             background: #FFFFFF;
@@ -423,6 +424,7 @@
             overflow-y: auto; /* Allow vertical scrolling */
             background: #F4F5F7;
             position: relative;
+            max-height: calc(100vh - 200px); /* Prevent infinite growth */
         }
         
         /* Hide scrollbars but keep mouse wheel functionality */

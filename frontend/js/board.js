@@ -1918,8 +1918,8 @@ async function loadTasksFromAPI() {
         }
         
         // Load tasks filtered by project and assignee (with pagination for large datasets)
-        // Use smaller pageSize for better performance - board view doesn't need all tasks at once
-        const response = await apiClient.get(queryUrl + '&page=1&pageSize=100');
+        // Use larger pageSize to load all tasks by default
+        const response = await apiClient.get(queryUrl + '&page=1&pageSize=500');
         if (response.ok) {
             const data = await response.json();
             // Handle both paginated and non-paginated responses for backwards compatibility
