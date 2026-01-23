@@ -1531,6 +1531,12 @@ async function loadTeams() {
     }
 }
 
+// Apply filters when team or assignee filter changes
+window.applyFilters = async function() {
+    console.log('Applying filters...');
+    await loadTasksFromAPI();
+}
+
 async function loadLabels() {
     try {
         const currentProject = projectSelector.getCurrentProject();
