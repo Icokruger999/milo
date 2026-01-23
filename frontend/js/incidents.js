@@ -5,6 +5,11 @@ let currentIncident = null;
 let currentProject = null;
 let users = [];
 let teams = [];
+// Pagination state
+let currentPage = 1;
+let pageSize = 50;
+let totalIncidents = 0;
+let totalPages = 1;
 // apiClient is already defined in api-client.js - use it directly
 // If apiClient is not available, try to access it from global scope
 if (typeof apiClient === 'undefined') {
@@ -83,9 +88,10 @@ async function loadTeams() {
 }
 
 // Load incidents
-async function loadIncidents() {
+async function loadIncidents(page = 1) {
     try {
-        console.log('Loading incidents...');
+        console.log(`Loading incidents page ${page}...`);
+        currentPage = page;
         
         // Show loading state
         const tbody = document.getElementById('incidentsTableBody');
@@ -94,7 +100,7 @@ async function loadIncidents() {
         }
         
         const projectId = currentProject?.id;
-        const url = projectId ? `/incidents?projectId=${projectId}&page=1&pageSize=50` : '/incidents?page=1&pageSize=50';
+        const url = projectId ? `/incidents?projectId=${projectId}&page=${page}&pageSize=${pageSize}` : `/incidents?page=${page}&pageSize=${pageSize}`;
         
         // Add timeout to prevent hanging
         const controller = new AbortController();
@@ -108,16 +114,23 @@ async function loadIncidents() {
             // Handle pagination response (new format) or direct array (old format)
             if (data.incidents && Array.isArray(data.incidents)) {
                 allIncidents = data.incidents;
+                totalIncidents = data.total || data.incidents.length;
+                totalPages = Math.ceil(totalIncidents / pageSize);
             } else if (Array.isArray(data)) {
                 // Backward compatibility with old format
                 allIncidents = data;
+                totalIncidents = data.length;
+                totalPages = 1;
             } else {
                 allIncidents = [];
+                totalIncidents = 0;
+                totalPages = 1;
             }
             incidents = [...allIncidents];
             
-            console.log(`Loaded ${incidents.length} incidents`);
+            console.log(`Loaded ${incidents.length} incidents (page ${currentPage} of ${totalPages}, total: ${totalIncidents})`);
             renderIncidents();
+            renderPagination();
         } else {
             console.error('Failed to load incidents:', response.status);
             showEmptyState();
@@ -876,6 +889,81 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// Render pagination controls
+function renderPagination() {
+    const paginationContainer = document.getElementById('paginationControls');
+    if (!paginationContainer) return;
+    
+    if (totalPages <= 1) {
+        paginationContainer.innerHTML = '';
+        return;
+    }
+    
+    let html = '<div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 20px;">';
+    
+    // Previous button
+    html += `<button onclick="loadIncidents(${currentPage - 1})" 
+        ${currentPage === 1 ? 'disabled' : ''} 
+        style="padding: 8px 12px; border: 1px solid #DFE1E6; background: white; border-radius: 4px; cursor: ${currentPage === 1 ? 'not-allowed' : 'pointer'}; opacity: ${currentPage === 1 ? '0.5' : '1'};">
+        ← Previous
+    </button>`;
+    
+    // Page numbers
+    const maxVisiblePages = 7;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    // Adjust start if we're near the end
+    if (endPage - startPage < maxVisiblePages - 1) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    // First page + ellipsis
+    if (startPage > 1) {
+        html += `<button onclick="loadIncidents(1)" style="padding: 8px 12px; border: 1px solid #DFE1E6; background: white; border-radius: 4px; cursor: pointer;">1</button>`;
+        if (startPage > 2) {
+            html += '<span style="padding: 8px;">...</span>';
+        }
+    }
+    
+    // Page number buttons
+    for (let i = startPage; i <= endPage; i++) {
+        const isActive = i === currentPage;
+        html += `<button onclick="loadIncidents(${i})" 
+            style="padding: 8px 12px; border: 1px solid ${isActive ? '#0052CC' : '#DFE1E6'}; 
+            background: ${isActive ? '#0052CC' : 'white'}; 
+            color: ${isActive ? 'white' : '#172B4D'}; 
+            border-radius: 4px; cursor: pointer; font-weight: ${isActive ? '600' : '400'};">
+            ${i}
+        </button>`;
+    }
+    
+    // Last page + ellipsis
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            html += '<span style="padding: 8px;">...</span>';
+        }
+        html += `<button onclick="loadIncidents(${totalPages})" style="padding: 8px 12px; border: 1px solid #DFE1E6; background: white; border-radius: 4px; cursor: pointer;">${totalPages}</button>`;
+    }
+    
+    // Next button
+    html += `<button onclick="loadIncidents(${currentPage + 1})" 
+        ${currentPage === totalPages ? 'disabled' : ''} 
+        style="padding: 8px 12px; border: 1px solid #DFE1E6; background: white; border-radius: 4px; cursor: ${currentPage === totalPages ? 'not-allowed' : 'pointer'}; opacity: ${currentPage === totalPages ? '0.5' : '1'};">
+        Next →
+    </button>`;
+    
+    html += '</div>';
+    
+    // Add page info
+    html += `<div style="text-align: center; margin-top: 12px; font-size: 13px; color: #6B778C;">
+        Showing ${(currentPage - 1) * pageSize + 1} - ${Math.min(currentPage * pageSize, totalIncidents)} of ${totalIncidents} incidents
+    </div>`;
+    
+    paginationContainer.innerHTML = html;
+}
+
 
 // User menu functionality
 document.addEventListener('DOMContentLoaded', function() {
