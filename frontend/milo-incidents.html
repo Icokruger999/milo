@@ -1083,6 +1083,44 @@
                             <div id="reportStats" style="background: #F4F5F7; padding: 16px; border-radius: 6px; margin-bottom: 16px;">
                                 <div style="font-size: 14px; color: #6B778C; margin-bottom: 8px;">Loading...</div>
                             </div>
+                            
+                            <!-- Schedule Settings -->
+                            <div style="background: #F4F5F7; padding: 16px; border-radius: 6px; margin-bottom: 16px;">
+                                <h4 style="font-size: 14px; font-weight: 600; color: #172B4D; margin-bottom: 12px;">Schedule Settings</h4>
+                                <div class="form-row" style="margin-bottom: 12px;">
+                                    <label class="form-label">Frequency</label>
+                                    <select class="form-input" id="reportFrequency" style="width: 100%;">
+                                        <option value="manual">Manual Only</option>
+                                        <option value="daily">Daily</option>
+                                        <option value="weekly">Weekly</option>
+                                        <option value="monthly">Monthly</option>
+                                    </select>
+                                </div>
+                                <div class="form-row" style="margin-bottom: 12px;">
+                                    <label class="form-label">Time (24-hour format)</label>
+                                    <input type="time" class="form-input" id="reportTime" value="09:00" style="width: 100%;">
+                                </div>
+                                <div class="form-row" id="weeklyDayRow" style="display: none; margin-bottom: 12px;">
+                                    <label class="form-label">Day of Week</label>
+                                    <select class="form-input" id="reportWeekday" style="width: 100%;">
+                                        <option value="1">Monday</option>
+                                        <option value="2">Tuesday</option>
+                                        <option value="3">Wednesday</option>
+                                        <option value="4">Thursday</option>
+                                        <option value="5">Friday</option>
+                                        <option value="6">Saturday</option>
+                                        <option value="0">Sunday</option>
+                                    </select>
+                                </div>
+                                <div class="form-row" id="monthlyDayRow" style="display: none;">
+                                    <label class="form-label">Day of Month</label>
+                                    <input type="number" class="form-input" id="reportMonthDay" min="1" max="31" value="1" style="width: 100%;">
+                                </div>
+                                <button class="btn-secondary" onclick="saveScheduleSettings()" style="width: 100%; margin-top: 8px;">
+                                    Save Schedule
+                                </button>
+                            </div>
+                            
                             <button class="btn-primary" onclick="sendDailyReport()" style="width: 100%;">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 6px;">
                                     <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -1090,6 +1128,7 @@
                                 </svg>
                                 Send Report Now
                             </button>
+                            <div id="sendReportStatus" style="display: none; margin-top: 12px; padding: 8px; text-align: center; font-size: 14px; font-weight: 500;"></div>
                         </div>
                     </div>
                 </div>

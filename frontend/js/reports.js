@@ -501,7 +501,7 @@ async function sendDailyReport() {
         }
         
         const result = await response.json();
-        showSuccess(`✓ Report sent successfully to ${result.sent} recipient(s)!`);
+        showSuccess(`Report sent successfully`);
         await loadRecipients(); // Refresh to show updated lastSentAt
         await loadReportPreview();
     } catch (error) {
@@ -537,10 +537,123 @@ function formatDate(date) {
 
 function showSuccess(message) {
     console.log('SUCCESS:', message);
-    // Silent success - no popup
+    // Show simple text message below the button
+    const statusDiv = document.getElementById('sendReportStatus');
+    if (statusDiv) {
+        statusDiv.textContent = message;
+        statusDiv.style.color = '#36B37E';
+        statusDiv.style.display = 'block';
+        setTimeout(() => {
+            statusDiv.style.display = 'none';
+        }, 5000);
+    }
 }
 
 function showError(message) {
     console.error('ERROR:', message);
-    // Silent error - no popup, just log to console
+    // Show simple text message below the button
+    const statusDiv = document.getElementById('sendReportStatus');
+    if (statusDiv) {
+        statusDiv.textContent = message;
+        statusDiv.style.color = '#DE350B';
+        statusDiv.style.display = 'block';
+        setTimeout(() => {
+            statusDiv.style.display = 'none';
+        }, 8000);
+    }
 }
+
+// Schedule settings functions
+function setupScheduleListeners() {
+    const frequencySelect = document.getElementById('reportFrequency');
+    if (frequencySelect) {
+        frequencySelect.addEventListener('change', function() {
+            const weeklyRow = document.getElementById('weeklyDayRow');
+            const monthlyRow = document.getElementById('monthlyDayRow');
+            
+            if (this.value === 'weekly') {
+                weeklyRow.style.display = 'block';
+                monthlyRow.style.display = 'none';
+            } else if (this.value === 'monthly') {
+                weeklyRow.style.display = 'none';
+                monthlyRow.style.display = 'block';
+            } else {
+                weeklyRow.style.display = 'none';
+                monthlyRow.style.display = 'none';
+            }
+        });
+    }
+}
+
+async function loadScheduleSettings() {
+    try {
+        // Get currentProject
+        let currentProject = null;
+        if (typeof projectSelector !== 'undefined' && projectSelector.getCurrentProject) {
+            currentProject = projectSelector.getCurrentProject();
+        } else if (typeof projectSelector !== 'undefined' && projectSelector.currentProject) {
+            currentProject = projectSelector.currentProject;
+        }
+        
+        const projectId = currentProject?.id;
+        const endpoint = projectId ? `/reports/schedule?projectId=${projectId}` : '/reports/schedule';
+        const response = await apiClient.get(endpoint);
+        
+        if (response.ok) {
+            const settings = await response.json();
+            document.getElementById('reportFrequency').value = settings.frequency || 'manual';
+            document.getElementById('reportTime').value = settings.time || '09:00';
+            document.getElementById('reportWeekday').value = settings.weekday || '1';
+            document.getElementById('reportMonthDay').value = settings.monthDay || '1';
+            
+            // Trigger change event to show/hide conditional fields
+            document.getElementById('reportFrequency').dispatchEvent(new Event('change'));
+        }
+    } catch (error) {
+        console.error('Error loading schedule settings:', error);
+    }
+}
+
+async function saveScheduleSettings() {
+    try {
+        const frequency = document.getElementById('reportFrequency').value;
+        const time = document.getElementById('reportTime').value;
+        const weekday = document.getElementById('reportWeekday').value;
+        const monthDay = document.getElementById('reportMonthDay').value;
+        
+        // Get currentProject
+        let currentProject = null;
+        if (typeof projectSelector !== 'undefined' && projectSelector.getCurrentProject) {
+            currentProject = projectSelector.getCurrentProject();
+        } else if (typeof projectSelector !== 'undefined' && projectSelector.currentProject) {
+            currentProject = projectSelector.currentProject;
+        }
+        
+        const data = {
+            frequency,
+            time,
+            weekday: frequency === 'weekly' ? parseInt(weekday) : null,
+            monthDay: frequency === 'monthly' ? parseInt(monthDay) : null,
+            projectId: currentProject?.id || null
+        };
+        
+        const response = await apiClient.post('/reports/schedule', data);
+        
+        if (response.ok) {
+            showSuccess('Schedule settings saved successfully');
+        } else {
+            showError('Failed to save schedule settings');
+        }
+    } catch (error) {
+        console.error('Error saving schedule settings:', error);
+        showError('Failed to save schedule settings');
+    }
+}
+
+// Initialize schedule listeners when modal opens
+const originalShowReportManagement = showReportManagement;
+showReportManagement = function() {
+    originalShowReportManagement();
+    setupScheduleListeners();
+    loadScheduleSettings();
+};
