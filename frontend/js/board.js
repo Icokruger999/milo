@@ -1467,6 +1467,11 @@ async function loadUsersAndProducts() {
 async function loadTeams() {
     try {
         const currentProject = projectSelector.getCurrentProject();
+        if (!currentProject || !currentProject.id) {
+            console.log('No project selected, skipping team load');
+            return;
+        }
+        
         let url = '/teams';
         if (currentProject && currentProject.id) {
             url += `?projectId=${currentProject.id}`;
@@ -1478,7 +1483,7 @@ async function loadTeams() {
             const teamFilter = document.getElementById('teamFilter');
             const assigneeFilter = document.getElementById('assigneeFilter');
             
-            if (teamFilter) {
+            if (teamFilter && Array.isArray(teams)) {
                 // Clear and repopulate team filter
                 teamFilter.innerHTML = '<option value="">All Teams</option>';
                 teams.forEach(team => {
@@ -1522,6 +1527,7 @@ async function loadTeams() {
         }
     } catch (error) {
         console.error('Failed to load teams:', error);
+        // Don't throw - allow board to continue loading
     }
 }
 
@@ -1897,8 +1903,9 @@ async function loadTasksFromAPI() {
         // Build query with filters
         let queryUrl = `/tasks?projectId=${currentProject.id}`;
         
-        // Check for team filter
-        const teamFilter = document.getElementById('teamFilter')?.value;
+        // Check for team filter (only if element exists)
+        const teamFilterElement = document.getElementById('teamFilter');
+        const teamFilter = teamFilterElement?.value;
         if (teamFilter && teamFilter !== '') {
             queryUrl += `&teamId=${teamFilter}`;
         }
