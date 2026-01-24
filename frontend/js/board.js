@@ -327,10 +327,12 @@ function showBoardView() {
     const boardContent = document.querySelector('.board-content');
     const dashboardView = document.getElementById('dashboardView');
     const timelineView = document.getElementById('timelineView');
+    const pageTitle = document.getElementById('pageTitle');
     
     if (boardContent) boardContent.style.display = 'flex';
     if (dashboardView) dashboardView.style.display = 'none';
     if (timelineView) timelineView.style.display = 'none';
+    if (pageTitle) pageTitle.textContent = 'Board';
     
     renderBoard();
 }
@@ -340,6 +342,7 @@ function showDashboardView() {
     const boardContent = document.querySelector('.board-content');
     const dashboardView = document.getElementById('dashboardView');
     const timelineView = document.getElementById('timelineView');
+    const pageTitle = document.getElementById('pageTitle');
     
     if (boardContent) boardContent.style.display = 'none';
     if (dashboardView) {
@@ -348,9 +351,13 @@ function showDashboardView() {
         dashboardView.style.overflowY = 'auto';
     }
     if (timelineView) timelineView.style.display = 'none';
+    if (pageTitle) pageTitle.textContent = 'Dashboard';
     
+    console.log('🎯 Switching to Dashboard view, loading data...');
     if (typeof loadDashboardData === 'function') {
         loadDashboardData();
+    } else {
+        console.error('❌ loadDashboardData function not found!');
     }
 }
 
@@ -359,10 +366,12 @@ function showTimelineView() {
     const boardContent = document.querySelector('.board-content');
     const dashboardView = document.getElementById('dashboardView');
     const timelineView = document.getElementById('timelineView');
+    const pageTitle = document.getElementById('pageTitle');
     
     if (boardContent) boardContent.style.display = 'none';
     if (dashboardView) dashboardView.style.display = 'none';
     if (timelineView) timelineView.style.display = 'flex';
+    if (pageTitle) pageTitle.textContent = 'Timeline';
     
     if (typeof loadTimelineData === 'function') {
         loadTimelineData();
