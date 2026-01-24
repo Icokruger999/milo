@@ -1946,8 +1946,9 @@ async function loadTasksFromAPI() {
         
         // Check for assignee filter from dropdown
         const assigneeFilter = document.getElementById('assigneeFilter')?.value;
-        if (assigneeFilter && assigneeFilter !== '' && assigneeFilter !== 'unassigned') {
-            // Filter by specific assignee
+        // Only add assigneeId filter if it's a specific user ID (not empty, 'all', or 'unassigned')
+        if (assigneeFilter && assigneeFilter !== '' && assigneeFilter !== 'unassigned' && assigneeFilter !== 'all' && !isNaN(parseInt(assigneeFilter))) {
+            // Filter by specific assignee - only if it's a valid numeric ID
             queryUrl += `&assigneeId=${assigneeFilter}`;
         }
         

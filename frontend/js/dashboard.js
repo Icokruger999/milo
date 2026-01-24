@@ -418,7 +418,7 @@ async function loadAssignees() {
         }
         
         // Clear existing options except "All Assignees"
-        assigneeFilter.innerHTML = '<option value="all" selected>All Assignees</option>';
+        assigneeFilter.innerHTML = '<option value="" selected>All Assignees</option>';
         
         // Load all users from API (not just from tasks)
         const usersResponse = await apiClient.get('/auth/users');
@@ -505,9 +505,9 @@ function applyFiltersImmediate() {
     const statusFilter = statusFilterEl.value;
     const timeRangeFilter = timeRangeFilterEl.value;
     
-    // Filter tasks - treat empty string as "all"
-    const assigneeValue = assigneeFilter === '' ? 'all' : assigneeFilter;
-    const statusValue = statusFilter === '' ? 'all' : statusFilter;
+    // Filter tasks - treat empty string as "all" (no filter)
+    const assigneeValue = assigneeFilter || '';
+    const statusValue = statusFilter || '';
     
     console.log('Applying filters:', {
         assignee: assigneeValue,
@@ -517,8 +517,8 @@ function applyFiltersImmediate() {
     });
     
     dashboardData.filteredTasks = dashboardData.tasks.filter(task => {
-        // Filter by assignee
-        if (assigneeValue && assigneeValue !== 'all') {
+        // Filter by assignee (empty string means no filter / all assignees)
+        if (assigneeValue && assigneeValue !== '' && assigneeValue !== 'all') {
             const taskAssigneeId = task.assigneeId ? String(task.assigneeId) : null;
             const filterAssigneeId = String(assigneeValue);
             if (taskAssigneeId !== filterAssigneeId) {
@@ -526,8 +526,8 @@ function applyFiltersImmediate() {
             }
         }
         
-        // Filter by status (handle variations)
-        if (statusValue && statusValue !== 'all') {
+        // Filter by status (handle variations) - empty string means no filter
+        if (statusValue && statusValue !== '' && statusValue !== 'all') {
             const taskStatus = (task.status || '').toLowerCase();
             const filterStatus = statusValue.toLowerCase();
             
