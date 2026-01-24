@@ -2601,14 +2601,32 @@ async function handleGridDrop(e) {
     const newStatus = this.dataset.status;
     const newAssignee = this.dataset.assignee;
     
-    // Find the task
+    console.log('🎯 Dropping task', taskId, 'to status:', newStatus);
+    
+    // Find the task and its current status key
     let task = null;
+    let currentStatusKey = null;
     for (const status in tasks) {
-        task = tasks[status].find(t => t.id === taskId);
-        if (task) break;
+        const foundTask = tasks[status].find(t => t.id === taskId);
+        if (foundTask) {
+            task = foundTask;
+            currentStatusKey = status;
+            break;
+        }
     }
     
-    if (!task) return;
+    if (!task) {
+        console.error('❌ Task not found:', taskId);
+        return;
+    }
+    
+    console.log('📦 Found task in status:', currentStatusKey);
+    
+    // Don't do anything if dropping in same status
+    if (currentStatusKey === newStatus) {
+        console.log('ℹ️ Task already in', newStatus);
+        return;
+    }
     
     // Update task status
     const statusMap = {
@@ -2626,16 +2644,22 @@ async function handleGridDrop(e) {
         });
         
         if (response.ok) {
-            // Move task in local data
-            const oldStatus = task.status ? task.status.toLowerCase().replace(' ', '') : 'todo';
-            const oldStatusKey = oldStatus.includes('progress') ? 'progress' : 
-                                oldStatus.includes('review') ? 'review' :
-                                oldStatus === 'done' ? 'done' : 'todo';
+            console.log('✅ Task status updated on server');
             
-            tasks[oldStatusKey] = tasks[oldStatusKey].filter(t => t.id !== taskId);
+            // Remove from old status
+            tasks[currentStatusKey] = tasks[currentStatusKey].filter(t => t.id !== taskId);
+            
+            // Update task status property
             task.status = statusMap[newStatus];
+            
+            // Add to new status
             tasks[newStatus].push(task);
             
+            console.log('✅ Task moved from', currentStatusKey, 'to', newStatus);
+            
+            renderBoard();
+        } else {
+            console.error('❌ Failed to update task on server');
             renderBoard();
         }
     } catch (error) {
