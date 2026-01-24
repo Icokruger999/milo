@@ -1490,8 +1490,9 @@ async function loadTeams() {
         }
         
         const response = await apiClient.get(url);
+        let teams = []; // Initialize teams outside the if block
         if (response.ok) {
-            const teams = await response.json();
+            teams = await response.json();
             const teamFilter = document.getElementById('teamFilter');
             const assigneeFilter = document.getElementById('assigneeFilter');
             
@@ -1507,7 +1508,7 @@ async function loadTeams() {
             }
             
             // Also populate assignee filter with team members
-            if (assigneeFilter && teams.length > 0) {
+            if (assigneeFilter && Array.isArray(teams) && teams.length > 0) {
                 // Get all unique team members
                 const teamMembers = new Set();
                 teams.forEach(team => {
