@@ -1926,10 +1926,13 @@ async function loadTasksFromAPI() {
         // Get current project
         const currentProject = projectSelector.getCurrentProject();
         if (!currentProject) {
+            console.error('❌ No project selected in loadTasksFromAPI');
             // No project selected - redirect to project selector
             window.location.href = 'milo-select-project.html';
             return Promise.resolve();
         }
+
+        console.log('📡 Loading tasks for project:', currentProject.name, 'ID:', currentProject.id);
 
         // Build query with filters
         let queryUrl = `/tasks?projectId=${currentProject.id}`;
@@ -1948,13 +1951,20 @@ async function loadTasksFromAPI() {
             queryUrl += `&assigneeId=${assigneeFilter}`;
         }
         
+        console.log('📡 API Query URL:', queryUrl);
+        
         // Load tasks filtered by project and assignee (with pagination for large datasets)
         // Use larger pageSize to load all tasks by default
         const response = await apiClient.get(queryUrl + '&page=1&pageSize=500');
+        console.log('📡 API Response status:', response.status, response.ok ? '✅' : '❌');
+        
         if (response.ok) {
             const data = await response.json();
             // Handle both paginated and non-paginated responses for backwards compatibility
             const apiTasks = data.tasks || data;
+            
+            console.log('📦 API returned', Array.isArray(apiTasks) ? apiTasks.length : 0, 'tasks');
+            console.log('📦 Raw API data:', data);
             
             // Convert API tasks to board format
             tasks = {
@@ -1967,10 +1977,12 @@ async function loadTasksFromAPI() {
             
             // Apply unassigned filter on frontend if needed
             const assigneeFilterValue = document.getElementById('assigneeFilter')?.value;
-            let filteredApiTasks = apiTasks;
+            let filteredApiTasks = Array.isArray(apiTasks) ? apiTasks : [];
             if (assigneeFilterValue === 'unassigned') {
-                filteredApiTasks = apiTasks.filter(task => !task.assigneeId || !task.assignee);
+                filteredApiTasks = filteredApiTasks.filter(task => !task.assigneeId || !task.assignee);
             }
+            
+            console.log('📦 Processing', filteredApiTasks.length, 'tasks after filtering');
             
             filteredApiTasks.forEach(task => {
                 // Calculate assignee initials properly
@@ -2031,20 +2043,30 @@ async function loadTasksFromAPI() {
                 }
             });
             
-                renderBoard();
-                
-                // Make tasks available globally for dashboard
-                window.tasks = getAllTasksFlat();
-                
-                // Refresh dashboard if it's currently visible
-                if (typeof loadDashboardData === 'function' && currentBoardView === 'dashboard') {
-                    setTimeout(() => loadDashboardData(), 200);
-                }
-                
-                // Apply filters after loading tasks
-                if (typeof filterTasks === 'function') {
-                    filterTasks();
-                }
+            // Log task counts after populating
+            console.log('✅ Tasks populated:', {
+                todo: tasks.todo.length,
+                progress: tasks.progress.length,
+                review: tasks.review.length,
+                blocked: tasks.blocked.length,
+                done: tasks.done.length,
+                total: tasks.todo.length + tasks.progress.length + tasks.review.length + tasks.blocked.length + tasks.done.length
+            });
+            
+            renderBoard();
+            
+            // Make tasks available globally for dashboard
+            window.tasks = getAllTasksFlat();
+            
+            // Refresh dashboard if it's currently visible
+            if (typeof loadDashboardData === 'function' && currentBoardView === 'dashboard') {
+                setTimeout(() => loadDashboardData(), 200);
+            }
+            
+            // Apply filters after loading tasks
+            if (typeof filterTasks === 'function') {
+                filterTasks();
+            }
                 
                 return Promise.resolve();
             } else {
