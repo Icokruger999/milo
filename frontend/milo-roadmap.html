@@ -24,10 +24,10 @@
             overflow: hidden;
         }
 
-        /* Global Navigation */
+        /* Global Navigation - White header */
         .global-nav {
-            background: #232F3E;
-            border-bottom: 1px solid #3C4043;
+            background: #FFFFFF;
+            border-bottom: 1px solid #DFE1E6;
             height: 48px;
             display: flex;
             align-items: center;
@@ -49,6 +49,7 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            color: #0052CC;
         }
 
         .global-nav-links {
@@ -59,7 +60,7 @@
 
         .global-nav-link {
             padding: 6px 12px;
-            color: #FFFFFF;
+            color: #42526E;
             text-decoration: none;
             font-size: 14px;
             border-radius: 3px;
@@ -67,19 +68,28 @@
         }
 
         .global-nav-link:hover {
-            background: #3C4043;
-            color: #FFFFFF;
+            background: #F4F5F7;
+            color: #172B4D;
+        }
+
+        .global-nav-link.active {
+            background: #DEEBFF;
+            color: #0052CC;
         }
 
         .global-nav-create {
-            background: #FF9900;
-            color: #232F3E;
+            background: #0052CC;
+            color: #FFFFFF;
             padding: 6px 12px;
             border: none;
             border-radius: 3px;
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
+        }
+
+        .global-nav-create:hover {
+            background: #0747A6;
         }
 
         .global-nav-right {
@@ -919,11 +929,13 @@
                     <rect x="14" y="14" width="7" height="7"></rect>
                 </svg>
             </div>
-            <span style="font-size: 16px; font-weight: 600; color: #FFFFFF; margin-left: 8px;">Milo</span>
             <div class="global-nav-links">
-                <a href="#" class="global-nav-link">Your work</a>
-                <a href="#" class="global-nav-link">Projects</a>
-                <a href="#" class="global-nav-link">Filters</a>
+                <a href="milo-board.html" class="global-nav-link">Board</a>
+                <a href="milo-backlog.html" class="global-nav-link">Backlog</a>
+                <a href="milo-roadmap.html" class="global-nav-link active">Roadmap</a>
+                <a href="milo-project-timeline.html" class="global-nav-link">Project Timeline</a>
+                <a href="milo-flakes.html" class="global-nav-link">Flakes</a>
+                <a href="milo-teams.html" class="global-nav-link">Teams</a>
             </div>
             <button class="global-nav-create" onclick="showCreateTaskModal()">Create</button>
         </div>
