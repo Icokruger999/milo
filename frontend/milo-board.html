@@ -1626,7 +1626,7 @@
                 </div>
 
                 <!-- Dashboard View (Hidden by default) -->
-                <div class="dashboard-view" id="dashboardView" style="display: none; flex: 1; overflow-y: auto; padding: 24px;">
+                <div class="dashboard-view" id="dashboardView" style="display: none; flex: 1; overflow-y: auto; padding: 32px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                     <!-- Hide scrollbar but keep mouse wheel functionality -->
                     <style>
                         #dashboardView::-webkit-scrollbar {
@@ -1637,66 +1637,216 @@
                             scrollbar-width: none;
                             -ms-overflow-style: none;
                         }
+                        
+                        /* Power BI Style Dashboard */
+                        .dashboard-container {
+                            max-width: 1600px;
+                            margin: 0 auto;
+                        }
+                        
+                        .dashboard-header {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            margin-bottom: 32px;
+                            padding: 24px 32px;
+                            background: rgba(255, 255, 255, 0.95);
+                            border-radius: 12px;
+                            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+                        }
+                        
+                        .dashboard-title {
+                            font-size: 32px;
+                            font-weight: 700;
+                            color: #1a1a2e;
+                            margin: 0;
+                            letter-spacing: -0.5px;
+                        }
+                        
+                        .dashboard-subtitle {
+                            font-size: 14px;
+                            color: #6B778C;
+                            margin-top: 4px;
+                        }
+                        
+                        /* Stats Cards - Power BI Style */
+                        .dashboard-stats-grid {
+                            display: grid;
+                            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                            gap: 24px;
+                            margin-bottom: 32px;
+                        }
+                        
+                        .dashboard-stat-card {
+                            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+                            padding: 28px 32px;
+                            border-radius: 12px;
+                            border: 1px solid rgba(0, 0, 0, 0.06);
+                            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                            transition: transform 0.2s, box-shadow 0.2s;
+                            position: relative;
+                            overflow: hidden;
+                        }
+                        
+                        .dashboard-stat-card::before {
+                            content: '';
+                            position: absolute;
+                            top: 0;
+                            left: 0;
+                            right: 0;
+                            height: 4px;
+                            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+                        }
+                        
+                        .dashboard-stat-card:hover {
+                            transform: translateY(-4px);
+                            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+                        }
+                        
+                        .dashboard-stat-label {
+                            font-size: 13px;
+                            font-weight: 600;
+                            color: #6B778C;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                            margin-bottom: 12px;
+                        }
+                        
+                        .dashboard-stat-value {
+                            font-size: 42px;
+                            font-weight: 800;
+                            color: #1a1a2e;
+                            line-height: 1;
+                            margin-bottom: 8px;
+                        }
+                        
+                        .dashboard-stat-change {
+                            font-size: 12px;
+                            color: #36B37E;
+                            font-weight: 600;
+                        }
+                        
+                        /* Charts Grid - Power BI Style */
+                        .dashboard-charts-grid {
+                            display: grid;
+                            grid-template-columns: repeat(2, 1fr);
+                            gap: 24px;
+                            margin-bottom: 32px;
+                        }
+                        
+                        @media (max-width: 1400px) {
+                            .dashboard-charts-grid {
+                                grid-template-columns: 1fr;
+                            }
+                        }
+                        
+                        .dashboard-chart-card {
+                            background: rgba(255, 255, 255, 0.95);
+                            padding: 28px;
+                            border-radius: 12px;
+                            border: 1px solid rgba(0, 0, 0, 0.06);
+                            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                            transition: transform 0.2s, box-shadow 0.2s;
+                        }
+                        
+                        .dashboard-chart-card:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+                        }
+                        
+                        .dashboard-chart-title {
+                            font-size: 18px;
+                            font-weight: 700;
+                            color: #1a1a2e;
+                            margin-bottom: 20px;
+                            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                            letter-spacing: -0.3px;
+                        }
+                        
+                        .dashboard-chart-container {
+                            position: relative;
+                            height: 320px;
+                        }
+                        
+                        /* Large chart cards */
+                        .dashboard-chart-card.large {
+                            grid-column: span 2;
+                        }
+                        
+                        @media (max-width: 1400px) {
+                            .dashboard-chart-card.large {
+                                grid-column: span 1;
+                            }
+                        }
                     </style>
-                    <div style="max-width: 1200px; margin: 0 auto;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                            <h2 style="font-size: 24px; font-weight: 600; color: #172B4D; margin: 0;">Dashboard</h2>
+                    
+                    <div class="dashboard-container">
+                        <!-- Header -->
+                        <div class="dashboard-header">
+                            <div>
+                                <h1 class="dashboard-title">Project Dashboard</h1>
+                                <div class="dashboard-subtitle">Real-time insights and analytics</div>
+                            </div>
                         </div>
                         
                         <!-- Stats Cards -->
                         <div class="dashboard-stats-grid">
                             <div class="dashboard-stat-card">
-                                <div style="font-size: 13px; color: #6B778C; margin-bottom: 8px;">Total Tasks</div>
-                                <div id="dashTotalTasks" style="font-size: 32px; font-weight: 700; color: #172B4D;">0</div>
+                                <div class="dashboard-stat-label">Total Tasks</div>
+                                <div id="dashTotalTasks" class="dashboard-stat-value">0</div>
+                                <div class="dashboard-stat-change">↑ Active tasks</div>
                             </div>
                             <div class="dashboard-stat-card">
-                                <div style="font-size: 13px; color: #6B778C; margin-bottom: 8px;">In Progress</div>
-                                <div id="dashInProgress" style="font-size: 32px; font-weight: 700; color: #FFAB00;">0</div>
+                                <div class="dashboard-stat-label">In Progress</div>
+                                <div id="dashInProgress" class="dashboard-stat-value" style="color: #FFAB00;">0</div>
+                                <div class="dashboard-stat-change">Currently working</div>
                             </div>
                             <div class="dashboard-stat-card">
-                                <div style="font-size: 13px; color: #6B778C; margin-bottom: 8px;">Completed</div>
-                                <div id="dashCompleted" style="font-size: 32px; font-weight: 700; color: #36B37E;">0</div>
+                                <div class="dashboard-stat-label">Completed</div>
+                                <div id="dashCompleted" class="dashboard-stat-value" style="color: #36B37E;">0</div>
+                                <div class="dashboard-stat-change">✓ Done</div>
                             </div>
                             <div class="dashboard-stat-card">
-                                <div style="font-size: 13px; color: #6B778C; margin-bottom: 8px;">Completion Rate</div>
-                                <div id="dashCompletionRate" style="font-size: 32px; font-weight: 700; color: #0052CC;">0%</div>
+                                <div class="dashboard-stat-label">Completion Rate</div>
+                                <div id="dashCompletionRate" class="dashboard-stat-value" style="color: #0052CC;">0%</div>
+                                <div class="dashboard-stat-change">Overall progress</div>
                             </div>
                         </div>
 
                         <!-- Charts -->
                         <div class="dashboard-charts-grid">
                             <div class="dashboard-chart-card">
-                                <div class="dashboard-chart-title">Tasks by Status</div>
+                                <div class="dashboard-chart-title">📊 Tasks by Status</div>
                                 <div class="dashboard-chart-container">
                                     <canvas id="dashStatusChart"></canvas>
                                 </div>
                             </div>
                             <div class="dashboard-chart-card">
-                                <div class="dashboard-chart-title">Tasks by Priority</div>
+                                <div class="dashboard-chart-title">🎯 Tasks by Priority</div>
                                 <div class="dashboard-chart-container">
                                     <canvas id="dashPriorityChart"></canvas>
                                 </div>
                             </div>
-                            <div class="dashboard-chart-card">
-                                <div class="dashboard-chart-title">Tasks by Assignee</div>
-                                <div class="dashboard-chart-container">
-                                    <canvas id="dashAssigneeChart"></canvas>
-                                </div>
-                            </div>
-                            <div class="dashboard-chart-card">
-                                <div class="dashboard-chart-title">Task Completion Over Time</div>
+                            <div class="dashboard-chart-card large">
+                                <div class="dashboard-chart-title">📈 Task Completion Over Time</div>
                                 <div class="dashboard-chart-container">
                                     <canvas id="dashCompletionChart"></canvas>
                                 </div>
                             </div>
                             <div class="dashboard-chart-card">
-                                <div class="dashboard-chart-title">Tasks by Label</div>
+                                <div class="dashboard-chart-title">👥 Tasks by Assignee</div>
+                                <div class="dashboard-chart-container">
+                                    <canvas id="dashAssigneeChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="dashboard-chart-card">
+                                <div class="dashboard-chart-title">🏷️ Tasks by Label</div>
                                 <div class="dashboard-chart-container">
                                     <canvas id="dashLabelChart"></canvas>
                                 </div>
                             </div>
                             <div class="dashboard-chart-card">
-                                <div class="dashboard-chart-title">Average Task Age by Status</div>
+                                <div class="dashboard-chart-title">⏱️ Average Task Age by Status</div>
                                 <div class="dashboard-chart-container">
                                     <canvas id="dashAgeChart"></canvas>
                                 </div>

@@ -9,7 +9,9 @@ let charts = {
     statusChart: null,
     assigneeChart: null,
     priorityChart: null,
-    timelineChart: null
+    timelineChart: null,
+    labelChart: null,
+    ageChart: null
 };
 
 // Performance: Cache data for 30 seconds
@@ -606,11 +608,11 @@ function updateStats() {
         hasData: dashboardData.tasks && dashboardData.tasks.length > 0
     });
     
-    // Update with null checks
-    const totalTasksEl = document.getElementById('totalTasks');
-    const inProgressEl = document.getElementById('inProgressTasks');
-    const completedEl = document.getElementById('completedTasks');
-    const completionRateEl = document.getElementById('completionRate');
+    // Update with null checks - use correct IDs from HTML (dash prefix)
+    const totalTasksEl = document.getElementById('dashTotalTasks');
+    const inProgressEl = document.getElementById('dashInProgress');
+    const completedEl = document.getElementById('dashCompleted');
+    const completionRateEl = document.getElementById('dashCompletionRate');
     
     if (totalTasksEl) {
         totalTasksEl.textContent = totalTasks;
@@ -654,6 +656,8 @@ function updateCharts() {
         updateAssigneeChart();
         updatePriorityChart();
         updateTimelineChart();
+        updateLabelChart();
+        updateAgeChart();
         console.log('✓ All charts updated');
     } catch (error) {
         console.error('Error updating charts:', error);
@@ -663,7 +667,7 @@ function updateCharts() {
 // Update status chart with status variation handling
 function updateStatusChart() {
     const tasks = dashboardData.filteredTasks || dashboardData.tasks || [];
-    const ctx = document.getElementById('statusChart');
+    const ctx = document.getElementById('dashStatusChart');
     
     if (!ctx) {
         console.warn('Status chart canvas not found');
@@ -748,10 +752,12 @@ function updateStatusChart() {
 // Update assignee chart with optimization
 function updateAssigneeChart() {
     const tasks = dashboardData.filteredTasks || dashboardData.tasks || [];
-    const ctx = document.getElementById('assigneeChart');
+    const ctx = document.getElementById('dashAssigneeChart');
     
     if (!ctx) {
         console.warn('Assignee chart canvas not found');
+        return;
+    }ssignee chart canvas not found');
         return;
     }
     
@@ -857,7 +863,7 @@ function updateAssigneeChart() {
 // Update priority chart with optimization
 function updatePriorityChart() {
     const tasks = dashboardData.filteredTasks || dashboardData.tasks || [];
-    const ctx = document.getElementById('priorityChart');
+    const ctx = document.getElementById('dashPriorityChart');
     
     if (!ctx) {
         console.warn('Priority chart canvas not found');
@@ -936,7 +942,7 @@ function invalidateDashboardCache() {
 // Update timeline chart (last 7 days) with null checks
 function updateTimelineChart() {
     const tasks = dashboardData.tasks || []; // Use all tasks for timeline
-    const ctx = document.getElementById('timelineChart');
+    const ctx = document.getElementById('dashCompletionChart');
     
     if (!ctx) {
         console.warn('Timeline chart canvas not found');
@@ -1076,6 +1082,205 @@ function updateTimelineChart() {
 // Show create task modal (redirect to board for now)
 function showCreateTaskModal() {
     window.location.href = 'milo-board.html';
+}
+
+// Update label chart
+function updateLabelChart() {
+    const tasks = dashboardData.filteredTasks || dashboardData.tasks || [];
+    const ctx = document.getElementById('dashLabelChart');
+    
+    if (!ctx) {
+        console.warn('Label chart canvas not found');
+        return;
+    }
+    
+    // Count tasks by label
+    const labelMap = {};
+    tasks.forEach(task => {
+        if (task.labels && Array.isArray(task.labels) && task.labels.length > 0) {
+            task.labels.forEach(label => {
+                const labelName = label.name || label;
+                labelMap[labelName] = (labelMap[labelName] || 0) + 1;
+            });
+        } else {
+            labelMap['No Label'] = (labelMap['No Label'] || 0) + 1;
+        }
+    });
+    
+    // Sort by count and take top 8
+    const sortedLabels = Object.entries(labelMap)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8);
+    
+    const labels = sortedLabels.map(l => l[0]);
+    const data = sortedLabels.map(l => l[1]);
+    
+    // Generate colors
+    const colors = [
+        '#0052CC', '#36B37E', '#FFAB00', '#DE350B',
+        '#6554C0', '#00B8D9', '#FF5630', '#57D9A3'
+    ];
+    
+    // Update or create chart
+    if (charts.labelChart) {
+        charts.labelChart.data.labels = labels;
+        charts.labelChart.data.datasets[0].data = data;
+        charts.labelChart.update('none');
+    } else {
+        charts.labelChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Tasks',
+                    data: data,
+                    backgroundColor: colors,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            font: {
+                                family: 'Inter'
+                            }
+                        },
+                        grid: {
+                            color: '#F4F5F7'
+                        }
+                    },
+                    y: {
+                        ticks: {
+                            font: {
+                                family: 'Inter',
+                                size: 11
+                            }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+// Update age chart (average task age by status)
+function updateAgeChart() {
+    const tasks = dashboardData.filteredTasks || dashboardData.tasks || [];
+    const ctx = document.getElementById('dashAgeChart');
+    
+    if (!ctx) {
+        console.warn('Age chart canvas not found');
+        return;
+    }
+    
+    // Calculate average age by status
+    const statusGroups = {
+        'todo': [],
+        'progress': [],
+        'review': [],
+        'blocked': [],
+        'done': []
+    };
+    
+    const now = new Date();
+    tasks.forEach(task => {
+        const status = (task.status || '').toLowerCase();
+        const createdDate = task.createdAt ? new Date(task.createdAt) : null;
+        
+        if (!createdDate || isNaN(createdDate.getTime())) return;
+        
+        const ageInDays = Math.floor((now - createdDate) / (1000 * 60 * 60 * 24));
+        
+        // Map status to group
+        if (status === 'todo' || status === 'backlog' || !status) {
+            statusGroups.todo.push(ageInDays);
+        } else if (status === 'progress' || status === 'in-progress' || status === 'inprogress') {
+            statusGroups.progress.push(ageInDays);
+        } else if (status === 'review' || status === 'in-review' || status === 'inreview') {
+            statusGroups.review.push(ageInDays);
+        } else if (status === 'blocked') {
+            statusGroups.blocked.push(ageInDays);
+        } else if (status === 'done' || status === 'completed' || status === 'complete') {
+            statusGroups.done.push(ageInDays);
+        }
+    });
+    
+    // Calculate averages
+    const averages = Object.entries(statusGroups).map(([status, ages]) => {
+        if (ages.length === 0) return 0;
+        const sum = ages.reduce((a, b) => a + b, 0);
+        return Math.round(sum / ages.length);
+    });
+    
+    const labels = ['To Do', 'In Progress', 'In Review', 'Blocked', 'Done'];
+    const colors = ['#DFE1E6', '#FFAB00', '#0065FF', '#DE350B', '#36B37E'];
+    
+    // Update or create chart
+    if (charts.ageChart) {
+        charts.ageChart.data.datasets[0].data = averages;
+        charts.ageChart.update('none');
+    } else {
+        charts.ageChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Average Age (days)',
+                    data: averages,
+                    backgroundColor: colors,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            font: {
+                                family: 'Inter'
+                            }
+                        },
+                        grid: {
+                            color: '#F4F5F7'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            font: {
+                                family: 'Inter',
+                                size: 11
+                            }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
 }
 
 // Make functions globally available
