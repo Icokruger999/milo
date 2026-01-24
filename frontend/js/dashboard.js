@@ -666,8 +666,6 @@ function updateAssigneeChart() {
     if (!ctx) {
         console.warn('Assignee chart canvas not found');
         return;
-    }ssignee chart canvas not found');
-        return;
     }
     
     console.log('Updating assignee chart with', tasks.length, 'tasks');
