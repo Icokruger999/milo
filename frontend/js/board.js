@@ -1329,6 +1329,12 @@ async function loadUsersAndProducts() {
         const populateAssigneeDropdown = (users) => {
             if (!assigneeSelect) return;
             
+            // Safety check: ensure users is an array
+            if (!users || !Array.isArray(users)) {
+                console.warn('populateAssigneeDropdown called with invalid users:', users);
+                users = [];
+            }
+            
             // Store current selection before clearing
             const currentValue = assigneeSelect.value;
             
