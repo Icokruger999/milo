@@ -155,6 +155,8 @@ function setupUserMenu() {
 // Load dashboard data with caching and error handling
 async function loadDashboardData() {
     try {
+        console.log('📊 loadDashboardData() called');
+        
         let currentProject = null;
         
         // Try projectSelector first
@@ -213,113 +215,68 @@ async function loadDashboardData() {
         }
         
         if (!currentProject) {
-            console.error('No project selected');
+            console.error('❌ No project selected');
             showErrorState();
             return;
         }
         
-        console.log('Loading dashboard for project:', currentProject.name, 'ID:', currentProject.id);
+        console.log('✅ Loading dashboard for project:', currentProject.name, 'ID:', currentProject.id);
 
-        // Check cache first (but always reload if data is empty)
-        const now = Date.now();
-        const hasValidCache = dataCache.tasks && 
-                             dataCache.tasks.length > 0 && 
-                             (now - dataCache.timestamp < dataCache.duration);
-        
-        if (hasValidCache) {
-            console.log('Using cached dashboard data:', dataCache.tasks.length, 'tasks');
-            dashboardData.tasks = dataCache.tasks;
-            dashboardData.filteredTasks = [...dashboardData.tasks];
-            await loadAssignees();
-            applyFiltersImmediate();
-            return;
-        } else if (dataCache.tasks && dataCache.tasks.length === 0) {
-            console.log('Cache has no tasks, forcing reload...');
-        }
-
-        // Load data with timeout protection
+        // Always reload data (don't use cache for now to ensure fresh data)
         console.log('🔍 Fetching tasks for project:', currentProject.id, 'from API endpoint:', `/tasks?projectId=${currentProject.id}`);
-        const apiPromise = (async () => {
-            try {
-                const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
+        
+        try {
+            const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
+            
+            console.log('📡 API Response Status:', response.status, response.ok ? '✅' : '❌');
+            
+            if (response.ok) {
+                const data = await response.json();
+                // Handle both paginated and non-paginated responses
+                const tasks = data.tasks || data;
                 
-                console.log('📡 API Response Status:', response.status, response.ok ? '✅' : '❌');
+                // Ensure tasks is an array
+                const tasksArray = Array.isArray(tasks) ? tasks : [];
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    // Handle both paginated and non-paginated responses
-                    const tasks = data.tasks || data;
-                    
-                    // Ensure tasks is an array
-                    const tasksArray = Array.isArray(tasks) ? tasks : [];
-                    
-                    console.log('✅ Loaded tasks:', tasksArray.length, 'tasks');
-                    console.log('📋 Response structure:', {
-                        isArray: Array.isArray(data),
-                        hasTasks: !!data.tasks,
-                        tasksLength: tasksArray.length,
-                        sampleData: data
-                    });
-                    
-                    if (tasksArray.length === 0) {
-                        console.warn('⚠️ No tasks found for this project. Please create some tasks on the Board first!');
-                        console.info('💡 Tip: Click the "Create" button on the Board page to add tasks');
-                        console.info('💡 Current project ID:', currentProject.id);
-                    } else {
-                        console.log('📋 Sample task:', tasksArray[0]);
-                    }
-                    
-                    // Cache the data
-                    dataCache.tasks = tasksArray;
-                    dataCache.timestamp = now;
-                    
-                    dashboardData.tasks = tasksArray;
-                    // Start with all tasks visible (no filtering yet)
-                    dashboardData.filteredTasks = [...dashboardData.tasks];
-                    
-                    console.log('📊 Dashboard data set:', {
-                        totalTasks: dashboardData.tasks.length,
-                        filteredTasks: dashboardData.filteredTasks.length,
-                        hasData: dashboardData.tasks.length > 0
-                    });
-                    
-                    // Load assignees for filter
-                    await loadAssignees();
-                    
-                    // Apply initial filters and render (this will update stats)
-                    console.log('🔄 Applying filters and updating UI...');
-                    applyFiltersImmediate();
-                    
-                    // Force update stats even if filters didn't change
-                    updateStats();
-                    updateCharts();
-                    
-                    if (dashboardData.tasks.length > 0) {
-                        console.log('✅ Dashboard loaded successfully with', dashboardData.tasks.length, 'tasks');
-                    } else {
-                        console.log('ℹ️ Dashboard loaded but no tasks found. Create tasks on the Board to see data here.');
-                    }
+                console.log('✅ Loaded tasks:', tasksArray.length, 'tasks');
+                
+                if (tasksArray.length === 0) {
+                    console.warn('⚠️ No tasks found for this project');
                 } else {
-                    const errorText = await response.text().catch(() => 'Unknown error');
-                    console.error('❌ Failed to load tasks. Status:', response.status, 'Response:', errorText);
-                    console.error('🔧 Check if the API is running at:', apiClient.baseURL);
-                    showErrorState();
+                    console.log('📋 Sample task:', tasksArray[0]);
                 }
-            } catch (apiError) {
-                console.error('❌ API Request Error:', apiError.message);
-                console.error('🔧 Full error:', apiError);
+                
+                // Update cache
+                dataCache.tasks = tasksArray;
+                dataCache.timestamp = Date.now();
+                
+                dashboardData.tasks = tasksArray;
+                dashboardData.filteredTasks = [...dashboardData.tasks];
+                
+                console.log('📊 Dashboard data set:', {
+                    totalTasks: dashboardData.tasks.length,
+                    filteredTasks: dashboardData.filteredTasks.length
+                });
+                
+                // Update stats and charts
+                console.log('🔄 Updating stats and charts...');
+                updateStats();
+                updateCharts();
+                
+                console.log('✅ Dashboard loaded successfully with', dashboardData.tasks.length, 'tasks');
+            } else {
+                const errorText = await response.text().catch(() => 'Unknown error');
+                console.error('❌ Failed to load tasks. Status:', response.status, 'Response:', errorText);
                 showErrorState();
-                throw apiError;
             }
-        })();
-        
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Dashboard load timeout')), 10000)
-        );
-        
-        await Promise.race([apiPromise, timeoutPromise]);
+        } catch (apiError) {
+            console.error('❌ API Request Error:', apiError.message);
+            console.error('🔧 Full error:', apiError);
+            showErrorState();
+            throw apiError;
+        }
     } catch (error) {
-        console.error('Error loading dashboard data:', error);
+        console.error('❌ Error loading dashboard data:', error);
         showErrorState();
     }
 }
