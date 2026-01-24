@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Board Diagnostics</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f4f5f7; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        h1 { color: #0052CC; }
+        .test { margin: 20px 0; padding: 15px; border-left: 4px solid #0052CC; background: #f9fafb; }
+        .success { border-left-color: #36B37E; }
+        .error { border-left-color: #DE350B; }
+        .warning { border-left-color: #FF991F; }
+        button { background: #0052CC; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0747A6; }
+        pre { background: #f4f5f7; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        .status { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Board Diagnostics</h1>
+        <p>This page will help diagnose why the board isn't showing data.</p>
+        
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="clearResults()">Clear Results</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://api.codingeverest.com/api';
+        let results = [];
+
+        function addResult(title, status, message, data = null) {
+            const statusClass = status === 'success' ? 'success' : status === 'error' ? 'error' : 'warning';
+            const statusIcon = status === 'success' ? '✅' : status === 'error' ? '❌' : '⚠️';
+            
+            let html = `
+                <div class="test ${statusClass}">
+                    <h3>${statusIcon} ${title}</h3>
+                    <p class="status">${message}</p>
+                    ${data ? `<pre>${JSON.stringify(data, null, 2)}</pre>` : ''}
+                </div>
+            `;
+            
+            results.push(html);
+            document.getElementById('results').innerHTML = results.join('');
+        }
+
+        function clearResults() {
+            results = [];
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function runAllTests() {
+            clearResults();
+            
+            // Test 1: Check authentication
+            addResult('Test 1: Authentication', 'warning', 'Checking localStorage for auth token...');
+            const token = localStorage.getItem('milo_token');
+            const user = localStorage.getItem('milo_user');
+            
+            if (!token) {
+                addResult('Test 1: Authentication', 'error', 'No auth token found in localStorage', {
+                    token: token,
+                    user: user ? JSON.parse(user) : null
+                });
+                return;
+            }
+            
+            addResult('Test 1: Authentication', 'success', 'Auth token found', {
+                token: token.substring(0, 20) + '...',
+                user: user ? JSON.parse(user) : null
+            });
+            
+            // Test 2: Check current project
+            addResult('Test 2: Current Project', 'warning', 'Checking localStorage for current project...');
+            const projectStr = localStorage.getItem('milo_current_project');
+            
+            if (!projectStr) {
+                addResult('Test 2: Current Project', 'error', 'No current project found in localStorage');
+                return;
+            }
+            
+            const project = JSON.parse(projectStr);
+            addResult('Test 2: Current Project', 'success', 'Current project found', project);
+            
+            // Test 3: Test API connectivity
+            addResult('Test 3: API Connectivity', 'warning', 'Testing connection to API...');
+            try {
+                const response = await fetch(`${API_BASE}/health`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    addResult('Test 3: API Connectivity', 'success', 'API is reachable');
+                } else {
+                    addResult('Test 3: API Connectivity', 'error', `API returned status ${response.status}`);
+                }
+            } catch (error) {
+                addResult('Test 3: API Connectivity', 'error', 'Failed to connect to API', { error: error.message });
+                return;
+            }
+            
+            // Test 4: Load tasks for current project
+            addResult('Test 4: Load Tasks', 'warning', `Loading tasks for project ${project.id}...`);
+            try {
+                const response = await fetch(`${API_BASE}/tasks?projectId=${project.id}&page=1&pageSize=500`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    addResult('Test 4: Load Tasks', 'error', `API returned status ${response.status}`, {
+                        status: response.status,
+                        statusText: response.statusText
+                    });
+                    return;
+                }
+                
+                const data = await response.json();
+                const tasks = data.tasks || data;
+                
+                if (!tasks || tasks.length === 0) {
+                    addResult('Test 4: Load Tasks', 'warning', 'No tasks found for this project', {
+                        projectId: project.id,
+                        projectName: project.name,
+                        tasksCount: 0
+                    });
+                } else {
+                    addResult('Test 4: Load Tasks', 'success', `Found ${tasks.length} tasks`, {
+                        projectId: project.id,
+                        projectName: project.name,
+                        tasksCount: tasks.length,
+                        sampleTask: tasks[0]
+                    });
+                }
+            } catch (error) {
+                addResult('Test 4: Load Tasks', 'error', 'Failed to load tasks', { error: error.message });
+            }
+            
+            // Test 5: Check board grouping
+            addResult('Test 5: Board Grouping', 'warning', 'Checking board grouping setting...');
+            const groupBy = localStorage.getItem('boardGroupBy') || 'status';
+            addResult('Test 5: Board Grouping', 'success', `Board is grouped by: ${groupBy}`, {
+                groupBy: groupBy,
+                availableOptions: ['status', 'assignee', 'label', 'priority', 'team']
+            });
+        }
+    </script>
+</body>
+</html>
