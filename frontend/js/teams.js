@@ -161,7 +161,7 @@ window.openCreateTeamModal = async function() {
     addMemberToTeam();
     
     // Update modal title
-    const modalTitle = document.getElementById('taskModalTitle');
+    const modalTitle = document.getElementById('teamModalTitle');
     if (modalTitle) {
         modalTitle.textContent = 'Create Team';
     }
@@ -376,7 +376,10 @@ async function openEditTeamModal(team) {
     addMemberToTeam();
     
     // Update modal title and button
-    document.getElementById('taskModalTitle').textContent = 'Edit Team';
+    const modalTitle = document.getElementById('teamModalTitle');
+    if (modalTitle) {
+        modalTitle.textContent = 'Edit Team';
+    }
     
     // Store team ID for update
     const modal = document.getElementById('createTeamModal');

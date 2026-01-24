@@ -147,13 +147,14 @@ function renderFilteredBoard() {
 // Group By functionality
 function applyGroupBy() {
     currentFilters.groupBy = document.getElementById('groupByFilter')?.value || 'none';
-    // Group by logic will be implemented based on selected option
-    if (currentFilters.groupBy !== 'none') {
-        // TODO: Implement grouping
-        console.log('Group by:', currentFilters.groupBy);
+    
+    console.log('Applying group by:', currentFilters.groupBy);
+    
+    // Call the board's grouping function if it exists
+    if (typeof window.applyBoardGrouping === 'function') {
+        window.applyBoardGrouping(currentFilters.groupBy);
     } else {
-        // Reset to normal view
-        filterTasks();
+        console.warn('Board grouping function not found');
     }
 }
 

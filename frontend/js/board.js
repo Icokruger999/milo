@@ -2425,6 +2425,14 @@ window.loadTaskComments = loadTaskComments;
 
 // Group by functionality - Grid layout with assignee rows
 let collapsedAssignees = {}; // Track which assignees are collapsed
+let currentGroupBy = 'assignee'; // Default grouping
+
+// Apply board grouping based on selected option
+window.applyBoardGrouping = function(groupBy) {
+    console.log('🔄 Applying board grouping:', groupBy);
+    currentGroupBy = groupBy || 'assignee';
+    renderBoard();
+};
 
 function renderBoard() {
     console.log('🎨 renderBoard() called');
@@ -2436,7 +2444,7 @@ function renderBoard() {
         done: tasks.done?.length || 0
     });
     
-    // Render grid layout with assignee rows
+    // Render grid layout with grouping
     renderBoardGrid();
 }
 
@@ -2456,7 +2464,7 @@ function renderBoardGrid() {
         ...(tasks.done || [])
     ];
     
-    console.log(`🎨 Rendering board with ${allTasks.length} total tasks`);
+    console.log(`🎨 Rendering board with ${allTasks.length} total tasks, grouped by: ${currentGroupBy}`);
     console.log('Tasks breakdown:', {
         todo: tasks.todo?.length || 0,
         progress: tasks.progress?.length || 0,
@@ -2465,80 +2473,236 @@ function renderBoardGrid() {
         done: tasks.done?.length || 0
     });
     
-    // Group tasks by assignee
-    const assigneeGroups = {};
-    allTasks.forEach(task => {
-        const assigneeName = task.assigneeName || 'Unassigned';
-        const assigneeId = task.assigneeId || 'unassigned';
-        
-        if (!assigneeGroups[assigneeName]) {
-            assigneeGroups[assigneeName] = {
-                name: assigneeName,
-                id: assigneeId,
-                tasks: { todo: [], progress: [], review: [], blocked: [], done: [] }
-            };
-        }
-        
-        // Add task to appropriate status
-        const status = (task.status || 'todo').toLowerCase();
-        if (status.includes('progress')) {
-            assigneeGroups[assigneeName].tasks.progress.push(task);
-        } else if (status.includes('review')) {
-            assigneeGroups[assigneeName].tasks.review.push(task);
-        } else if (status === 'blocked') {
-            assigneeGroups[assigneeName].tasks.blocked.push(task);
-        } else if (status === 'done') {
-            assigneeGroups[assigneeName].tasks.done.push(task);
-        } else {
-            assigneeGroups[assigneeName].tasks.todo.push(task);
-        }
-    });
+    // Group tasks based on current grouping option
+    let groups = {};
     
-    // Sort assignees alphabetically, Unassigned last
-    const sortedAssignees = Object.keys(assigneeGroups).sort((a, b) => {
-        if (a === 'Unassigned') return 1;
-        if (b === 'Unassigned') return -1;
+    if (currentGroupBy === 'none') {
+        // No grouping - show all tasks in one row
+        groups['All Tasks'] = {
+            name: 'All Tasks',
+            id: 'all',
+            tasks: { todo: [], progress: [], review: [], blocked: [], done: [] }
+        };
+        
+        allTasks.forEach(task => {
+            const status = (task.status || 'todo').toLowerCase();
+            if (status.includes('progress')) {
+                groups['All Tasks'].tasks.progress.push(task);
+            } else if (status.includes('review')) {
+                groups['All Tasks'].tasks.review.push(task);
+            } else if (status === 'blocked') {
+                groups['All Tasks'].tasks.blocked.push(task);
+            } else if (status === 'done') {
+                groups['All Tasks'].tasks.done.push(task);
+            } else {
+                groups['All Tasks'].tasks.todo.push(task);
+            }
+        });
+    } else if (currentGroupBy === 'assignee') {
+        // Group by assignee (default)
+        allTasks.forEach(task => {
+            const assigneeName = task.assigneeName || 'Unassigned';
+            const assigneeId = task.assigneeId || 'unassigned';
+            
+            if (!groups[assigneeName]) {
+                groups[assigneeName] = {
+                    name: assigneeName,
+                    id: assigneeId,
+                    tasks: { todo: [], progress: [], review: [], blocked: [], done: [] }
+                };
+            }
+            
+            const status = (task.status || 'todo').toLowerCase();
+            if (status.includes('progress')) {
+                groups[assigneeName].tasks.progress.push(task);
+            } else if (status.includes('review')) {
+                groups[assigneeName].tasks.review.push(task);
+            } else if (status === 'blocked') {
+                groups[assigneeName].tasks.blocked.push(task);
+            } else if (status === 'done') {
+                groups[assigneeName].tasks.done.push(task);
+            } else {
+                groups[assigneeName].tasks.todo.push(task);
+            }
+        });
+    } else if (currentGroupBy === 'priority') {
+        // Group by priority
+        const priorityNames = { 0: 'Low Priority', 1: 'Medium Priority', 2: 'High Priority' };
+        allTasks.forEach(task => {
+            const priority = task.priority || 0;
+            const priorityName = priorityNames[priority] || 'Low Priority';
+            
+            if (!groups[priorityName]) {
+                groups[priorityName] = {
+                    name: priorityName,
+                    id: `priority-${priority}`,
+                    tasks: { todo: [], progress: [], review: [], blocked: [], done: [] }
+                };
+            }
+            
+            const status = (task.status || 'todo').toLowerCase();
+            if (status.includes('progress')) {
+                groups[priorityName].tasks.progress.push(task);
+            } else if (status.includes('review')) {
+                groups[priorityName].tasks.review.push(task);
+            } else if (status === 'blocked') {
+                groups[priorityName].tasks.blocked.push(task);
+            } else if (status === 'done') {
+                groups[priorityName].tasks.done.push(task);
+            } else {
+                groups[priorityName].tasks.todo.push(task);
+            }
+        });
+    } else if (currentGroupBy === 'label') {
+        // Group by label
+        allTasks.forEach(task => {
+            const labelName = task.label || 'No Label';
+            
+            if (!groups[labelName]) {
+                groups[labelName] = {
+                    name: labelName,
+                    id: `label-${labelName.toLowerCase().replace(/\s+/g, '-')}`,
+                    tasks: { todo: [], progress: [], review: [], blocked: [], done: [] }
+                };
+            }
+            
+            const status = (task.status || 'todo').toLowerCase();
+            if (status.includes('progress')) {
+                groups[labelName].tasks.progress.push(task);
+            } else if (status.includes('review')) {
+                groups[labelName].tasks.review.push(task);
+            } else if (status === 'blocked') {
+                groups[labelName].tasks.blocked.push(task);
+            } else if (status === 'done') {
+                groups[labelName].tasks.done.push(task);
+            } else {
+                groups[labelName].tasks.todo.push(task);
+            }
+        });
+    } else if (currentGroupBy === 'team') {
+        // Group by team (if task has team info)
+        allTasks.forEach(task => {
+            const teamName = task.teamName || 'No Team';
+            
+            if (!groups[teamName]) {
+                groups[teamName] = {
+                    name: teamName,
+                    id: task.teamId || 'no-team',
+                    tasks: { todo: [], progress: [], review: [], blocked: [], done: [] }
+                };
+            }
+            
+            const status = (task.status || 'todo').toLowerCase();
+            if (status.includes('progress')) {
+                groups[teamName].tasks.progress.push(task);
+            } else if (status.includes('review')) {
+                groups[teamName].tasks.review.push(task);
+            } else if (status === 'blocked') {
+                groups[teamName].tasks.blocked.push(task);
+            } else if (status === 'done') {
+                groups[teamName].tasks.done.push(task);
+            } else {
+                groups[teamName].tasks.todo.push(task);
+            }
+        });
+    } else if (currentGroupBy === 'product') {
+        // Group by product (if task has product info)
+        allTasks.forEach(task => {
+            const productName = task.productName || 'No Product';
+            
+            if (!groups[productName]) {
+                groups[productName] = {
+                    name: productName,
+                    id: task.productId || 'no-product',
+                    tasks: { todo: [], progress: [], review: [], blocked: [], done: [] }
+                };
+            }
+            
+            const status = (task.status || 'todo').toLowerCase();
+            if (status.includes('progress')) {
+                groups[productName].tasks.progress.push(task);
+            } else if (status.includes('review')) {
+                groups[productName].tasks.review.push(task);
+            } else if (status === 'blocked') {
+                groups[productName].tasks.blocked.push(task);
+            } else if (status === 'done') {
+                groups[productName].tasks.done.push(task);
+            } else {
+                groups[productName].tasks.todo.push(task);
+            }
+        });
+    }
+    
+    // Sort groups
+    const sortedGroupNames = Object.keys(groups).sort((a, b) => {
+        // Special sorting for specific group types
+        if (currentGroupBy === 'assignee') {
+            if (a === 'Unassigned') return 1;
+            if (b === 'Unassigned') return -1;
+        } else if (currentGroupBy === 'priority') {
+            const priorityOrder = { 'High Priority': 0, 'Medium Priority': 1, 'Low Priority': 2 };
+            return (priorityOrder[a] || 999) - (priorityOrder[b] || 999);
+        } else if (currentGroupBy === 'label' || currentGroupBy === 'team' || currentGroupBy === 'product') {
+            if (a.startsWith('No ')) return 1;
+            if (b.startsWith('No ')) return -1;
+        }
         return a.localeCompare(b);
     });
     
     // Render rows
     container.innerHTML = '';
-    sortedAssignees.forEach(assigneeName => {
-        const group = assigneeGroups[assigneeName];
+    sortedGroupNames.forEach(groupName => {
+        const group = groups[groupName];
         const totalTasks = group.tasks.todo.length + group.tasks.progress.length + 
                           group.tasks.review.length + group.tasks.blocked.length + group.tasks.done.length;
         
-        const isCollapsed = collapsedAssignees[assigneeName] || false;
-        const initials = assigneeName === 'Unassigned' ? 'UN' : 
-                        assigneeName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-        const assigneeColor = getAssigneeColor(group.id, assigneeName);
+        const isCollapsed = collapsedAssignees[groupName] || false;
+        
+        // Generate initials/icon based on group type
+        let initials = 'GR';
+        if (currentGroupBy === 'assignee') {
+            initials = groupName === 'Unassigned' ? 'UN' : 
+                      groupName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+        } else if (currentGroupBy === 'priority') {
+            initials = groupName.includes('High') ? 'H' : groupName.includes('Medium') ? 'M' : 'L';
+        } else if (currentGroupBy === 'label') {
+            initials = groupName.substring(0, 2).toUpperCase();
+        } else if (currentGroupBy === 'team') {
+            initials = groupName === 'No Team' ? 'NT' : groupName.substring(0, 2).toUpperCase();
+        } else if (currentGroupBy === 'product') {
+            initials = groupName === 'No Product' ? 'NP' : groupName.substring(0, 2).toUpperCase();
+        } else if (currentGroupBy === 'none') {
+            initials = 'ALL';
+        }
+        
+        const groupColor = getAssigneeColor(group.id, groupName);
         
         const row = document.createElement('div');
         row.className = `assignee-row ${isCollapsed ? 'collapsed' : ''}`;
         row.style.height = 'auto';
         row.style.minHeight = '120px';
-        row.dataset.assignee = assigneeName;
+        row.dataset.assignee = groupName;
         
         row.innerHTML = `
             <div class="assignee-info">
-                <div class="assignee-toggle ${isCollapsed ? 'collapsed' : ''}" onclick="toggleAssigneeRow('${assigneeName}')">
+                <div class="assignee-toggle ${isCollapsed ? 'collapsed' : ''}" onclick="toggleAssigneeRow('${groupName.replace(/'/g, "\\'")}')">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
                 </div>
-                <div class="assignee-avatar" style="background: ${assigneeColor.bg}; color: ${assigneeColor.text};">
+                <div class="assignee-avatar" style="background: ${groupColor.bg}; color: ${groupColor.text};">
                     ${initials}
                 </div>
                 <div class="assignee-details">
-                    <div class="assignee-name">${assigneeName}</div>
+                    <div class="assignee-name">${groupName}</div>
                     <div class="assignee-task-count">${totalTasks} task${totalTasks !== 1 ? 's' : ''}</div>
                 </div>
             </div>
-            <div class="status-cell" data-status="todo" data-assignee="${assigneeName}"></div>
-            <div class="status-cell" data-status="progress" data-assignee="${assigneeName}"></div>
-            <div class="status-cell" data-status="review" data-assignee="${assigneeName}"></div>
-            <div class="status-cell" data-status="blocked" data-assignee="${assigneeName}"></div>
-            <div class="status-cell" data-status="done" data-assignee="${assigneeName}"></div>
+            <div class="status-cell" data-status="todo" data-assignee="${groupName}"></div>
+            <div class="status-cell" data-status="progress" data-assignee="${groupName}"></div>
+            <div class="status-cell" data-status="review" data-assignee="${groupName}"></div>
+            <div class="status-cell" data-status="blocked" data-assignee="${groupName}"></div>
+            <div class="status-cell" data-status="done" data-assignee="${groupName}"></div>
         `;
         
         container.appendChild(row);
