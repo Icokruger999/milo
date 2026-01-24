@@ -968,7 +968,7 @@ View in Milo: {link}";
         {
             _logger.LogInformation("Fetching active report recipients for daily incident report...");
 
-            // Get active recipients
+            // Get active recipients - DISTINCT to prevent duplicates
             var recipientsQuery = dbContext.ReportRecipients
                 .Where(r => r.IsActive && r.ReportType == "DailyIncidents");
 
@@ -977,7 +977,11 @@ View in Milo: {link}";
                 recipientsQuery = recipientsQuery.Where(r => r.ProjectId == projectId.Value);
             }
 
-            var recipients = await recipientsQuery.ToListAsync();
+            // Use DISTINCT to prevent duplicate recipients
+            var recipients = await recipientsQuery
+                .GroupBy(r => r.Email.ToLower())
+                .Select(g => g.First())
+                .ToListAsync();
 
             if (!recipients.Any())
             {
@@ -985,7 +989,7 @@ View in Milo: {link}";
                 return 0;
             }
 
-            _logger.LogInformation($"Found {recipients.Count} active recipients. Generating daily incident report...");
+            _logger.LogInformation($"Found {recipients.Count} unique active recipients. Generating daily incident report...");
 
             // Get ALL incidents (not just today's)
             var incidentsQuery = dbContext.Incidents
@@ -1029,12 +1033,20 @@ View in Milo: {link}";
                 }).ToList()
             };
 
-            // Send emails to all recipients
+            // Send emails to all recipients - track sent emails to prevent duplicates
             int successCount = 0;
             var failedRecipients = new List<string>();
+            var sentEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var recipient in recipients)
             {
+                // Skip if already sent to this email
+                if (sentEmails.Contains(recipient.Email))
+                {
+                    _logger.LogWarning($"Skipping duplicate email to {recipient.Email}");
+                    continue;
+                }
+
                 try
                 {
                     var sent = await SendDailyIncidentReportAsync(
@@ -1045,6 +1057,7 @@ View in Milo: {link}";
 
                     if (sent)
                     {
+                        sentEmails.Add(recipient.Email);
                         recipient.LastSentAt = DateTime.UtcNow;
                         successCount++;
                         _logger.LogInformation($"✓ Daily incident report sent to {recipient.Email}");
@@ -1068,7 +1081,7 @@ View in Milo: {link}";
                 await dbContext.SaveChangesAsync();
             }
 
-            _logger.LogInformation($"Daily incident report sent to {successCount} of {recipients.Count} recipients");
+            _logger.LogInformation($"Daily incident report sent to {successCount} unique recipients (out of {recipients.Count} total)");
             if (failedRecipients.Any())
             {
                 _logger.LogWarning($"Failed recipients: {string.Join(", ", failedRecipients)}");
