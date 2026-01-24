@@ -2060,7 +2060,8 @@ async function loadTasksFromAPI() {
             window.tasks = getAllTasksFlat();
             
             // Refresh dashboard if it's currently visible
-            if (typeof loadDashboardData === 'function' && currentBoardView === 'dashboard') {
+            const dashboardView = document.getElementById('dashboardView');
+            if (typeof loadDashboardData === 'function' && dashboardView && dashboardView.style.display !== 'none') {
                 setTimeout(() => loadDashboardData(), 200);
             }
             
