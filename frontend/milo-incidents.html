@@ -25,10 +25,10 @@
             overflow: hidden;
         }
 
-        /* Top Global Navigation - AWS Style */
+        /* Top Global Navigation - White Style */
         .global-nav {
-            background: #232F3E;
-            border-bottom: 1px solid #3C4043;
+            background: #FFFFFF;
+            border-bottom: 1px solid #DFE1E6;
             height: 48px;
             display: flex;
             align-items: center;
@@ -49,6 +49,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            color: #0052CC;
         }
 
         .global-nav-links {
@@ -59,7 +60,7 @@
 
         .global-nav-link {
             padding: 6px 12px;
-            color: #FFFFFF;
+            color: #42526E;
             text-decoration: none;
             font-size: 14px;
             border-radius: 3px;
@@ -67,19 +68,28 @@
         }
 
         .global-nav-link:hover {
-            background: #3C4043;
-            color: #FFFFFF;
+            background: #F4F5F7;
+            color: #172B4D;
+        }
+
+        .global-nav-link.active {
+            background: #DEEBFF;
+            color: #0052CC;
         }
 
         .global-nav-create {
-            background: #FF9900;
-            color: #232F3E;
+            background: #0052CC;
+            color: #FFFFFF;
             padding: 6px 12px;
             border: none;
             border-radius: 3px;
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
+        }
+
+        .global-nav-create:hover {
+            background: #0747A6;
         }
 
         .global-nav-right {
@@ -97,11 +107,11 @@
             justify-content: center;
             border-radius: 3px;
             cursor: pointer;
-            color: #FFFFFF;
+            color: #42526E;
         }
 
         .global-nav-icon:hover {
-            background: #3C4043;
+            background: #F4F5F7;
         }
 
         /* Left Sidebar */
@@ -580,10 +590,9 @@
                 <a href="milo-board.html" class="global-nav-link">Board</a>
                 <a href="milo-backlog.html" class="global-nav-link">Backlog</a>
                 <a href="milo-roadmap.html" class="global-nav-link">Roadmap</a>
-                <a href="milo-board.html#timeline" class="global-nav-link">Timeline</a>
-                <a href="milo-board.html#dashboard" class="global-nav-link">Dashboard</a>
+                <a href="milo-project-timeline.html" class="global-nav-link">Project Timeline</a>
                 <a href="milo-flakes.html" class="global-nav-link">Flakes</a>
-                <a href="milo-incidents.html" class="global-nav-link" style="background: #DEEBFF; color: #0052CC; font-weight: 500;">Incidents</a>
+                <a href="milo-teams.html" class="global-nav-link">Teams</a>
             </div>
         </div>
         <div class="global-nav-right">
@@ -619,7 +628,7 @@
                 <rect x="3" y="14" width="7" height="7"></rect>
             </svg>
         </a>
-        <a href="milo-board.html#timeline" class="sidebar-icon" title="Timeline">
+        <a href="milo-project-timeline.html" class="sidebar-icon" title="Project Timeline">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
