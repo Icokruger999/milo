@@ -17,10 +17,9 @@
             color: #172B4D;
         }
 
-        /* Navigation */
+        /* Navigation - White header */
         .global-nav {
-            background: #232F3E;
-            color: white;
+            background: #FFFFFF;
             height: 56px;
             display: flex;
             align-items: center;
@@ -30,7 +29,7 @@
             left: 0;
             right: 0;
             z-index: 1000;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-bottom: 1px solid #DFE1E6;
         }
 
         .global-nav-left {
@@ -41,30 +40,38 @@
 
         .global-nav-logo {
             cursor: pointer;
+            color: #0052CC;
         }
 
         .global-nav-brand-text {
             font-size: 18px;
             font-weight: 600;
-            color: white;
+            color: #0052CC;
         }
 
         .global-nav-links {
             display: flex;
-            gap: 20px;
+            gap: 8px;
         }
 
         .global-nav-links a {
-            color: rgba(255, 255, 255, 0.9);
+            color: #42526E;
             text-decoration: none;
             font-size: 14px;
             font-weight: 500;
-            transition: color 0.15s;
+            padding: 6px 12px;
+            border-radius: 4px;
+            transition: all 0.15s;
         }
 
-        .global-nav-links a:hover,
+        .global-nav-links a:hover {
+            background: #F4F5F7;
+            color: #172B4D;
+        }
+
         .global-nav-links a.active {
-            color: white;
+            background: #DEEBFF;
+            color: #0052CC;
         }
 
         /* Main Container */
@@ -456,6 +463,7 @@
                 <a href="milo-board.html">Board</a>
                 <a href="milo-backlog.html">Backlog</a>
                 <a href="milo-roadmap.html">Roadmap</a>
+                <a href="milo-project-timeline.html">Project Timeline</a>
                 <a href="milo-flakes.html">Flakes</a>
                 <a href="milo-teams.html" class="active">Teams</a>
             </div>

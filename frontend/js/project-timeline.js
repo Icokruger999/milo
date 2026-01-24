@@ -1,16 +1,14 @@
 // Project Timeline - Gantt Chart View
-// Displays tasks in a project management timeline format
+// Fully functional timeline with days/weeks/months view
 
-let timelineTasks = [];
-let phases = [];
-let dayWidth = 40; // pixels per day
-let startDate = null;
-let endDate = null;
+let tasks = [];
 let currentProject = null;
+let currentView = 'weeks'; // days, weeks, months
+let currentDate = new Date();
+let dayWidth = 40;
 
-// Phase colors
-const phaseColors = ['blue', 'green', 'orange', 'purple', 'gray'];
-let colorIndex = 0;
+// Colors for tasks
+const taskColors = ['blue', 'green', 'orange', 'purple', 'red'];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async function() {
@@ -65,15 +63,30 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
     }
 
-    // Load timeline data
-    await loadTimelineData();
+    // Update project title
+    const titleEl = document.getElementById('projectTitle');
+    if (titleEl) titleEl.textContent = currentProject.name + ' Timeline';
+
+    // Set default dates for new task inputs
+    const today = new Date();
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    
+    document.getElementById('newTaskStart').value = formatDateForInput(today);
+    document.getElementById('newTaskEnd').value = formatDateForInput(nextWeek);
+
+    // Load tasks
+    await loadTasks();
+
+    // Render timeline
+    renderTimeline();
 
     // Scroll to today
-    setTimeout(scrollToToday, 100);
+    setTimeout(goToToday, 100);
 });
 
-// Load timeline data from API
-async function loadTimelineData() {
+// Load tasks from API
+async function loadTasks() {
     try {
         const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
         if (!response.ok) {
@@ -81,145 +94,133 @@ async function loadTimelineData() {
             return;
         }
 
-        const tasks = await response.json();
+        const rawTasks = await response.json();
         
-        // Process tasks into phases and subtasks
-        processTasksIntoPhases(tasks);
-        
-        // Calculate date range
-        calculateDateRange();
-        
-        // Render the timeline
-        renderTimeline();
+        // Process tasks
+        tasks = rawTasks.map((task, index) => {
+            // Calculate progress based on status
+            let progress = 0;
+            if (task.status === 'done') progress = 100;
+            else if (task.status === 'review') progress = 75;
+            else if (task.status === 'progress') progress = 50;
+            else progress = 0;
+
+            return {
+                id: task.id,
+                name: task.title || 'Untitled',
+                wbs: (index + 1).toString(),
+                startDate: task.startDate ? new Date(task.startDate) : new Date(task.createdAt || Date.now()),
+                endDate: task.dueDate ? new Date(task.dueDate) : null,
+                progress: progress,
+                color: taskColors[index % taskColors.length],
+                status: task.status,
+                assignee: task.assignee ? task.assignee.name : null,
+                label: task.label
+            };
+        });
+
+        // Set default end date if missing
+        tasks.forEach(task => {
+            if (!task.endDate) {
+                task.endDate = new Date(task.startDate);
+                task.endDate.setDate(task.endDate.getDate() + 7);
+            }
+        });
+
+        console.log(`Loaded ${tasks.length} tasks`);
     } catch (error) {
-        console.error('Error loading timeline:', error);
+        console.error('Error loading tasks:', error);
     }
-}
-
-// Process tasks into phases based on labels or parent tasks
-function processTasksIntoPhases(tasks) {
-    phases = [];
-    const phaseMap = new Map();
-    
-    // Group tasks by label (as phases)
-    tasks.forEach(task => {
-        const phaseName = task.label || 'Uncategorized';
-        
-        if (!phaseMap.has(phaseName)) {
-            phaseMap.set(phaseName, {
-                id: `phase-${phaseMap.size + 1}`,
-                name: phaseName,
-                color: phaseColors[phaseMap.size % phaseColors.length],
-                tasks: [],
-                wbs: phaseMap.size + 1,
-                startDate: null,
-                endDate: null,
-                expanded: true
-            });
-        }
-        
-        const phase = phaseMap.get(phaseName);
-        const taskIndex = phase.tasks.length + 1;
-        
-        // Calculate progress based on status
-        let progress = 0;
-        if (task.status === 'done') progress = 100;
-        else if (task.status === 'review') progress = 75;
-        else if (task.status === 'progress') progress = 50;
-        else if (task.status === 'todo') progress = 0;
-        
-        const processedTask = {
-            id: task.id,
-            name: task.title || 'Untitled Task',
-            wbs: `${phase.wbs}.${taskIndex}`,
-            startDate: task.startDate ? new Date(task.startDate) : (task.createdAt ? new Date(task.createdAt) : new Date()),
-            endDate: task.dueDate ? new Date(task.dueDate) : null,
-            progress: progress,
-            assignee: task.assignee ? task.assignee.name : null,
-            status: task.status,
-            color: phase.color
-        };
-        
-        // If no end date, default to 7 days after start
-        if (!processedTask.endDate) {
-            processedTask.endDate = new Date(processedTask.startDate);
-            processedTask.endDate.setDate(processedTask.endDate.getDate() + 7);
-        }
-        
-        phase.tasks.push(processedTask);
-        
-        // Update phase dates
-        if (!phase.startDate || processedTask.startDate < phase.startDate) {
-            phase.startDate = new Date(processedTask.startDate);
-        }
-        if (!phase.endDate || processedTask.endDate > phase.endDate) {
-            phase.endDate = new Date(processedTask.endDate);
-        }
-    });
-    
-    // Calculate phase progress
-    phaseMap.forEach(phase => {
-        if (phase.tasks.length > 0) {
-            const totalProgress = phase.tasks.reduce((sum, t) => sum + t.progress, 0);
-            phase.progress = Math.round(totalProgress / phase.tasks.length);
-        } else {
-            phase.progress = 0;
-        }
-    });
-    
-    phases = Array.from(phaseMap.values());
-    
-    // Sort phases by WBS
-    phases.sort((a, b) => a.wbs - b.wbs);
-}
-
-// Calculate the date range for the timeline
-function calculateDateRange() {
-    const now = new Date();
-    
-    // Find min and max dates from all tasks
-    let minDate = new Date(now);
-    let maxDate = new Date(now);
-    
-    phases.forEach(phase => {
-        if (phase.startDate && phase.startDate < minDate) {
-            minDate = new Date(phase.startDate);
-        }
-        if (phase.endDate && phase.endDate > maxDate) {
-            maxDate = new Date(phase.endDate);
-        }
-    });
-    
-    // Add padding: 2 weeks before and 4 weeks after
-    startDate = new Date(minDate);
-    startDate.setDate(startDate.getDate() - 14);
-    
-    endDate = new Date(maxDate);
-    endDate.setDate(endDate.getDate() + 28);
 }
 
 // Render the complete timeline
 function renderTimeline() {
-    renderGanttHeader();
-    renderTaskTable();
-    renderGanttBody();
+    renderTaskList();
+    renderGanttChart();
+    updatePeriodLabel();
 }
 
-// Render Gantt header with months and days
-function renderGanttHeader() {
-    const header = document.getElementById('ganttHeader');
-    if (!header || !startDate || !endDate) return;
+// Render task list (left panel)
+function renderTaskList() {
+    const container = document.getElementById('taskList');
+    if (!container) return;
+
+    if (tasks.length === 0) {
+        container.innerHTML = `
+            <div style="padding: 40px 20px; text-align: center; color: #6B778C;">
+                <p>No tasks yet. Add your first task below.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = tasks.map(task => `
+        <div class="task-row" data-task-id="${task.id}">
+            <div class="task-color">
+                <div class="color-dot ${task.color}"></div>
+            </div>
+            <div class="task-name">
+                ${escapeHtml(task.name)}
+            </div>
+            <div class="wbs-cell">${task.wbs}</div>
+            <div class="date-cell">${formatDateShort(task.startDate)}</div>
+            <div class="date-cell">${formatDateShort(task.endDate)}</div>
+        </div>
+    `).join('');
+}
+
+// Render Gantt chart (right panel)
+function renderGanttChart() {
+    const { startDate: viewStart, endDate: viewEnd, days } = getViewDateRange();
     
-    const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+    renderGanttHeader(viewStart, days);
+    renderGanttBody(viewStart, days);
+}
+
+// Get date range based on current view
+function getViewDateRange() {
+    const start = new Date(currentDate);
+    let days = 0;
+
+    if (currentView === 'days') {
+        // Show 2 weeks centered on current date
+        start.setDate(start.getDate() - 7);
+        days = 14;
+        dayWidth = 60;
+    } else if (currentView === 'weeks') {
+        // Show current month
+        start.setDate(1);
+        const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+        days = end.getDate();
+        dayWidth = 40;
+    } else if (currentView === 'months') {
+        // Show 3 months
+        start.setDate(1);
+        const end = new Date(start.getFullYear(), start.getMonth() + 3, 0);
+        days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+        dayWidth = 15;
+    }
+
+    const endDate = new Date(start);
+    endDate.setDate(endDate.getDate() + days);
+
+    return { startDate: start, endDate: endDate, days: days };
+}
+
+// Render Gantt header
+function renderGanttHeader(viewStart, totalDays) {
+    const header = document.getElementById('ganttHeader');
+    if (!header) return;
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     // Group days by month
     const months = [];
     let currentMonth = null;
-    
+
     for (let i = 0; i < totalDays; i++) {
-        const date = new Date(startDate);
+        const date = new Date(viewStart);
         date.setDate(date.getDate() + i);
         
         const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
@@ -227,49 +228,50 @@ function renderGanttHeader() {
         if (!currentMonth || currentMonth.key !== monthKey) {
             currentMonth = {
                 key: monthKey,
-                label: date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }).toUpperCase(),
+                label: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
                 days: []
             };
             months.push(currentMonth);
         }
-        
+
         const isWeekend = date.getDay() === 0 || date.getDay() === 6;
         const isToday = date.getTime() === today.getTime();
-        
+
         currentMonth.days.push({
             date: new Date(date),
-            dayOfWeek: date.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0),
-            dayOfMonth: date.getDate(),
+            dayName: date.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0),
+            dayNum: date.getDate(),
             isWeekend,
             isToday
         });
     }
-    
-    // Render month row
-    let monthRowHTML = '<div class="gantt-month-row">';
+
+    // Render months row
+    let monthsHTML = '<div class="gantt-months-row">';
     months.forEach(month => {
         const width = month.days.length * dayWidth;
-        monthRowHTML += `<div class="gantt-month-cell" style="min-width: ${width}px; width: ${width}px;">${month.label}</div>`;
+        monthsHTML += `<div class="gantt-month-cell" style="min-width: ${width}px; width: ${width}px;">${month.label}</div>`;
     });
-    monthRowHTML += '</div>';
-    
-    // Render day row
-    let dayRowHTML = '<div class="gantt-header-row">';
+    monthsHTML += '</div>';
+
+    // Render days row
+    let daysHTML = '<div class="gantt-days-row">';
     months.forEach(month => {
         month.days.forEach(day => {
-            let classes = 'gantt-header-cell';
+            let classes = 'gantt-day-cell';
             if (day.isWeekend) classes += ' weekend';
             if (day.isToday) classes += ' today';
-            dayRowHTML += `<div class="${classes}" style="min-width: ${dayWidth}px;">
-                <div>${day.dayOfWeek}</div>
-                <div>${day.dayOfMonth}</div>
+            
+            daysHTML += `<div class="${classes}" style="min-width: ${dayWidth}px; width: ${dayWidth}px;">
+                <span class="gantt-day-name">${day.dayName}</span>
+                <span class="gantt-day-num">${day.dayNum}</span>
             </div>`;
         });
     });
-    dayRowHTML += '</div>';
-    
-    header.innerHTML = monthRowHTML + dayRowHTML;
-    
+    daysHTML += '</div>';
+
+    header.innerHTML = monthsHTML + daysHTML;
+
     // Set wrapper width
     const wrapper = document.getElementById('ganttWrapper');
     if (wrapper) {
@@ -277,148 +279,199 @@ function renderGanttHeader() {
     }
 }
 
-// Render task table (left panel)
-function renderTaskTable() {
-    const tbody = document.getElementById('taskTableBody');
-    if (!tbody) return;
-    
-    let html = '';
-    let rowIndex = 0;
-    
-    phases.forEach((phase, phaseIndex) => {
-        // Phase row
-        html += `
-            <tr class="phase-row" data-phase-id="${phase.id}" data-row="${rowIndex}">
-                <td>
-                    <span class="phase-indicator ${phase.color}"></span>
-                </td>
-                <td>
-                    <div class="task-name">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="cursor: pointer;" onclick="togglePhase('${phase.id}')">
-                            <polyline points="${phase.expanded ? '6 9 12 15 18 9' : '9 6 15 12 9 18'}"></polyline>
-                        </svg>
-                        ${escapeHtml(phase.name)}
-                    </div>
-                </td>
-                <td class="wbs-number">${phase.wbs}</td>
-                <td class="date-cell">${formatDate(phase.startDate)}</td>
-                <td class="date-cell">${formatDate(phase.endDate)}</td>
-            </tr>
-        `;
-        rowIndex++;
-        
-        // Task rows (if phase is expanded)
-        if (phase.expanded) {
-            phase.tasks.forEach(task => {
-                html += `
-                    <tr data-task-id="${task.id}" data-row="${rowIndex}">
-                        <td></td>
-                        <td>
-                            <div class="task-name task-indent">
-                                ${escapeHtml(task.name)}
-                            </div>
-                        </td>
-                        <td class="wbs-number">${task.wbs}</td>
-                        <td class="date-cell">${formatDate(task.startDate)}</td>
-                        <td class="date-cell">${formatDate(task.endDate)}</td>
-                    </tr>
-                `;
-                rowIndex++;
-            });
-        }
-    });
-    
-    tbody.innerHTML = html;
-}
-
 // Render Gantt body with bars
-function renderGanttBody() {
+function renderGanttBody(viewStart, totalDays) {
     const body = document.getElementById('ganttBody');
-    if (!body || !startDate || !endDate) return;
-    
-    const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+    if (!body) return;
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     let html = '';
-    
-    // Create grid cells for each row
-    phases.forEach((phase, phaseIndex) => {
-        // Phase row
-        html += renderGanttRow(phase, true, totalDays, today);
+
+    // Render rows for each task
+    tasks.forEach(task => {
+        html += '<div class="gantt-row">';
         
-        // Task rows (if expanded)
-        if (phase.expanded) {
-            phase.tasks.forEach(task => {
-                html += renderGanttRow(task, false, totalDays, today);
-            });
+        // Background cells
+        for (let i = 0; i < totalDays; i++) {
+            const date = new Date(viewStart);
+            date.setDate(date.getDate() + i);
+            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+            html += `<div class="gantt-cell ${isWeekend ? 'weekend' : ''}" style="min-width: ${dayWidth}px; width: ${dayWidth}px;"></div>`;
         }
+
+        // Task bar
+        if (task.startDate && task.endDate) {
+            const barStart = Math.max(0, Math.ceil((task.startDate - viewStart) / (1000 * 60 * 60 * 24)));
+            const barEnd = Math.ceil((task.endDate - viewStart) / (1000 * 60 * 60 * 24));
+            
+            if (barEnd > 0 && barStart < totalDays) {
+                const left = barStart * dayWidth;
+                const width = Math.max(dayWidth, (barEnd - barStart) * dayWidth);
+                const progressWidth = (task.progress / 100) * width;
+
+                html += `
+                    <div class="gantt-bar ${task.color}" style="left: ${left}px; width: ${width}px;" title="${escapeHtml(task.name)} - ${task.progress}%">
+                        <div class="gantt-bar-progress" style="width: ${progressWidth}px;"></div>
+                        <span class="gantt-bar-label">${escapeHtml(task.name)} ${task.progress}%</span>
+                    </div>
+                `;
+            }
+        }
+
+        html += '</div>';
     });
-    
-    // Add today line
-    const todayOffset = Math.ceil((today - startDate) / (1000 * 60 * 60 * 24));
+
+    // Add empty row for new task
+    html += '<div class="gantt-row">';
+    for (let i = 0; i < totalDays; i++) {
+        const date = new Date(viewStart);
+        date.setDate(date.getDate() + i);
+        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+        html += `<div class="gantt-cell ${isWeekend ? 'weekend' : ''}" style="min-width: ${dayWidth}px; width: ${dayWidth}px;"></div>`;
+    }
+    html += '</div>';
+
+    // Today line
+    const todayOffset = Math.ceil((today - viewStart) / (1000 * 60 * 60 * 24));
     if (todayOffset >= 0 && todayOffset <= totalDays) {
         html += `<div class="today-line" style="left: ${todayOffset * dayWidth}px;"></div>`;
     }
-    
+
     body.innerHTML = html;
 }
 
-// Render a single Gantt row
-function renderGanttRow(item, isPhase, totalDays, today) {
-    let html = `<div class="gantt-row ${isPhase ? 'phase-row' : ''}">`;
+// Update period label
+function updatePeriodLabel() {
+    const label = document.getElementById('currentPeriod');
+    if (!label) return;
+
+    if (currentView === 'days') {
+        const start = new Date(currentDate);
+        start.setDate(start.getDate() - 7);
+        const end = new Date(currentDate);
+        end.setDate(end.getDate() + 7);
+        label.textContent = `${formatDateShort(start)} - ${formatDateShort(end)}`;
+    } else if (currentView === 'weeks') {
+        label.textContent = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    } else {
+        const start = new Date(currentDate);
+        const end = new Date(start.getFullYear(), start.getMonth() + 3, 0);
+        label.textContent = `${start.toLocaleDateString('en-US', { month: 'short' })} - ${end.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+    }
+}
+
+// Set view mode
+function setView(view) {
+    currentView = view;
     
-    // Background cells
-    for (let i = 0; i < totalDays; i++) {
-        const date = new Date(startDate);
-        date.setDate(date.getDate() + i);
-        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-        html += `<div class="gantt-cell ${isWeekend ? 'weekend' : ''}"></div>`;
+    // Update buttons
+    document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`view${view.charAt(0).toUpperCase() + view.slice(1)}`).classList.add('active');
+    
+    renderTimeline();
+}
+
+// Navigate period
+function navigatePeriod(direction) {
+    if (currentView === 'days') {
+        currentDate.setDate(currentDate.getDate() + (direction * 7));
+    } else if (currentView === 'weeks') {
+        currentDate.setMonth(currentDate.getMonth() + direction);
+    } else {
+        currentDate.setMonth(currentDate.getMonth() + (direction * 3));
     }
     
-    // Calculate bar position
-    if (item.startDate && item.endDate) {
-        const barStart = Math.max(0, Math.ceil((item.startDate - startDate) / (1000 * 60 * 60 * 24)));
-        const barEnd = Math.ceil((item.endDate - startDate) / (1000 * 60 * 60 * 24));
-        const barWidth = Math.max(dayWidth, (barEnd - barStart) * dayWidth);
-        const barLeft = barStart * dayWidth;
+    renderTimeline();
+}
+
+// Go to today
+function goToToday() {
+    currentDate = new Date();
+    renderTimeline();
+    
+    // Scroll to today in gantt
+    const panel = document.getElementById('ganttPanel');
+    const { startDate: viewStart } = getViewDateRange();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const todayOffset = Math.ceil((today - viewStart) / (1000 * 60 * 60 * 24));
+    const scrollPos = Math.max(0, (todayOffset * dayWidth) - (panel.clientWidth / 2));
+    panel.scrollLeft = scrollPos;
+}
+
+// Handle keypress on new task input
+async function handleTaskKeypress(event) {
+    if (event.key === 'Enter') {
+        await createTask();
+    }
+}
+
+// Create new task
+async function createTask() {
+    const nameInput = document.getElementById('newTaskName');
+    const startInput = document.getElementById('newTaskStart');
+    const endInput = document.getElementById('newTaskEnd');
+    const colorSelect = document.getElementById('newTaskColor');
+
+    const name = nameInput.value.trim();
+    if (!name) return;
+
+    const startDate = startInput.value ? new Date(startInput.value) : new Date();
+    const endDate = endInput.value ? new Date(endInput.value) : new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    try {
+        const user = authService.getCurrentUser();
         
-        const progress = item.progress || 0;
-        const progressWidth = (progress / 100) * barWidth;
-        
-        // Build label
-        let label = '';
-        if (isPhase) {
-            label = `${item.name} ${progress}%`;
+        const response = await apiClient.post('/tasks', {
+            title: name,
+            projectId: currentProject.id,
+            status: 'todo',
+            startDate: startDate.toISOString(),
+            dueDate: endDate.toISOString(),
+            creatorId: user ? user.id : null
+        });
+
+        if (response.ok) {
+            // Clear inputs
+            nameInput.value = '';
+            
+            // Set new default dates
+            const today = new Date();
+            const nextWeek = new Date(today);
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            startInput.value = formatDateForInput(today);
+            endInput.value = formatDateForInput(nextWeek);
+
+            // Reload tasks
+            await loadTasks();
+            renderTimeline();
+            
+            console.log('Task created successfully');
         } else {
-            label = `${item.name} ${progress}%`;
-            if (item.assignee) {
-                label += ` <span class="gantt-bar-assignee">${item.assignee}</span>`;
-            }
+            console.error('Failed to create task');
         }
-        
-        html += `
-            <div class="gantt-bar-container" style="left: ${barLeft}px; width: ${barWidth}px;">
-                <div class="gantt-bar ${item.color}" style="width: 100%;" onclick="openTaskDetail(${item.id})" title="${escapeHtml(item.name)} - ${progress}% complete">
-                    <div class="gantt-bar-progress" style="width: ${progressWidth}px;"></div>
-                    <div class="gantt-bar-label">${label}</div>
-                </div>
-            </div>
-        `;
+    } catch (error) {
+        console.error('Error creating task:', error);
     }
-    
-    html += '</div>';
-    return html;
 }
 
-// Format date for display
-function formatDate(date) {
+// Helper functions
+function formatDateShort(date) {
     if (!date) return '';
-    const d = new Date(date);
-    return d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
+    return new Date(date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' });
 }
 
-// Escape HTML
+function formatDateForInput(date) {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -426,82 +479,9 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Toggle phase expansion
-function togglePhase(phaseId) {
-    const phase = phases.find(p => p.id === phaseId);
-    if (phase) {
-        phase.expanded = !phase.expanded;
-        renderTaskTable();
-        renderGanttBody();
-    }
-}
-
-// Scroll to today
-function scrollToToday() {
-    const container = document.getElementById('ganttContainer');
-    if (!container || !startDate) return;
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const todayOffset = Math.ceil((today - startDate) / (1000 * 60 * 60 * 24));
-    const scrollPosition = Math.max(0, (todayOffset * dayWidth) - (container.clientWidth / 2));
-    
-    container.scrollLeft = scrollPosition;
-}
-
-// Zoom in
-function zoomIn() {
-    dayWidth = Math.min(80, dayWidth + 10);
-    renderTimeline();
-}
-
-// Zoom out
-function zoomOut() {
-    dayWidth = Math.max(20, dayWidth - 10);
-    renderTimeline();
-}
-
-// Add new phase
-function addPhase() {
-    const name = prompt('Enter phase name:');
-    if (!name) return;
-    
-    colorIndex = (colorIndex + 1) % phaseColors.length;
-    
-    const newPhase = {
-        id: `phase-${Date.now()}`,
-        name: name,
-        color: phaseColors[colorIndex],
-        tasks: [],
-        wbs: phases.length + 1,
-        startDate: new Date(),
-        endDate: new Date(),
-        progress: 0,
-        expanded: true
-    };
-    
-    phases.push(newPhase);
-    renderTimeline();
-}
-
-// Add new task
-async function addTask() {
-    // Redirect to board to create task
-    window.location.href = 'milo-board.html';
-}
-
-// Open task detail
-function openTaskDetail(taskId) {
-    // Could open a modal or redirect to task detail
-    console.log('Open task:', taskId);
-}
-
 // Make functions global
-window.togglePhase = togglePhase;
-window.scrollToToday = scrollToToday;
-window.zoomIn = zoomIn;
-window.zoomOut = zoomOut;
-window.addPhase = addPhase;
-window.addTask = addTask;
-window.openTaskDetail = openTaskDetail;
+window.setView = setView;
+window.navigatePeriod = navigatePeriod;
+window.goToToday = goToToday;
+window.handleTaskKeypress = handleTaskKeypress;
+window.createTask = createTask;
