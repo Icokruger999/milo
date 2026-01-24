@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Show loading state
 function showLoadingState() {
-    const stats = ['totalTasks', 'inProgressTasks', 'completedTasks', 'completionRate'];
+    const stats = ['dashTotalTasks', 'dashInProgress', 'dashCompleted', 'dashCompletionRate'];
     stats.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -288,15 +288,16 @@ function showErrorState() {
         console.log('Using cached data due to error');
         dashboardData.tasks = dataCache.tasks;
         dashboardData.filteredTasks = [...dashboardData.tasks];
-        applyFiltersImmediate(); // No debounce for error recovery
+        updateStats();
+        updateCharts();
         return;
     }
     
     // Show zeros instead of "Error"
-    const totalTasksEl = document.getElementById('totalTasks');
-    const inProgressEl = document.getElementById('inProgressTasks');
-    const completedEl = document.getElementById('completedTasks');
-    const completionRateEl = document.getElementById('completionRate');
+    const totalTasksEl = document.getElementById('dashTotalTasks');
+    const inProgressEl = document.getElementById('dashInProgress');
+    const completedEl = document.getElementById('dashCompleted');
+    const completionRateEl = document.getElementById('dashCompletionRate');
     
     if (totalTasksEl) {
         totalTasksEl.textContent = '0';
@@ -305,9 +306,6 @@ function showErrorState() {
     if (inProgressEl) inProgressEl.textContent = '0';
     if (completedEl) completedEl.textContent = '0';
     if (completionRateEl) completionRateEl.textContent = '0%';
-    
-    // Show helpful message on dashboard
-    showEmptyStateMessage();
     
     // Clear charts
     Object.values(charts).forEach(chart => {
@@ -319,52 +317,6 @@ function showErrorState() {
             }
         }
     });
-}
-
-// Show empty state message when no tasks
-function showEmptyStateMessage() {
-    const dashboardContent = document.querySelector('.dashboard-content');
-    if (!dashboardContent) return;
-    
-    // Check if message already exists
-    if (document.getElementById('emptyStateMessage')) return;
-    
-    const emptyMessage = document.createElement('div');
-    emptyMessage.id = 'emptyStateMessage';
-    emptyMessage.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        text-align: center;
-        padding: 40px;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        z-index: 1000;
-        max-width: 500px;
-    `;
-    emptyMessage.innerHTML = `
-        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#0052CC" stroke-width="1.5" style="margin-bottom: 20px;">
-            <rect x="3" y="3" width="7" height="9"></rect>
-            <rect x="14" y="3" width="7" height="5"></rect>
-            <rect x="14" y="12" width="7" height="9"></rect>
-            <rect x="3" y="16" width="7" height="5"></rect>
-        </svg>
-        <h2 style="margin: 0 0 16px 0; color: #172B4D; font-size: 24px;">No Tasks Yet</h2>
-        <p style="margin: 0 0 24px 0; color: #6B778C; font-size: 16px; line-height: 1.5;">
-            Your dashboard will display metrics once you create tasks on the Board.
-        </p>
-        <button onclick="window.location.href='milo-board.html'" 
-                style="background: #0052CC; color: white; border: none; padding: 12px 24px; border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer;">
-            Go to Board & Create Tasks
-        </button>
-        <p style="margin: 16px 0 0 0; color: #6B778C; font-size: 13px;">
-            Or press <kbd style="background: #F4F5F7; padding: 2px 6px; border-radius: 3px;">F12</kbd> to open console for debugging
-        </p>
-    `;
-    
-    dashboardContent.appendChild(emptyMessage);
 }
 
 // Load assignees for filter dropdown - get ALL users from API
