@@ -43,9 +43,8 @@ public class EmailService : IEmailService
         try
         {
             var subject = $"Daily Incident Report - {reportData.Date:MMMM dd, yyyy}";
-            var htmlBody = GenerateReportHtml(recipientName, reportData);
-            
-            return await SendEmailAsync(recipientEmail, subject, htmlBody);
+            var plainTextBody = GenerateReportPlainText(recipientName, reportData);
+            return await SendEmailWithPlainTextAsync(recipientEmail, subject, plainTextBody, plainTextBody);
         }
         catch (Exception ex)
         {
@@ -54,9 +53,73 @@ public class EmailService : IEmailService
         }
     }
 
+    private string GenerateReportPlainText(string recipientName, DailyReportData reportData)
+    {
+        var sb = new StringBuilder();
+        
+        sb.AppendLine("═══════════════════════════════════════════════════════════════");
+        sb.AppendLine($"           DAILY INCIDENT REPORT - {reportData.Date:MMMM dd, yyyy}");
+        sb.AppendLine("═══════════════════════════════════════════════════════════════");
+        sb.AppendLine();
+        sb.AppendLine($"Hello {recipientName},");
+        sb.AppendLine();
+        sb.AppendLine("Here's your daily summary of incidents:");
+        sb.AppendLine();
+        sb.AppendLine("───────────────────────────────────────────────────────────────");
+        sb.AppendLine("                         SUMMARY");
+        sb.AppendLine("───────────────────────────────────────────────────────────────");
+        sb.AppendLine($"  Total Incidents:    {reportData.TotalCount}");
+        sb.AppendLine($"  Resolved:           {reportData.ResolvedCount}");
+        sb.AppendLine($"  High Priority:      {reportData.HighPriorityCount}");
+        sb.AppendLine($"  New:                {reportData.NewCount}");
+        sb.AppendLine();
+
+        if (reportData.Incidents.Any())
+        {
+            sb.AppendLine("───────────────────────────────────────────────────────────────");
+            sb.AppendLine("                    ALL INCIDENTS");
+            sb.AppendLine("───────────────────────────────────────────────────────────────");
+            sb.AppendLine();
+
+            foreach (var incident in reportData.Incidents)
+            {
+                var resolutionTimeText = incident.ResolutionTime.HasValue 
+                    ? FormatDuration(incident.ResolutionTime.Value)
+                    : "-";
+                var createdDate = incident.CreatedAt.HasValue 
+                    ? incident.CreatedAt.Value.ToString("MMM dd, HH:mm")
+                    : "-";
+                var closedDate = incident.ResolvedAt.HasValue 
+                    ? incident.ResolvedAt.Value.ToString("MMM dd, HH:mm")
+                    : "-";
+                
+                sb.AppendLine($"  [{incident.IncidentNumber}] {incident.Subject}");
+                sb.AppendLine($"    Status: {incident.Status}  |  Priority: {incident.Priority}");
+                sb.AppendLine($"    Requester: {incident.RequesterName}  |  Assignee: {incident.AssigneeName}");
+                sb.AppendLine($"    Created: {createdDate}  |  Closed: {closedDate}  |  Resolution: {resolutionTimeText}");
+                sb.AppendLine();
+            }
+        }
+        else
+        {
+            sb.AppendLine("  No incidents in the system.");
+            sb.AppendLine();
+        }
+
+        sb.AppendLine("───────────────────────────────────────────────────────────────");
+        sb.AppendLine();
+        sb.AppendLine("View all incidents: https://www.codingeverest.com/milo-incidents.html");
+        sb.AppendLine();
+        sb.AppendLine("───────────────────────────────────────────────────────────────");
+        sb.AppendLine("This is an automated report from Milo Incident Management");
+        sb.AppendLine("https://www.codingeverest.com");
+        sb.AppendLine("───────────────────────────────────────────────────────────────");
+
+        return sb.ToString();
+    }
+
     public async Task<bool> SendEmailAsync(string to, string subject, string htmlBody)
     {
-        // Create plain text version from HTML (simple strip)
         var plainTextBody = System.Text.RegularExpressions.Regex.Replace(htmlBody, "<[^>]*>", "")
             .Replace("&nbsp;", " ")
             .Replace("&amp;", "&")
@@ -81,7 +144,6 @@ public class EmailService : IEmailService
                 return false;
             }
 
-            // Use MailKit SMTP
             return await SendEmailViaMailKitAsync(to, subject, htmlBody, plainTextBody, fromEmail, fromName);
         }
         catch (Exception ex)
@@ -106,13 +168,11 @@ public class EmailService : IEmailService
                 return false;
             }
 
-            // Use MailKit for proper HTML email support
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress(fromName, fromEmail));
             message.To.Add(new MailboxAddress("", to));
             message.Subject = subject;
 
-            // Build multipart message with both HTML and plain text
             var builder = new BodyBuilder();
             builder.HtmlBody = htmlBody;
             builder.TextBody = plainTextBody;
@@ -133,162 +193,6 @@ public class EmailService : IEmailService
                 to, _configuration["Email:SmtpHost"], _configuration["Email:SmtpPort"]);
             return false;
         }
-    }
-
-    private string GenerateReportHtml(string recipientName, DailyReportData reportData)
-    {
-        var html = new StringBuilder();
-        
-        html.Append(@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 0; }
-        .container { max-width: 1200px; margin: 0 auto; background-color: #FFFFFF; }
-        .header { background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 32px 24px; text-align: center; }
-        .header h1 { margin: 0; font-size: 28px; font-weight: 600; }
-        .header p { margin: 8px 0 0; font-size: 14px; opacity: 0.9; }
-        .content { padding: 32px 24px; }
-        .greeting { font-size: 16px; margin-bottom: 24px; }
-        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
-        .stat-card { background: #F4F5F7; border-radius: 8px; padding: 20px; text-align: center; }
-        .stat-value { font-size: 36px; font-weight: 700; margin-bottom: 4px; }
-        .stat-label { font-size: 13px; color: #6B778C; text-transform: uppercase; letter-spacing: 0.5px; }
-        .stat-total { color: #0052CC; }
-        .stat-resolved { color: #36B37E; }
-        .stat-high { color: #FF991F; }
-        .stat-new { color: #6554C0; }
-        .incidents-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13px; }
-        .incidents-table th { background: #0052CC; color: #FFFFFF; padding: 12px 8px; text-align: left; font-size: 11px; font-weight: 600; text-transform: uppercase; border: 1px solid #0747A6; }
-        .incidents-table td { padding: 10px 8px; border: 1px solid #DFE1E6; font-size: 13px; }
-        .incidents-table tr:nth-child(even) { background: #F9FAFB; }
-        .incidents-table tr:hover { background: #F4F5F7; }
-        .incident-number { font-weight: 600; color: #0052CC; }
-        .status-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; white-space: nowrap; }
-        .status-new { background: #EAE6FF; color: #6554C0; }
-        .status-open { background: #DEEBFF; color: #0052CC; }
-        .status-resolved { background: #E3FCEF; color: #006644; }
-        .status-closed { background: #E3FCEF; color: #006644; }
-        .priority-high, .priority-urgent { color: #DE350B; font-weight: 600; }
-        .priority-medium { color: #FF991F; font-weight: 600; }
-        .priority-low { color: #6B778C; }
-        .footer { background: #F4F5F7; padding: 24px; text-align: center; font-size: 12px; color: #6B778C; }
-        .footer a { color: #0052CC; text-decoration: none; }
-        .cta-button { display: inline-block; background: #0052CC; color: #FFFFFF; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 16px 0; }
-        @media only screen and (max-width: 600px) {
-            .container { max-width: 100%; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .incidents-table { font-size: 11px; }
-            .incidents-table th, .incidents-table td { padding: 6px 4px; }
-        }
-    </style>
-</head>
-<body>
-    <div class='container'>
-        <div class='header'>
-            <h1>Daily Incident Report</h1>
-            <p>" + reportData.Date.ToString("MMMM dd, yyyy") + @"</p>
-        </div>
-        <div class='content'>
-            <div class='greeting'>
-                Hello " + recipientName + @",
-            </div>
-            <p>Here's your daily summary of incidents:</p>
-            
-            <div class='stats-grid'>
-                <div class='stat-card'>
-                    <div class='stat-value stat-total'>" + reportData.TotalCount + @"</div>
-                    <div class='stat-label'>Total Incidents</div>
-                </div>
-                <div class='stat-card'>
-                    <div class='stat-value stat-resolved'>" + reportData.ResolvedCount + @"</div>
-                    <div class='stat-label'>Resolved</div>
-                </div>
-                <div class='stat-card'>
-                    <div class='stat-value stat-high'>" + reportData.HighPriorityCount + @"</div>
-                    <div class='stat-label'>High Priority</div>
-                </div>
-                <div class='stat-card'>
-                    <div class='stat-value stat-new'>" + reportData.NewCount + @"</div>
-                    <div class='stat-label'>New</div>
-                </div>
-            </div>");
-
-        if (reportData.Incidents.Any())
-        {
-            html.Append(@"
-            <h3 style='margin-top: 32px; margin-bottom: 16px;'>All Incidents - Detailed View</h3>
-            <table class='incidents-table'>
-                <thead>
-                    <tr>
-                        <th>Incident #</th>
-                        <th>Subject</th>
-                        <th>Requester</th>
-                        <th>Assignee</th>
-                        <th>Status</th>
-                        <th>Priority</th>
-                        <th>Created</th>
-                        <th>Closed</th>
-                        <th>Resolution Time</th>
-                    </tr>
-                </thead>
-                <tbody>");
-
-            foreach (var incident in reportData.Incidents)
-            {
-                var statusClass = incident.Status.ToLower().Replace(" ", "-");
-                var priorityClass = incident.Priority.ToLower();
-                var resolutionTimeText = incident.ResolutionTime.HasValue 
-                    ? FormatDuration(incident.ResolutionTime.Value)
-                    : "-";
-                var createdDate = incident.CreatedAt.HasValue 
-                    ? incident.CreatedAt.Value.ToString("MMM dd, HH:mm")
-                    : "-";
-                var closedDate = incident.ResolvedAt.HasValue 
-                    ? incident.ResolvedAt.Value.ToString("MMM dd, HH:mm")
-                    : "-";
-                
-                html.Append($@"
-                    <tr>
-                        <td class='incident-number'>{System.Net.WebUtility.HtmlEncode(incident.IncidentNumber)}</td>
-                        <td>{System.Net.WebUtility.HtmlEncode(incident.Subject)}</td>
-                        <td>{System.Net.WebUtility.HtmlEncode(incident.RequesterName)}</td>
-                        <td>{System.Net.WebUtility.HtmlEncode(incident.AssigneeName)}</td>
-                        <td><span class='status-badge status-{statusClass}'>{incident.Status}</span></td>
-                        <td class='priority-{priorityClass}'>{incident.Priority}</td>
-                        <td style='font-size: 12px; color: #6B778C;'>{createdDate}</td>
-                        <td style='font-size: 12px; color: #6B778C;'>{closedDate}</td>
-                        <td>{resolutionTimeText}</td>
-                    </tr>");
-            }
-
-            html.Append(@"
-                </tbody>
-            </table>");
-        }
-        else
-        {
-            html.Append("<p style='text-align: center; color: #6B778C; padding: 32px 0;'>No incidents in the system.</p>");
-        }
-
-        html.Append(@"
-            <div style='text-align: center; margin-top: 32px;'>
-                <a href='https://www.codingeverest.com/milo-incidents.html' class='cta-button'>View All Incidents</a>
-            </div>
-        </div>
-        <div class='footer'>
-            <p>This is an automated report from Milo Incident Management</p>
-            <p><a href='https://www.codingeverest.com'>www.codingeverest.com</a></p>
-            <p style='margin-top: 16px; font-size: 11px;'>To stop receiving these reports, please contact your administrator.</p>
-        </div>
-    </div>
-</body>
-</html>");
-
-        return html.ToString();
     }
 
     private string FormatDuration(TimeSpan duration)
@@ -316,119 +220,31 @@ public class EmailService : IEmailService
     {
         try
         {
-            // Validate inputs
-            if (string.IsNullOrEmpty(email))
-            {
-                _logger.LogError("SendTemporaryPasswordEmailAsync: Email is null or empty");
-                return false;
-            }
-            if (string.IsNullOrEmpty(temporaryPassword))
-            {
-                _logger.LogError("SendTemporaryPasswordEmailAsync: TemporaryPassword is null or empty");
-                return false;
-            }
-            if (string.IsNullOrEmpty(name))
-            {
-                _logger.LogWarning("SendTemporaryPasswordEmailAsync: Name is null or empty, using email");
-                name = email;
-            }
-            
-            _logger.LogInformation($"Sending temporary password email to {email} for user {name}");
+            if (string.IsNullOrEmpty(email)) return false;
+            if (string.IsNullOrEmpty(temporaryPassword)) return false;
+            if (string.IsNullOrEmpty(name)) name = email;
             
             var subject = "Your Temporary Password - Milo";
             
-            // HTML encode the name to prevent XSS
-            var escapedName = System.Net.WebUtility.HtmlEncode(name);
-            var escapedPassword = System.Net.WebUtility.HtmlEncode(temporaryPassword);
-            
-            // Create plain text version first (for Outlook and email clients that don't support HTML)
-            var plainTextBody = $@"Your Temporary Password - Milo
+            var plainTextBody = $@"YOUR TEMPORARY PASSWORD - MILO
+═══════════════════════════════════════════════════════════════
 
 Hello {name},
 
 Your temporary password has been generated. Please use the following password to log in:
 
-TEMPORARY PASSWORD: {temporaryPassword}
+    TEMPORARY PASSWORD: {temporaryPassword}
 
 IMPORTANT: For security reasons, please change this password after your first login.
 
 Login URL: https://www.codingeverest.com/milo-login.html
 
+───────────────────────────────────────────────────────────────
 This is an automated message from Milo
-If you didn't request this, please ignore this email.";
-            
-            // HTML version with inline styles for Outlook compatibility
-            var htmlBody = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <!--[if mso]>
-    <style type='text/css'>
-        body, table, td {{ font-family: Arial, sans-serif !important; }}
-    </style>
-    <![endif]-->
-</head>
-<body style='margin: 0; padding: 0; background-color: #F4F5F7; font-family: Arial, Helvetica, sans-serif;'>
-    <table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0' style='background-color: #F4F5F7; padding: 20px;'>
-        <tr>
-            <td align='center'>
-                <table role='presentation' width='600' cellpadding='0' cellspacing='0' border='0' style='background-color: #FFFFFF; border-radius: 8px; max-width: 600px; width: 100%;'>
-                    <!-- Header -->
-                    <tr>
-                        <td style='background-color: #0052CC; padding: 32px 24px; text-align: center; border-radius: 8px 8px 0 0;'>
-                            <h1 style='margin: 0; color: #FFFFFF; font-size: 28px; font-weight: 600;'>Your Temporary Password</h1>
-                        </td>
-                    </tr>
-                    <!-- Content -->
-                    <tr>
-                        <td style='padding: 32px 24px;'>
-                            <p style='margin: 0 0 16px 0; font-size: 16px; color: #172B4D; line-height: 1.6;'>Hello {escapedName},</p>
-                            <p style='margin: 0 0 24px 0; font-size: 16px; color: #172B4D; line-height: 1.6;'>Your temporary password has been generated. Please use the following password to log in:</p>
-                            
-                            <!-- Password Box -->
-                            <table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0' style='background-color: #F4F5F7; border: 2px dashed #0052CC; border-radius: 6px; margin: 24px 0;'>
-                                <tr>
-                                    <td style='padding: 20px; text-align: center;'>
-                                        <div style='font-size: 28px; font-weight: 700; color: #0052CC; letter-spacing: 3px; font-family: 'Courier New', Courier, monospace; word-break: break-all;'>{escapedPassword}</div>
-                                    </td>
-                                </tr>
-                            </table>
-                            
-                            <p style='margin: 24px 0 16px 0; font-size: 16px; color: #172B4D; line-height: 1.6;'><strong style='color: #DE350B;'>IMPORTANT:</strong> For security reasons, please change this password after your first login.</p>
-                            
-                            <!-- Login Button -->
-                            <table role='presentation' width='100%' cellpadding='0' cellspacing='0' border='0' style='margin: 32px 0;'>
-                                <tr>
-                                    <td align='center'>
-                                        <a href='https://www.codingeverest.com/milo-login.html' style='display: inline-block; background-color: #0052CC; color: #FFFFFF; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 16px;'>Log In Now</a>
-                                    </td>
-                                </tr>
-                            </table>
-                            
-                            <!-- Login URL as text -->
-                            <p style='margin: 24px 0 0 0; font-size: 12px; color: #6B778C; line-height: 1.6;'>
-                                Login URL: <a href='https://www.codingeverest.com/milo-login.html' style='color: #0052CC; text-decoration: underline; word-break: break-all;'>https://www.codingeverest.com/milo-login.html</a>
-                            </p>
-                        </td>
-                    </tr>
-                    <!-- Footer -->
-                    <tr>
-                        <td style='background-color: #F4F5F7; padding: 24px; text-align: center; border-radius: 0 0 8px 8px;'>
-                            <p style='margin: 0 0 8px 0; font-size: 12px; color: #6B778C;'>This is an automated message from Milo</p>
-                            <p style='margin: 0; font-size: 12px; color: #6B778C;'>If you didn't request this, please ignore this email.</p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>";
+If you didn't request this, please ignore this email.
+───────────────────────────────────────────────────────────────";
 
-            // Send email with both HTML and plain text versions
-            return await SendEmailWithPlainTextAsync(email, subject, htmlBody, plainTextBody);
+            return await SendEmailWithPlainTextAsync(email, subject, plainTextBody, plainTextBody);
         }
         catch (Exception ex)
         {
@@ -439,11 +255,11 @@ If you didn't request this, please ignore this email.";
 
     public async Task<bool> SendTaskAssignmentEmailAsync(string email, string assigneeName, string taskTitle, string taskId, string projectName, string? taskLink = null)
     {
-        try {
+        try
+        {
             var subject = $"New Task Assigned: {taskId} - {taskTitle}";
             var link = taskLink ?? $"https://www.codingeverest.com/milo-board.html?task={taskId}";
             
-            // Send as plain text with link - simpler and more reliable
             var plainTextBody = $@"Hello {assigneeName},
 
 A new task has been assigned to you:
@@ -455,7 +271,6 @@ View task details: {link}
 
 This is an automated notification from Milo";
 
-            // For plain text emails, set both htmlBody and plainTextBody to the same content
             return await SendEmailWithPlainTextAsync(email, subject, plainTextBody, plainTextBody);
         }
         catch (Exception ex)
@@ -470,54 +285,25 @@ This is an automated notification from Milo";
         try
         {
             var subject = $"Team Assignment: {teamName} - {projectName}";
-            var htmlBody = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-    <style>
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 20px; }}
-        .container {{ max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; }}
-        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 32px 24px; text-align: center; }}
-        .content {{ padding: 32px 24px; }}
-        .info-box {{ background: #F4F5F7; border-radius: 6px; padding: 20px; margin: 24px 0; }}
-        .info-row {{ margin: 12px 0; }}
-        .label {{ font-size: 12px; color: #6B778C; text-transform: uppercase; font-weight: 600; }}
-        .value {{ font-size: 16px; color: #172B4D; font-weight: 600; margin-top: 4px; }}
-        .cta-button {{ display: inline-block; background: #0052CC; color: #FFFFFF; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; margin: 24px 0; }}
-        .footer {{ background: #F4F5F7; padding: 24px; text-align: center; font-size: 12px; color: #6B778C; }}
-    </style>
-</head>
-<body>
-    <div class='container'>
-        <div class='header'>
-            <h1>Team Assignment</h1>
-        </div>
-        <div class='content'>
-            <p>Hello {memberName},</p>
-            <p>You have been assigned to a team for a new project:</p>
-            <div class='info-box'>
-                <div class='info-row'>
-                    <div class='label'>Team</div>
-                    <div class='value'>{teamName}</div>
-                </div>
-                <div class='info-row'>
-                    <div class='label'>Project</div>
-                    <div class='value'>{projectName} ({projectKey})</div>
-                </div>
-            </div>
-            <p style='text-align: center;'>
-                <a href='https://www.codingeverest.com/milo-board.html?project={projectKey}' class='cta-button'>View Project</a>
-            </p>
-        </div>
-        <div class='footer'>
-            <p>This is an automated notification from Milo</p>
-        </div>
-    </div>
-</body>
-</html>";
+            var link = $"https://www.codingeverest.com/milo-board.html?project={projectKey}";
+            
+            var plainTextBody = $@"TEAM ASSIGNMENT
+═══════════════════════════════════════════════════════════════
 
-            return await SendEmailAsync(email, subject, htmlBody);
+Hello {memberName},
+
+You have been assigned to a team for a new project:
+
+    TEAM: {teamName}
+    PROJECT: {projectName} ({projectKey})
+
+View Project: {link}
+
+───────────────────────────────────────────────────────────────
+This is an automated notification from Milo
+───────────────────────────────────────────────────────────────";
+
+            return await SendEmailWithPlainTextAsync(email, subject, plainTextBody, plainTextBody);
         }
         catch (Exception ex)
         {
@@ -528,8 +314,6 @@ This is an automated notification from Milo";
 
     public async Task<bool> SendCustomEmailAsync(string to, string subject, string htmlBody, string? textBody = null)
     {
-        // Use SendEmailWithPlainTextAsync to ensure both HTML and plain text are sent correctly
-        // If textBody is not provided, generate it from HTML
         var plainTextBody = textBody ?? System.Text.RegularExpressions.Regex.Replace(htmlBody, "<[^>]*>", "")
             .Replace("&nbsp;", " ")
             .Replace("&amp;", "&")
@@ -546,71 +330,31 @@ This is an automated notification from Milo";
     {
         try
         {
-            // Validate inputs
-            if (string.IsNullOrEmpty(email))
-            {
-                _logger.LogError("SendProjectInvitationEmailAsync: Email is null or empty");
-                return false;
-            }
-            if (string.IsNullOrEmpty(invitationToken))
-            {
-                _logger.LogError("SendProjectInvitationEmailAsync: InvitationToken is null or empty");
-                return false;
-            }
-            if (string.IsNullOrEmpty(projectName))
-            {
-                _logger.LogWarning("SendProjectInvitationEmailAsync: ProjectName is null or empty, using default");
-                projectName = "a project";
-            }
-            if (string.IsNullOrEmpty(projectKey))
-            {
-                _logger.LogWarning("SendProjectInvitationEmailAsync: ProjectKey is null or empty, using project name");
-                projectKey = projectName;
-            }
-            if (string.IsNullOrEmpty(name))
-            {
-                _logger.LogWarning("SendProjectInvitationEmailAsync: Name is null or empty, using email");
-                name = email;
-            }
+            if (string.IsNullOrEmpty(email)) return false;
+            if (string.IsNullOrEmpty(invitationToken)) return false;
+            if (string.IsNullOrEmpty(projectName)) projectName = "a project";
+            if (string.IsNullOrEmpty(projectKey)) projectKey = projectName;
+            if (string.IsNullOrEmpty(name)) name = email;
             
             var subject = $"Project Invitation: {projectName}";
             var invitationLink = $"https://www.codingeverest.com/milo-accept-invitation.html?token={invitationToken}";
             
-            // HTML encode all dynamic content to prevent XSS
-            var escapedName = System.Net.WebUtility.HtmlEncode(name);
-            var escapedProjectName = System.Net.WebUtility.HtmlEncode(projectName);
-            var escapedProjectKey = System.Net.WebUtility.HtmlEncode(projectKey);
-            var escapedToken = System.Net.WebUtility.HtmlEncode(invitationToken);
-            
-            _logger.LogInformation($"Sending project invitation email to {email} for project {projectName} with token {invitationToken.Substring(0, Math.Min(8, invitationToken.Length))}...");
-            
-            // Simple plain text email with just the link
-            var plainTextBody = $@"Hello {escapedName},
+            var plainTextBody = $@"PROJECT INVITATION
+═══════════════════════════════════════════════════════════════
 
-You have been invited to join the project: {escapedProjectName} (Project Key: {escapedProjectKey}).
+Hello {name},
+
+You have been invited to join the project: {projectName} (Project Key: {projectKey}).
 
 To accept the invitation, please click this link:
 {invitationLink}
 
-This is an automated invitation from Milo. If you didn't expect this invitation, you can safely ignore this email.";
+───────────────────────────────────────────────────────────────
+This is an automated invitation from Milo.
+If you didn't expect this invitation, you can safely ignore this email.
+───────────────────────────────────────────────────────────────";
 
-            // Simple HTML email with just the link (no complex styling)
-            var htmlBody = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-</head>
-<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333;'>
-    <p>Hello {escapedName},</p>
-    <p>You have been invited to join the project: <strong>{escapedProjectName}</strong> (Project Key: {escapedProjectKey}).</p>
-    <p>To accept the invitation, please click this link:</p>
-    <p><a href='{invitationLink}' style='color: #0052CC; text-decoration: underline;'>{invitationLink}</a></p>
-    <p style='font-size: 12px; color: #666;'>This is an automated invitation from Milo. If you didn't expect this invitation, you can safely ignore this email.</p>
-</body>
-</html>";
-
-            return await SendEmailWithPlainTextAsync(email, subject, htmlBody, plainTextBody);
+            return await SendEmailWithPlainTextAsync(email, subject, plainTextBody, plainTextBody);
         }
         catch (Exception ex)
         {
@@ -625,194 +369,54 @@ This is an automated invitation from Milo. If you didn't expect this invitation,
         {
             var emailSubject = $"New Incident Assigned: {incidentNumber} - {subject}";
             var link = incidentLink ?? "https://www.codingeverest.com/milo-incidents.html";
-            var priorityColor = priority.ToLower() switch
-            {
-                "high" or "urgent" => "#DE350B",
-                "medium" => "#FF991F",
-                _ => "#6B778C"
-            };
-            var statusColor = status.ToLower() switch
-            {
-                "new" => "#6554C0",
-                "open" => "#0052CC",
-                "resolved" => "#36B37E",
-                "closed" => "#36B37E",
-                _ => "#6B778C"
-            };
             
-            // Build details section dynamically
-            var detailsHtml = new StringBuilder();
-            detailsHtml.AppendLine($@"
-                        <div class='detail-item'>
-                            <div class='detail-label'>Priority</div>
-                            <div class='detail-value'><span class='priority-badge'>{priority}</span></div>
-                        </div>
-                        <div class='detail-item'>
-                            <div class='detail-label'>Status</div>
-                            <div class='detail-value'><span class='status-badge'>{status}</span></div>
-                        </div>");
+            var sb = new StringBuilder();
+            sb.AppendLine("INCIDENT ASSIGNED TO YOU");
+            sb.AppendLine("═══════════════════════════════════════════════════════════════");
+            sb.AppendLine();
+            sb.AppendLine($"Hello {assigneeName},");
+            sb.AppendLine();
+            sb.AppendLine("A new incident has been assigned to you and requires your attention:");
+            sb.AppendLine();
+            sb.AppendLine($"    INCIDENT: {incidentNumber}");
+            sb.AppendLine($"    SUBJECT: {subject}");
+            sb.AppendLine($"    PRIORITY: {priority}");
+            sb.AppendLine($"    STATUS: {status}");
             
             if (!string.IsNullOrWhiteSpace(requesterName))
             {
                 var requesterText = requesterName;
                 if (!string.IsNullOrWhiteSpace(requesterEmail))
                     requesterText += $" ({requesterEmail})";
-                detailsHtml.AppendLine($@"
-                        <div class='detail-item'>
-                            <div class='detail-label'>Requester</div>
-                            <div class='detail-value'>{requesterText}</div>
-                        </div>");
+                sb.AppendLine($"    REQUESTER: {requesterText}");
             }
             
             if (createdAt.HasValue)
-            {
-                detailsHtml.AppendLine($@"
-                        <div class='detail-item'>
-                            <div class='detail-label'>Created</div>
-                            <div class='detail-value'>{createdAt.Value:MMM dd, yyyy HH:mm} UTC</div>
-                        </div>");
-            }
+                sb.AppendLine($"    CREATED: {createdAt.Value:MMM dd, yyyy HH:mm} UTC");
             
             if (!string.IsNullOrWhiteSpace(category))
-            {
-                detailsHtml.AppendLine($@"
-                        <div class='detail-item'>
-                            <div class='detail-label'>Category</div>
-                            <div class='detail-value'>{category}</div>
-                        </div>");
-            }
+                sb.AppendLine($"    CATEGORY: {category}");
             
             if (!string.IsNullOrWhiteSpace(source))
-            {
-                detailsHtml.AppendLine($@"
-                        <div class='detail-item'>
-                            <div class='detail-label'>Source</div>
-                            <div class='detail-value'>{source}</div>
-                        </div>");
-            }
+                sb.AppendLine($"    SOURCE: {source}");
             
-            var descriptionHtml = "";
-            var descriptionText = "";
             if (!string.IsNullOrWhiteSpace(description))
             {
-                var escapedDescription = description.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
-                descriptionHtml = $@"
-                    <div style='margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(223, 225, 230, 0.6);'>
-                        <div class='detail-label'>Description</div>
-                        <div style='font-size: 14px; color: #42526E; line-height: 1.6; margin-top: 8px; white-space: pre-wrap;'>{escapedDescription}</div>
-                    </div>";
-                descriptionText = $"\n\nDescription:\n{description}";
+                sb.AppendLine();
+                sb.AppendLine("DESCRIPTION:");
+                sb.AppendLine(description);
             }
             
-            // Build plain text version
-            var plainTextDetails = new StringBuilder();
-            plainTextDetails.AppendLine($"Priority: {priority}");
-            plainTextDetails.AppendLine($"Status: {status}");
-            if (!string.IsNullOrWhiteSpace(requesterName))
-            {
-                var requesterText = requesterName;
-                if (!string.IsNullOrWhiteSpace(requesterEmail))
-                    requesterText += $" ({requesterEmail})";
-                plainTextDetails.AppendLine($"Requester: {requesterText}");
-            }
-            if (createdAt.HasValue)
-            {
-                plainTextDetails.AppendLine($"Created: {createdAt.Value:MMM dd, yyyy HH:mm} UTC");
-            }
-            if (!string.IsNullOrWhiteSpace(category))
-            {
-                plainTextDetails.AppendLine($"Category: {category}");
-            }
-            if (!string.IsNullOrWhiteSpace(source))
-            {
-                plainTextDetails.AppendLine($"Source: {source}");
-            }
-            
-            var plainTextBody = $@"Hello {assigneeName},
+            sb.AppendLine();
+            sb.AppendLine($"View incident details: {link}");
+            sb.AppendLine();
+            sb.AppendLine("───────────────────────────────────────────────────────────────");
+            sb.AppendLine("This is an automated notification from Milo Incident Management");
+            sb.AppendLine("Please review and respond to this incident as soon as possible.");
+            sb.AppendLine("───────────────────────────────────────────────────────────────");
 
-A new incident has been assigned to you and requires your attention:
-
-{incidentNumber} - {subject}
-
-{plainTextDetails.ToString().Trim()}{descriptionText}
-
-View incident details: {link}
-
-This is an automated notification from Milo Incident Management
-Please review and respond to this incident as soon as possible.";
-            
-            var htmlBody = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <style>
-        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-        body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #172B4D; background: linear-gradient(135deg, #F4F5F7 0%, #EBECF0 100%); margin: 0; padding: 20px; -webkit-font-smoothing: antialiased; }}
-        .email-wrapper {{ max-width: 600px; margin: 0 auto; }}
-        .container {{ background-color: #FFFFFF; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(9, 30, 66, 0.15), 0 0 1px rgba(9, 30, 66, 0.1); }}
-        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 40px 32px; text-align: center; position: relative; }}
-        .header::after {{ content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%); }}
-        .header h1 {{ font-size: 28px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }}
-        .content {{ padding: 40px 32px; }}
-        .greeting {{ font-size: 16px; color: #172B4D; margin-bottom: 16px; }}
-        .intro-text {{ font-size: 15px; color: #42526E; margin-bottom: 24px; line-height: 1.6; }}
-        .incident-box {{ background: linear-gradient(to bottom, #F8F9FA 0%, #F4F5F7 100%); border-left: 5px solid #0052CC; padding: 24px; margin: 24px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(9, 30, 66, 0.08); }}
-        .incident-number {{ font-size: 16px; font-weight: 700; color: #0052CC; margin-bottom: 12px; letter-spacing: 0.5px; text-transform: uppercase; }}
-        .incident-subject {{ font-size: 22px; font-weight: 700; color: #172B4D; margin-bottom: 20px; line-height: 1.4; }}
-        .incident-details {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(223, 225, 230, 0.6); }}
-        .detail-item {{ }}
-        .detail-label {{ font-size: 11px; color: #6B778C; text-transform: uppercase; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.5px; }}
-        .detail-value {{ font-size: 15px; font-weight: 600; color: #172B4D; }}
-        .priority-badge, .status-badge {{ display: inline-block; padding: 6px 14px; border-radius: 6px; font-weight: 600; font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }}
-        .priority-badge {{ background: {priorityColor}20; color: {priorityColor}; border: 1px solid {priorityColor}40; }}
-        .status-badge {{ background: {statusColor}20; color: {statusColor}; border: 1px solid {statusColor}40; }}
-        .cta-container {{ text-align: center; margin: 32px 0; }}
-        .cta-button {{ display: inline-block; background: linear-gradient(135deg, #0052CC 0%, #0065FF 100%); color: #FFFFFF; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 12px rgba(0, 82, 204, 0.3); transition: all 0.2s ease; border: none; }}
-        .cta-button:hover {{ box-shadow: 0 6px 16px rgba(0, 82, 204, 0.4); transform: translateY(-1px); }}
-        .footer {{ background: #F4F5F7; padding: 32px; text-align: center; border-top: 1px solid #DFE1E6; }}
-        .footer p {{ font-size: 13px; color: #6B778C; margin: 8px 0; line-height: 1.5; }}
-        .footer p:first-child {{ font-weight: 600; color: #42526E; }}
-        @media only screen and (max-width: 600px) {{
-            .content {{ padding: 32px 24px; }}
-            .incident-details {{ grid-template-columns: 1fr; gap: 16px; }}
-            .header {{ padding: 32px 24px; }}
-            .header h1 {{ font-size: 24px; }}
-        }}
-    </style>
-</head>
-<body>
-    <div class='email-wrapper'>
-        <div class='container'>
-            <div class='header'>
-                <h1>Incident Assigned to You</h1>
-            </div>
-            <div class='content'>
-                <p class='greeting'>Hello {assigneeName},</p>
-                <p class='intro-text'>A new incident has been assigned to you and requires your attention:</p>
-                <div class='incident-box'>
-                    <div class='incident-number'>{incidentNumber}</div>
-                    <div class='incident-subject'>{subject}</div>
-                    <div class='incident-details'>
-{detailsHtml.ToString().Trim()}
-                    </div>
-{descriptionHtml}
-                </div>
-                <div class='cta-container'>
-                    <a href='{link}' class='cta-button'>View Incident Details</a>
-                </div>
-            </div>
-            <div class='footer'>
-                <p>This is an automated notification from Milo Incident Management</p>
-                <p>Please review and respond to this incident as soon as possible.</p>
-            </div>
-        </div>
-    </div>
-</body>
-</html>";
-
-            return await SendEmailWithPlainTextAsync(email, emailSubject, htmlBody, plainTextBody);
+            var plainTextBody = sb.ToString();
+            return await SendEmailWithPlainTextAsync(email, emailSubject, plainTextBody, plainTextBody);
         }
         catch (Exception ex)
         {
@@ -827,35 +431,25 @@ Please review and respond to this incident as soon as possible.";
         {
             var adminEmail = "ico@astutetech.co.za";
             var subject = $"New User Signed Up: {userName}";
-            
-            // Get frontend URL from configuration
             var frontendUrl = _configuration["Frontend:Url"] ?? "https://www.codingeverest.com";
             var link = $"{frontendUrl}/milo-board.html";
             
-            // Simple HTML body with just a link (like project invitations)
-            var htmlBody = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-</head>
-<body>
-    <p>A new user has signed up and successfully logged in to Milo:</p>
-    <p><strong>{System.Net.WebUtility.HtmlEncode(userName)}</strong> ({System.Net.WebUtility.HtmlEncode(userEmail)})</p>
-    <p>Signed up: {signupDate:yyyy-MM-dd HH:mm:ss} UTC</p>
-    <p><a href='{link}'>View in Milo</a></p>
-</body>
-</html>";
+            var plainTextBody = $@"NEW USER SIGNED UP
+═══════════════════════════════════════════════════════════════
 
-            // Plain text version
-            var plainTextBody = $@"A new user has signed up and successfully logged in to Milo:
+A new user has signed up and successfully logged in to Milo:
 
-{userName} ({userEmail})
-Signed up: {signupDate:yyyy-MM-dd HH:mm:ss} UTC
+    NAME: {userName}
+    EMAIL: {userEmail}
+    SIGNED UP: {signupDate:yyyy-MM-dd HH:mm:ss} UTC
 
-View in Milo: {link}";
+View in Milo: {link}
 
-            return await SendEmailWithPlainTextAsync(adminEmail, subject, htmlBody, plainTextBody);
+───────────────────────────────────────────────────────────────
+This is an automated notification from Milo
+───────────────────────────────────────────────────────────────";
+
+            return await SendEmailWithPlainTextAsync(adminEmail, subject, plainTextBody, plainTextBody);
         }
         catch (Exception ex)
         {
@@ -868,89 +462,46 @@ View in Milo: {link}";
     {
         try
         {
-                var subject = $"Daily Milo Users Report - {DateTime.UtcNow.AddHours(2):yyyy-MM-dd}";
+            var subject = $"Daily Milo Users Report - {DateTime.UtcNow.AddHours(2):yyyy-MM-dd}";
             
             var activeUsers = users.Where(u => u.IsActive).ToList();
             var inactiveUsers = users.Where(u => !u.IsActive).ToList();
             var totalUsers = users.Count;
             var newUsersToday = users.Where(u => u.CreatedAt.Date == DateTime.UtcNow.Date).ToList();
             
-            var htmlBody = $@"
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset='utf-8'>
-    <style>
-        body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 20px; }}
-        .container {{ max-width: 800px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; }}
-        .header {{ background: linear-gradient(135deg, #0052CC 0%, #0747A6 100%); color: #FFFFFF; padding: 32px 24px; text-align: center; }}
-        .content {{ padding: 32px 24px; }}
-        .stats {{ display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 24px 0; }}
-        .stat-box {{ background: #F4F5F7; padding: 20px; border-radius: 6px; text-align: center; }}
-        .stat-number {{ font-size: 32px; font-weight: 700; color: #0052CC; }}
-        .stat-label {{ font-size: 14px; color: #6B778C; margin-top: 4px; }}
-        .user-table {{ width: 100%; border-collapse: collapse; margin-top: 24px; }}
-        .user-table th {{ background: #F4F5F7; padding: 12px; text-align: left; font-weight: 600; color: #172B4D; border-bottom: 2px solid #DFE1E6; }}
-        .user-table td {{ padding: 12px; border-bottom: 1px solid #DFE1E6; }}
-        .user-table tr:hover {{ background: #F4F5F7; }}
-        .footer {{ background: #F4F5F7; padding: 24px; text-align: center; font-size: 12px; color: #6B778C; }}
-    </style>
-</head>
-<body>
-    <div class='container'>
-        <div class='header'>
-            <h1>Daily Milo Users Report</h1>
-            <p style='margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;'>{DateTime.UtcNow.AddHours(2):dddd, MMMM dd, yyyy}</p>
-        </div>
-        <div class='content'>
-            <div class='stats'>
-                <div class='stat-box'>
-                    <div class='stat-number'>{totalUsers}</div>
-                    <div class='stat-label'>Total Users</div>
-                </div>
-                <div class='stat-box'>
-                    <div class='stat-number'>{activeUsers.Count}</div>
-                    <div class='stat-label'>Active Users</div>
-                </div>
-                <div class='stat-box'>
-                    <div class='stat-number'>{inactiveUsers.Count}</div>
-                    <div class='stat-label'>Inactive Users</div>
-                </div>
-                <div class='stat-box'>
-                    <div class='stat-number'>{newUsersToday.Count}</div>
-                    <div class='stat-label'>New Users Today</div>
-                </div>
-            </div>
+            var sb = new StringBuilder();
+            sb.AppendLine("═══════════════════════════════════════════════════════════════");
+            sb.AppendLine($"           DAILY MILO USERS REPORT - {DateTime.UtcNow.AddHours(2):dddd, MMMM dd, yyyy}");
+            sb.AppendLine("═══════════════════════════════════════════════════════════════");
+            sb.AppendLine();
+            sb.AppendLine("───────────────────────────────────────────────────────────────");
+            sb.AppendLine("                         SUMMARY");
+            sb.AppendLine("───────────────────────────────────────────────────────────────");
+            sb.AppendLine($"  Total Users:        {totalUsers}");
+            sb.AppendLine($"  Active Users:       {activeUsers.Count}");
+            sb.AppendLine($"  Inactive Users:     {inactiveUsers.Count}");
+            sb.AppendLine($"  New Users Today:    {newUsersToday.Count}");
+            sb.AppendLine();
+            sb.AppendLine("───────────────────────────────────────────────────────────────");
+            sb.AppendLine("                       ALL USERS");
+            sb.AppendLine("───────────────────────────────────────────────────────────────");
+            sb.AppendLine();
             
-            <h2 style='margin-top: 32px; font-size: 18px; color: #172B4D;'>All Users</h2>
-            <table class='user-table'>
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Status</th>
-                        <th>Signup Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {string.Join("", users.OrderByDescending(u => u.CreatedAt).Select(u => $@"
-                    <tr>
-                        <td>{System.Net.WebUtility.HtmlEncode(u.Name)}</td>
-                        <td>{System.Net.WebUtility.HtmlEncode(u.Email)}</td>
-                        <td>{(u.IsActive ? "<span style='color: #36B37E; font-weight: 600;'>Active</span>" : "<span style='color: #DE350B;'>Inactive</span>")}</td>
-                        <td>{u.CreatedAt:yyyy-MM-dd HH:mm}</td>
-                    </tr>"))}
-                </tbody>
-            </table>
-        </div>
-        <div class='footer'>
-            <p>This is an automated daily report from Milo</p>
-        </div>
-    </div>
-</body>
-</html>";
+            foreach (var user in users.OrderByDescending(u => u.CreatedAt))
+            {
+                var statusText = user.IsActive ? "Active" : "Inactive";
+                sb.AppendLine($"  {user.Name}");
+                sb.AppendLine($"    Email: {user.Email}");
+                sb.AppendLine($"    Status: {statusText}  |  Signup: {user.CreatedAt:yyyy-MM-dd HH:mm}");
+                sb.AppendLine();
+            }
+            
+            sb.AppendLine("───────────────────────────────────────────────────────────────");
+            sb.AppendLine("This is an automated daily report from Milo");
+            sb.AppendLine("───────────────────────────────────────────────────────────────");
 
-            return await SendEmailAsync(recipientEmail, subject, htmlBody);
+            var plainTextBody = sb.ToString();
+            return await SendEmailWithPlainTextAsync(recipientEmail, subject, plainTextBody, plainTextBody);
         }
         catch (Exception ex)
         {
@@ -968,7 +519,6 @@ View in Milo: {link}";
         {
             _logger.LogInformation("Fetching active report recipients for daily incident report...");
 
-            // Get active recipients - DISTINCT to prevent duplicates
             var recipientsQuery = dbContext.ReportRecipients
                 .Where(r => r.IsActive && r.ReportType == "DailyIncidents");
 
@@ -977,7 +527,6 @@ View in Milo: {link}";
                 recipientsQuery = recipientsQuery.Where(r => r.ProjectId == projectId.Value);
             }
 
-            // Use DISTINCT to prevent duplicate recipients
             var recipients = await recipientsQuery
                 .GroupBy(r => r.Email.ToLower())
                 .Select(g => g.First())
@@ -991,7 +540,6 @@ View in Milo: {link}";
 
             _logger.LogInformation($"Found {recipients.Count} unique active recipients. Generating daily incident report...");
 
-            // Get ALL incidents (not just today's)
             var incidentsQuery = dbContext.Incidents
                 .Include(i => i.Requester)
                 .Include(i => i.Assignee)
@@ -1008,7 +556,6 @@ View in Milo: {link}";
 
             var today = DateTime.UtcNow.Date;
 
-            // Prepare report data with ALL incidents
             var reportData = new DailyReportData
             {
                 Date = today,
@@ -1033,14 +580,12 @@ View in Milo: {link}";
                 }).ToList()
             };
 
-            // Send emails to all recipients - track sent emails to prevent duplicates
             int successCount = 0;
             var failedRecipients = new List<string>();
             var sentEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var recipient in recipients)
             {
-                // Skip if already sent to this email
                 if (sentEmails.Contains(recipient.Email))
                 {
                     _logger.LogWarning($"Skipping duplicate email to {recipient.Email}");
@@ -1060,12 +605,12 @@ View in Milo: {link}";
                         sentEmails.Add(recipient.Email);
                         recipient.LastSentAt = DateTime.UtcNow;
                         successCount++;
-                        _logger.LogInformation($"✓ Daily incident report sent to {recipient.Email}");
+                        _logger.LogInformation($"Daily incident report sent to {recipient.Email}");
                     }
                     else
                     {
                         failedRecipients.Add(recipient.Email);
-                        _logger.LogWarning($"✗ Failed to send daily incident report to {recipient.Email}");
+                        _logger.LogWarning($"Failed to send daily incident report to {recipient.Email}");
                     }
                 }
                 catch (Exception ex)
@@ -1075,7 +620,6 @@ View in Milo: {link}";
                 }
             }
 
-            // Update LastSentAt for successful sends
             if (successCount > 0)
             {
                 await dbContext.SaveChangesAsync();
@@ -1097,7 +641,6 @@ View in Milo: {link}";
     }
 }
 
-// Data class for user reports
 public class UserReportData
 {
     public string Name { get; set; } = string.Empty;
