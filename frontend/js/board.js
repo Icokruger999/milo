@@ -2405,7 +2405,10 @@ function renderBoard() {
 
 function renderBoardGrid() {
     const container = document.getElementById('boardGridBody');
-    if (!container) return;
+    if (!container) {
+        console.error('❌ boardGridBody container not found!');
+        return;
+    }
     
     // Collect all tasks from all statuses
     const allTasks = [
@@ -2415,6 +2418,15 @@ function renderBoardGrid() {
         ...(tasks.blocked || []),
         ...(tasks.done || [])
     ];
+    
+    console.log(`🎨 Rendering board with ${allTasks.length} total tasks`);
+    console.log('Tasks breakdown:', {
+        todo: tasks.todo?.length || 0,
+        progress: tasks.progress?.length || 0,
+        review: tasks.review?.length || 0,
+        blocked: tasks.blocked?.length || 0,
+        done: tasks.done?.length || 0
+    });
     
     // Group tasks by assignee
     const assigneeGroups = {};
