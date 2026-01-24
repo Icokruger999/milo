@@ -279,6 +279,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (typeof loadLabelsForFilter === 'function') {
             loadLabelsForFilter();
         }
+        
+        // Load teams for group by filter
+        loadTeamsForGroupBy();
     }, 300);
     
     // Listen for status changes from backlog page
@@ -385,6 +388,47 @@ function showTimelineView() {
     
     if (typeof loadTimelineData === 'function') {
         loadTimelineData();
+    }
+}
+
+// Load teams for Group By dropdown
+async function loadTeamsForGroupBy() {
+    try {
+        const currentProject = projectSelector.getCurrentProject();
+        if (!currentProject) {
+            console.warn('No project selected, cannot load teams');
+            return;
+        }
+        
+        console.log('Loading teams for project:', currentProject.id);
+        const response = await apiClient.get(`/teams?projectId=${currentProject.id}`);
+        
+        if (response.ok) {
+            const teams = await response.json();
+            console.log('Loaded teams:', teams.length, teams);
+            
+            const groupByFilter = document.getElementById('groupByFilter');
+            if (groupByFilter && teams.length > 0) {
+                // Keep Assignee as default, add teams dynamically
+                groupByFilter.innerHTML = '<option value="assignee">Assignee</option>';
+                
+                teams.forEach(team => {
+                    const option = document.createElement('option');
+                    option.value = `team-${team.id}`;
+                    option.textContent = team.name;
+                    option.dataset.teamId = team.id;
+                    groupByFilter.appendChild(option);
+                });
+                
+                console.log('✅ Group By populated with', teams.length, 'teams');
+            } else if (teams.length === 0) {
+                console.log('No teams found for this project');
+            }
+        } else {
+            console.error('Failed to load teams:', response.status);
+        }
+    } catch (error) {
+        console.error('Error loading teams for Group By:', error);
     }
 }
 
@@ -2445,11 +2489,23 @@ window.loadTaskComments = loadTaskComments;
 // Group by functionality - Grid layout with assignee rows
 let collapsedAssignees = {}; // Track which assignees are collapsed
 let currentGroupBy = 'assignee'; // Default grouping
+let currentTeamFilter = null; // For filtering by specific team
 
 // Apply board grouping based on selected option
 window.applyBoardGrouping = function(groupBy) {
     console.log('🔄 Applying board grouping:', groupBy);
-    currentGroupBy = groupBy || 'assignee';
+    
+    // Check if it's a specific team selection (format: team-{id})
+    if (groupBy && groupBy.startsWith('team-')) {
+        const teamId = parseInt(groupBy.split('-')[1]);
+        currentGroupBy = 'team';
+        currentTeamFilter = teamId;
+        console.log('Filtering by team ID:', teamId);
+    } else {
+        currentGroupBy = groupBy || 'assignee';
+        currentTeamFilter = null;
+    }
+    
     renderBoard();
 };
 
@@ -2599,29 +2655,36 @@ function renderBoardGrid() {
             }
         });
     } else if (currentGroupBy === 'team') {
-        // Group by team (if task has team info)
+        // Group by team - filter by specific team if selected
         allTasks.forEach(task => {
-            const teamName = task.teamName || 'No Team';
+            // Skip tasks that don't match the team filter
+            if (currentTeamFilter && task.teamId !== currentTeamFilter) {
+                return;
+            }
             
-            if (!groups[teamName]) {
-                groups[teamName] = {
-                    name: teamName,
-                    id: task.teamId || 'no-team',
+            // Group by assignee within the team
+            const assigneeName = task.assigneeName || 'Unassigned';
+            const assigneeId = task.assigneeId || 'unassigned';
+            
+            if (!groups[assigneeName]) {
+                groups[assigneeName] = {
+                    name: assigneeName,
+                    id: assigneeId,
                     tasks: { todo: [], progress: [], review: [], blocked: [], done: [] }
                 };
             }
             
             const status = (task.status || 'todo').toLowerCase();
             if (status.includes('progress')) {
-                groups[teamName].tasks.progress.push(task);
+                groups[assigneeName].tasks.progress.push(task);
             } else if (status.includes('review')) {
-                groups[teamName].tasks.review.push(task);
+                groups[assigneeName].tasks.review.push(task);
             } else if (status === 'blocked') {
-                groups[teamName].tasks.blocked.push(task);
+                groups[assigneeName].tasks.blocked.push(task);
             } else if (status === 'done') {
-                groups[teamName].tasks.done.push(task);
+                groups[assigneeName].tasks.done.push(task);
             } else {
-                groups[teamName].tasks.todo.push(task);
+                groups[assigneeName].tasks.todo.push(task);
             }
         });
     } else if (currentGroupBy === 'product') {
