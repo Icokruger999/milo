@@ -458,7 +458,6 @@
                 <a href="milo-roadmap.html">Roadmap</a>
                 <a href="milo-flakes.html">Flakes</a>
                 <a href="milo-teams.html" class="active">Teams</a>
-                <a href="milo-board.html#dashboard">Dashboard</a>
             </div>
         </div>
     </div>
@@ -517,7 +516,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="closeCreateTeamModal()">Cancel</button>
-                <button class="btn-primary" onclick="document.getElementById('createTeamForm').requestSubmit()">Create</button>
+                <button id="teamSubmitBtn" class="btn-primary" onclick="document.getElementById('createTeamForm').requestSubmit()">Create</button>
             </div>
         </div>
     </div>

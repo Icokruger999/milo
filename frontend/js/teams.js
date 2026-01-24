@@ -40,13 +40,8 @@ document.addEventListener('DOMContentLoaded', async function() {
 // Load all teams
 async function loadTeams() {
     try {
-        const currentProject = projectSelector.getCurrentProject();
+        // Load ALL teams (not filtered by project)
         let url = '/teams';
-        
-        // If we're on "Current project" filter and have a project, filter by it
-        if (currentFilter === 'project' && currentProject) {
-            url += `?projectId=${currentProject.id}`;
-        }
         
         const response = await apiClient.get(url);
         
@@ -160,10 +155,15 @@ window.openCreateTeamModal = async function() {
     addMemberToTeam();
     addMemberToTeam();
     
-    // Update modal title
+    // Update modal title and button
     const modalTitle = document.getElementById('teamModalTitle');
     if (modalTitle) {
         modalTitle.textContent = 'Create Team';
+    }
+    
+    const submitBtn = document.getElementById('teamSubmitBtn');
+    if (submitBtn) {
+        submitBtn.textContent = 'Create';
     }
     
     // Set mode to create
@@ -379,6 +379,11 @@ async function openEditTeamModal(team) {
     const modalTitle = document.getElementById('teamModalTitle');
     if (modalTitle) {
         modalTitle.textContent = 'Edit Team';
+    }
+    
+    const submitBtn = document.getElementById('teamSubmitBtn');
+    if (submitBtn) {
+        submitBtn.textContent = 'Save';
     }
     
     // Store team ID for update
