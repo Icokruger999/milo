@@ -385,6 +385,24 @@
         .user-avatar-small:nth-child(3) { background: #0052CC; z-index: 2; }
         .user-avatar-small:nth-child(4) { background: #6554C0; z-index: 1; }
 
+        .summit-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #36B37E;
+            color: white;
+            text-decoration: none;
+            border-radius: 3px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.15s;
+        }
+
+        .summit-btn:hover {
+            background: #2D9F6C;
+        }
+
         .user-avatar-more {
             width: 24px;
             height: 24px;
@@ -1239,6 +1257,14 @@
             <button class="global-nav-create" onclick="window.showCreateTaskModal()">Create</button>
         </div>
         <div class="global-nav-right">
+            <a href="https://summit.codingeverest.com/" target="_blank" class="summit-btn" title="Open Summit">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+                Summit
+            </a>
             <div class="global-nav-icon">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8"></circle>

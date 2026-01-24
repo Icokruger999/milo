@@ -33,6 +33,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
     }
 
+    // Set user avatar
+    const user = authService.getCurrentUser();
+    if (user) {
+        const nameParts = (user.name || user.email || 'User').trim().split(' ');
+        let initials = 'U';
+        if (nameParts.length >= 2) {
+            initials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+        } else if (nameParts.length === 1) {
+            initials = nameParts[0].substring(0, 2).toUpperCase();
+        }
+        const avatar = document.getElementById('userAvatar');
+        if (avatar) avatar.textContent = initials;
+    }
+
     await loadTeams();
     await loadUsersAndProjects();
 });

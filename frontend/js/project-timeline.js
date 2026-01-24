@@ -1,14 +1,15 @@
 // Project Timeline - Gantt Chart View
-// Fully functional timeline with days/weeks/months view
 
 let tasks = [];
 let currentProject = null;
 let currentView = 'weeks'; // days, weeks, months
 let currentDate = new Date();
-let dayWidth = 40;
+let dayWidth = 30;
+let isDragging = false;
+let startX = 0;
+let scrollLeft = 0;
 
-// Colors for tasks
-const taskColors = ['blue', 'green', 'orange', 'purple', 'red'];
+const taskColors = ['blue', 'green', 'orange', 'purple'];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async function() {
@@ -39,9 +40,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             try {
                 currentProject = JSON.parse(stored);
                 projectSelector.setCurrentProject(currentProject);
-            } catch (e) {
-                console.error('Error parsing stored project:', e);
-            }
+            } catch (e) {}
         }
     }
 
@@ -53,9 +52,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 currentProject = projectSelector.projects[0];
                 projectSelector.setCurrentProject(currentProject);
             }
-        } catch (error) {
-            console.error('Failed to load projects:', error);
-        }
+        } catch (error) {}
     }
 
     if (!currentProject) {
@@ -63,47 +60,60 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
     }
 
-    // Update project title
-    const titleEl = document.getElementById('projectTitle');
-    if (titleEl) titleEl.textContent = currentProject.name + ' Timeline';
+    document.getElementById('projectTitle').textContent = currentProject.name + ' Timeline';
 
-    // Set default dates for new task inputs
-    const today = new Date();
-    const nextWeek = new Date(today);
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    
-    document.getElementById('newTaskStart').value = formatDateForInput(today);
-    document.getElementById('newTaskEnd').value = formatDateForInput(nextWeek);
+    // Setup drag to scroll
+    setupDragScroll();
 
-    // Load tasks
+    // Load and render
     await loadTasks();
-
-    // Render timeline
     renderTimeline();
-
-    // Scroll to today
     setTimeout(goToToday, 100);
 });
+
+// Setup drag to scroll on gantt panel
+function setupDragScroll() {
+    const panel = document.getElementById('ganttPanel');
+    
+    panel.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        startX = e.pageX - panel.offsetLeft;
+        scrollLeft = panel.scrollLeft;
+        panel.style.cursor = 'grabbing';
+    });
+
+    panel.addEventListener('mouseleave', () => {
+        isDragging = false;
+        panel.style.cursor = 'grab';
+    });
+
+    panel.addEventListener('mouseup', () => {
+        isDragging = false;
+        panel.style.cursor = 'grab';
+    });
+
+    panel.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const x = e.pageX - panel.offsetLeft;
+        const walk = (x - startX) * 2;
+        panel.scrollLeft = scrollLeft - walk;
+    });
+}
 
 // Load tasks from API
 async function loadTasks() {
     try {
         const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
-        if (!response.ok) {
-            console.error('Failed to load tasks');
-            return;
-        }
+        if (!response.ok) return;
 
         const rawTasks = await response.json();
         
-        // Process tasks
         tasks = rawTasks.map((task, index) => {
-            // Calculate progress based on status
             let progress = 0;
             if (task.status === 'done') progress = 100;
             else if (task.status === 'review') progress = 75;
             else if (task.status === 'progress') progress = 50;
-            else progress = 0;
 
             return {
                 id: task.id,
@@ -113,98 +123,102 @@ async function loadTasks() {
                 endDate: task.dueDate ? new Date(task.dueDate) : null,
                 progress: progress,
                 color: taskColors[index % taskColors.length],
-                status: task.status,
-                assignee: task.assignee ? task.assignee.name : null,
-                label: task.label
+                status: task.status
             };
         });
 
-        // Set default end date if missing
         tasks.forEach(task => {
             if (!task.endDate) {
                 task.endDate = new Date(task.startDate);
                 task.endDate.setDate(task.endDate.getDate() + 7);
             }
         });
-
-        console.log(`Loaded ${tasks.length} tasks`);
     } catch (error) {
         console.error('Error loading tasks:', error);
     }
 }
 
-// Render the complete timeline
+// Render timeline
 function renderTimeline() {
     renderTaskList();
     renderGanttChart();
     updatePeriodLabel();
 }
 
-// Render task list (left panel)
+// Render task list with inline add
 function renderTaskList() {
     const container = document.getElementById('taskList');
     if (!container) return;
 
-    if (tasks.length === 0) {
-        container.innerHTML = `
-            <div style="padding: 40px 20px; text-align: center; color: #6B778C;">
-                <p>No tasks yet. Add your first task below.</p>
+    let html = '';
+
+    // Render existing tasks
+    tasks.forEach(task => {
+        html += `
+            <div class="task-row" data-task-id="${task.id}">
+                <div class="task-name">
+                    <div class="color-bar ${task.color}"></div>
+                    <span>${escapeHtml(task.name)}</span>
+                </div>
+                <div class="wbs-cell">${task.wbs}</div>
+                <div class="date-cell">${formatDateShort(task.startDate)}</div>
+                <div class="date-cell">${formatDateShort(task.endDate)}</div>
             </div>
         `;
-        return;
-    }
+    });
 
-    container.innerHTML = tasks.map(task => `
-        <div class="task-row" data-task-id="${task.id}">
-            <div class="task-color">
-                <div class="color-dot ${task.color}"></div>
+    // Add new task row
+    const today = new Date();
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+
+    html += `
+        <div class="add-task-row">
+            <div>
+                <input type="text" class="add-task-input" id="newTaskName" placeholder="+ Add new task..." onkeypress="handleTaskKeypress(event)">
             </div>
-            <div class="task-name">
-                ${escapeHtml(task.name)}
+            <div></div>
+            <div>
+                <input type="date" class="date-input" id="newTaskStart" value="${formatDateInput(today)}">
             </div>
-            <div class="wbs-cell">${task.wbs}</div>
-            <div class="date-cell">${formatDateShort(task.startDate)}</div>
-            <div class="date-cell">${formatDateShort(task.endDate)}</div>
+            <div>
+                <input type="date" class="date-input" id="newTaskEnd" value="${formatDateInput(nextWeek)}">
+            </div>
         </div>
-    `).join('');
+    `;
+
+    container.innerHTML = html;
 }
 
-// Render Gantt chart (right panel)
+// Render Gantt chart
 function renderGanttChart() {
-    const { startDate: viewStart, endDate: viewEnd, days } = getViewDateRange();
-    
-    renderGanttHeader(viewStart, days);
-    renderGanttBody(viewStart, days);
+    const { startDate: viewStart, days: totalDays } = getViewDateRange();
+    renderGanttHeader(viewStart, totalDays);
+    renderGanttBody(viewStart, totalDays);
 }
 
-// Get date range based on current view
+// Get date range based on view
 function getViewDateRange() {
     const start = new Date(currentDate);
     let days = 0;
 
     if (currentView === 'days') {
-        // Show 2 weeks centered on current date
         start.setDate(start.getDate() - 7);
-        days = 14;
-        dayWidth = 60;
+        days = 21;
+        dayWidth = 50;
     } else if (currentView === 'weeks') {
-        // Show current month
         start.setDate(1);
         const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
         days = end.getDate();
-        dayWidth = 40;
-    } else if (currentView === 'months') {
-        // Show 3 months
+        dayWidth = 30;
+    } else {
         start.setDate(1);
         const end = new Date(start.getFullYear(), start.getMonth() + 3, 0);
         days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-        dayWidth = 15;
+        dayWidth = 12;
     }
 
-    const endDate = new Date(start);
-    endDate.setDate(endDate.getDate() + days);
-
-    return { startDate: start, endDate: endDate, days: days };
+    return { startDate: start, days: days };
 }
 
 // Render Gantt header
@@ -215,14 +229,12 @@ function renderGanttHeader(viewStart, totalDays) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Group days by month
     const months = [];
     let currentMonth = null;
 
     for (let i = 0; i < totalDays; i++) {
         const date = new Date(viewStart);
         date.setDate(date.getDate() + i);
-        
         const monthKey = `${date.getFullYear()}-${date.getMonth()}`;
         
         if (!currentMonth || currentMonth.key !== monthKey) {
@@ -234,19 +246,15 @@ function renderGanttHeader(viewStart, totalDays) {
             months.push(currentMonth);
         }
 
-        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-        const isToday = date.getTime() === today.getTime();
-
         currentMonth.days.push({
             date: new Date(date),
             dayName: date.toLocaleDateString('en-US', { weekday: 'short' }).charAt(0),
             dayNum: date.getDate(),
-            isWeekend,
-            isToday
+            isWeekend: date.getDay() === 0 || date.getDay() === 6,
+            isToday: date.getTime() === today.getTime()
         });
     }
 
-    // Render months row
     let monthsHTML = '<div class="gantt-months-row">';
     months.forEach(month => {
         const width = month.days.length * dayWidth;
@@ -254,14 +262,12 @@ function renderGanttHeader(viewStart, totalDays) {
     });
     monthsHTML += '</div>';
 
-    // Render days row
     let daysHTML = '<div class="gantt-days-row">';
     months.forEach(month => {
         month.days.forEach(day => {
             let classes = 'gantt-day-cell';
             if (day.isWeekend) classes += ' weekend';
             if (day.isToday) classes += ' today';
-            
             daysHTML += `<div class="${classes}" style="min-width: ${dayWidth}px; width: ${dayWidth}px;">
                 <span class="gantt-day-name">${day.dayName}</span>
                 <span class="gantt-day-num">${day.dayNum}</span>
@@ -272,14 +278,11 @@ function renderGanttHeader(viewStart, totalDays) {
 
     header.innerHTML = monthsHTML + daysHTML;
 
-    // Set wrapper width
     const wrapper = document.getElementById('ganttWrapper');
-    if (wrapper) {
-        wrapper.style.width = `${totalDays * dayWidth}px`;
-    }
+    if (wrapper) wrapper.style.width = `${totalDays * dayWidth}px`;
 }
 
-// Render Gantt body with bars
+// Render Gantt body
 function renderGanttBody(viewStart, totalDays) {
     const body = document.getElementById('ganttBody');
     if (!body) return;
@@ -289,11 +292,10 @@ function renderGanttBody(viewStart, totalDays) {
 
     let html = '';
 
-    // Render rows for each task
+    // Rows for tasks
     tasks.forEach(task => {
         html += '<div class="gantt-row">';
         
-        // Background cells
         for (let i = 0; i < totalDays; i++) {
             const date = new Date(viewStart);
             date.setDate(date.getDate() + i);
@@ -301,7 +303,6 @@ function renderGanttBody(viewStart, totalDays) {
             html += `<div class="gantt-cell ${isWeekend ? 'weekend' : ''}" style="min-width: ${dayWidth}px; width: ${dayWidth}px;"></div>`;
         }
 
-        // Task bar
         if (task.startDate && task.endDate) {
             const barStart = Math.max(0, Math.ceil((task.startDate - viewStart) / (1000 * 60 * 60 * 24)));
             const barEnd = Math.ceil((task.endDate - viewStart) / (1000 * 60 * 60 * 24));
@@ -323,7 +324,7 @@ function renderGanttBody(viewStart, totalDays) {
         html += '</div>';
     });
 
-    // Add empty row for new task
+    // Empty row for add task
     html += '<div class="gantt-row">';
     for (let i = 0; i < totalDays; i++) {
         const date = new Date(viewStart);
@@ -348,28 +349,20 @@ function updatePeriodLabel() {
     if (!label) return;
 
     if (currentView === 'days') {
-        const start = new Date(currentDate);
-        start.setDate(start.getDate() - 7);
-        const end = new Date(currentDate);
-        end.setDate(end.getDate() + 7);
-        label.textContent = `${formatDateShort(start)} - ${formatDateShort(end)}`;
+        label.textContent = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     } else if (currentView === 'weeks') {
         label.textContent = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     } else {
-        const start = new Date(currentDate);
-        const end = new Date(start.getFullYear(), start.getMonth() + 3, 0);
-        label.textContent = `${start.toLocaleDateString('en-US', { month: 'short' })} - ${end.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+        const end = new Date(currentDate.getFullYear(), currentDate.getMonth() + 3, 0);
+        label.textContent = `${currentDate.toLocaleDateString('en-US', { month: 'short' })} - ${end.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
     }
 }
 
 // Set view mode
 function setView(view) {
     currentView = view;
-    
-    // Update buttons
     document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
     document.getElementById(`view${view.charAt(0).toUpperCase() + view.slice(1)}`).classList.add('active');
-    
     renderTimeline();
 }
 
@@ -382,7 +375,6 @@ function navigatePeriod(direction) {
     } else {
         currentDate.setMonth(currentDate.getMonth() + (direction * 3));
     }
-    
     renderTimeline();
 }
 
@@ -391,18 +383,16 @@ function goToToday() {
     currentDate = new Date();
     renderTimeline();
     
-    // Scroll to today in gantt
     const panel = document.getElementById('ganttPanel');
     const { startDate: viewStart } = getViewDateRange();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
     const todayOffset = Math.ceil((today - viewStart) / (1000 * 60 * 60 * 24));
-    const scrollPos = Math.max(0, (todayOffset * dayWidth) - (panel.clientWidth / 2));
-    panel.scrollLeft = scrollPos;
+    panel.scrollLeft = Math.max(0, (todayOffset * dayWidth) - (panel.clientWidth / 2));
 }
 
-// Handle keypress on new task input
+// Handle keypress for new task
 async function handleTaskKeypress(event) {
     if (event.key === 'Enter') {
         await createTask();
@@ -414,7 +404,6 @@ async function createTask() {
     const nameInput = document.getElementById('newTaskName');
     const startInput = document.getElementById('newTaskStart');
     const endInput = document.getElementById('newTaskEnd');
-    const colorSelect = document.getElementById('newTaskColor');
 
     const name = nameInput.value.trim();
     if (!name) return;
@@ -435,23 +424,9 @@ async function createTask() {
         });
 
         if (response.ok) {
-            // Clear inputs
             nameInput.value = '';
-            
-            // Set new default dates
-            const today = new Date();
-            const nextWeek = new Date(today);
-            nextWeek.setDate(nextWeek.getDate() + 7);
-            startInput.value = formatDateForInput(today);
-            endInput.value = formatDateForInput(nextWeek);
-
-            // Reload tasks
             await loadTasks();
             renderTimeline();
-            
-            console.log('Task created successfully');
-        } else {
-            console.error('Failed to create task');
         }
     } catch (error) {
         console.error('Error creating task:', error);
@@ -464,12 +439,9 @@ function formatDateShort(date) {
     return new Date(date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: '2-digit' });
 }
 
-function formatDateForInput(date) {
+function formatDateInput(date) {
     const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function escapeHtml(text) {
@@ -479,7 +451,7 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Make functions global
+// Global functions
 window.setView = setView;
 window.navigatePeriod = navigatePeriod;
 window.goToToday = goToToday;

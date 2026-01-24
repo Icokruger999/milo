@@ -2490,9 +2490,10 @@ window.loadTaskComments = loadTaskComments;
 let collapsedAssignees = {}; // Track which assignees are collapsed
 let currentGroupBy = 'assignee'; // Default grouping
 let currentTeamFilter = null; // For filtering by specific team
+let currentTeamMembers = []; // Store team member user IDs for filtering
 
 // Apply board grouping based on selected option
-window.applyBoardGrouping = function(groupBy) {
+window.applyBoardGrouping = async function(groupBy) {
     console.log('🔄 Applying board grouping:', groupBy);
     
     // Check if it's a specific team selection (format: team-{id})
@@ -2501,9 +2502,27 @@ window.applyBoardGrouping = function(groupBy) {
         currentGroupBy = 'team';
         currentTeamFilter = teamId;
         console.log('Filtering by team ID:', teamId);
+        
+        // Load team members to get their user IDs
+        try {
+            const response = await apiClient.get(`/teams/${teamId}`);
+            if (response.ok) {
+                const team = await response.json();
+                // Ensure all user IDs are integers for consistent comparison
+                currentTeamMembers = team.members ? team.members.map(m => parseInt(m.userId)) : [];
+                console.log('Team members loaded:', currentTeamMembers);
+            } else {
+                currentTeamMembers = [];
+                console.error('Failed to load team members');
+            }
+        } catch (error) {
+            currentTeamMembers = [];
+            console.error('Error loading team members:', error);
+        }
     } else {
         currentGroupBy = groupBy || 'assignee';
         currentTeamFilter = null;
+        currentTeamMembers = [];
     }
     
     renderBoard();
@@ -2655,11 +2674,22 @@ function renderBoardGrid() {
             }
         });
     } else if (currentGroupBy === 'team') {
-        // Group by team - filter by specific team if selected
+        // Group by team - filter by team members' assignee IDs
+        console.log('🔍 Team filtering - Team members:', currentTeamMembers);
+        let matchedCount = 0;
+        let skippedCount = 0;
+        
         allTasks.forEach(task => {
-            // Skip tasks that don't match the team filter
-            if (currentTeamFilter && task.teamId !== currentTeamFilter) {
-                return;
+            // Skip tasks that don't belong to team members
+            if (currentTeamFilter && currentTeamMembers.length > 0) {
+                const taskAssigneeId = task.assigneeId ? parseInt(task.assigneeId) : null;
+                const isTeamMember = taskAssigneeId && currentTeamMembers.includes(taskAssigneeId);
+                
+                if (!isTeamMember) {
+                    skippedCount++;
+                    return; // Skip tasks not assigned to team members
+                }
+                matchedCount++;
             }
             
             // Group by assignee within the team
@@ -2687,6 +2717,8 @@ function renderBoardGrid() {
                 groups[assigneeName].tasks.todo.push(task);
             }
         });
+        
+        console.log(`🔍 Team filter results: ${matchedCount} matched, ${skippedCount} skipped`);
     } else if (currentGroupBy === 'product') {
         // Group by product (if task has product info)
         allTasks.forEach(task => {

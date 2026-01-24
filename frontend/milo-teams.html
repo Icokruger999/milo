@@ -74,6 +74,27 @@
             color: #0052CC;
         }
 
+        .global-nav-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #0052CC;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
         /* Main Container */
         .container {
             margin-top: 56px;
@@ -459,13 +480,24 @@
                 </svg>
             </div>
             <div class="global-nav-links">
-                <a href="milo-board.html">Board</a>
-                <a href="milo-backlog.html">Backlog</a>
-                <a href="milo-roadmap.html">Roadmap</a>
-                <a href="milo-project-timeline.html">Project Timeline</a>
-                <a href="milo-flakes.html">Flakes</a>
-                <a href="milo-teams.html" class="active">Teams</a>
+                <a href="milo-board.html" class="global-nav-link">Board</a>
+                <a href="milo-backlog.html" class="global-nav-link">Backlog</a>
+                <a href="milo-roadmap.html" class="global-nav-link">Roadmap</a>
+                <a href="milo-project-timeline.html" class="global-nav-link">Project Timeline</a>
+                <a href="milo-flakes.html" class="global-nav-link">Flakes</a>
+                <a href="milo-teams.html" class="global-nav-link active">Teams</a>
             </div>
+        </div>
+        <div class="global-nav-right">
+            <a href="https://summit.codingeverest.com/" target="_blank" class="summit-btn" title="Open Summit">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+                Summit
+            </a>
+            <div class="user-avatar" id="userAvatar">U</div>
         </div>
     </div>
 

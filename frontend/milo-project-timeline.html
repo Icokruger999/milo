@@ -25,10 +25,10 @@
         /* Navigation - White header */
         .global-nav {
             background: #FFFFFF;
-            height: 56px;
+            height: 48px;
             display: flex;
             align-items: center;
-            padding: 0 20px;
+            padding: 0 16px;
             border-bottom: 1px solid #DFE1E6;
             position: fixed;
             top: 0;
@@ -40,40 +40,31 @@
         .global-nav-left {
             display: flex;
             align-items: center;
-            gap: 24px;
+            gap: 16px;
         }
 
         .global-nav-logo {
+            width: 24px;
+            height: 24px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            justify-content: center;
             cursor: pointer;
-            text-decoration: none;
-        }
-
-        .global-nav-logo svg {
-            color: #0052CC;
-        }
-
-        .global-nav-brand {
-            font-size: 18px;
-            font-weight: 700;
             color: #0052CC;
         }
 
         .global-nav-links {
             display: flex;
-            gap: 4px;
+            gap: 8px;
         }
 
         .global-nav-link {
-            padding: 8px 12px;
+            padding: 6px 12px;
             color: #42526E;
             text-decoration: none;
             font-size: 14px;
-            font-weight: 500;
-            border-radius: 4px;
-            transition: all 0.15s;
+            border-radius: 3px;
+            transition: background 0.15s;
         }
 
         .global-nav-link:hover {
@@ -107,13 +98,31 @@
             cursor: pointer;
         }
 
+        .summit-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: #36B37E;
+            color: white;
+            text-decoration: none;
+            border-radius: 3px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.15s;
+        }
+
+        .summit-btn:hover {
+            background: #2D9F6C;
+        }
+
         /* Main Container */
         .main-container {
-            margin-top: 56px;
-            height: calc(100vh - 56px);
+            margin-top: 48px;
+            height: calc(100vh - 48px);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            background: #FFFFFF;
         }
 
         /* Toolbar */
@@ -122,46 +131,82 @@
             padding: 12px 20px;
             display: flex;
             align-items: center;
-            gap: 16px;
+            justify-content: space-between;
             border-bottom: 1px solid #DFE1E6;
         }
 
         .toolbar-left {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
+        }
+
+        .project-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #172B4D;
         }
 
         .toolbar-right {
-            margin-left: auto;
             display: flex;
             align-items: center;
             gap: 12px;
         }
 
+        .nav-arrows {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .nav-btn {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #F4F5F7;
+            border: none;
+            border-radius: 3px;
+            color: #42526E;
+            cursor: pointer;
+        }
+
+        .nav-btn:hover {
+            background: #EBECF0;
+        }
+
+        .current-period {
+            font-size: 14px;
+            font-weight: 500;
+            color: #172B4D;
+            min-width: 120px;
+            text-align: center;
+        }
+
         .view-toggle {
             display: flex;
             background: #F4F5F7;
-            border-radius: 4px;
+            border-radius: 3px;
             padding: 2px;
         }
 
         .view-btn {
-            padding: 6px 16px;
+            padding: 6px 12px;
             border: none;
             background: transparent;
             color: #42526E;
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
-            border-radius: 3px;
+            border-radius: 2px;
             transition: all 0.15s;
         }
 
         .view-btn.active {
             background: #FFFFFF;
             color: #0052CC;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
 
         .today-btn {
@@ -169,7 +214,7 @@
             background: #0052CC;
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 3px;
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
@@ -179,29 +224,6 @@
             background: #0747A6;
         }
 
-        .nav-btn {
-            padding: 6px 10px;
-            background: #F4F5F7;
-            border: none;
-            border-radius: 4px;
-            color: #42526E;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-        }
-
-        .nav-btn:hover {
-            background: #EBECF0;
-        }
-
-        .current-period {
-            font-size: 14px;
-            font-weight: 600;
-            color: #172B4D;
-            min-width: 150px;
-            text-align: center;
-        }
-
         /* Content Area */
         .content-area {
             flex: 1;
@@ -209,31 +231,29 @@
             overflow: hidden;
         }
 
-        /* Left Panel - Task List */
+        /* Left Panel - Task Table */
         .task-panel {
-            width: 500px;
-            min-width: 500px;
+            width: 400px;
+            min-width: 400px;
             background: #FFFFFF;
             border-right: 1px solid #DFE1E6;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
         }
 
         .task-table-header {
             display: grid;
-            grid-template-columns: 40px 1fr 60px 100px 100px;
+            grid-template-columns: 1fr 60px 80px 80px;
             background: #F4F5F7;
             border-bottom: 1px solid #DFE1E6;
             font-size: 11px;
             font-weight: 600;
             color: #6B778C;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
         .task-table-header > div {
-            padding: 10px 8px;
+            padding: 10px 12px;
             border-right: 1px solid #DFE1E6;
         }
 
@@ -248,10 +268,10 @@
 
         .task-row {
             display: grid;
-            grid-template-columns: 40px 1fr 60px 100px 100px;
+            grid-template-columns: 1fr 60px 80px 80px;
             border-bottom: 1px solid #F4F5F7;
             align-items: center;
-            transition: background 0.1s;
+            min-height: 40px;
         }
 
         .task-row:hover {
@@ -262,37 +282,18 @@
             background: #FAFBFC;
         }
 
-        .task-row.phase .task-name {
-            font-weight: 600;
-        }
-
         .task-row > div {
-            padding: 10px 8px;
+            padding: 8px 12px;
             font-size: 13px;
             border-right: 1px solid #F4F5F7;
+            height: 100%;
+            display: flex;
+            align-items: center;
         }
 
         .task-row > div:last-child {
             border-right: none;
         }
-
-        .task-color {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .color-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 3px;
-        }
-
-        .color-dot.blue { background: #0052CC; }
-        .color-dot.green { background: #36B37E; }
-        .color-dot.orange { background: #FF9900; }
-        .color-dot.purple { background: #6554C0; }
-        .color-dot.red { background: #DE350B; }
 
         .task-name {
             display: flex;
@@ -300,61 +301,73 @@
             gap: 8px;
         }
 
-        .task-name.indent {
-            padding-left: 24px;
+        .color-bar {
+            width: 4px;
+            height: 20px;
+            border-radius: 2px;
+            flex-shrink: 0;
         }
 
-        .expand-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 2px;
-            color: #6B778C;
-        }
+        .color-bar.blue { background: #0052CC; }
+        .color-bar.green { background: #36B37E; }
+        .color-bar.orange { background: #FF9900; }
+        .color-bar.purple { background: #6554C0; }
 
-        .wbs-cell {
-            color: #6B778C;
-            font-family: monospace;
-            font-size: 12px;
-        }
-
-        .date-cell {
+        .wbs-cell, .date-cell {
             color: #6B778C;
             font-size: 12px;
         }
 
-        /* Add Task Row */
+        /* Add Task Input Row */
         .add-task-row {
             display: grid;
-            grid-template-columns: 40px 1fr 60px 100px 100px;
+            grid-template-columns: 1fr 60px 80px 80px;
             border-bottom: 1px solid #F4F5F7;
             align-items: center;
+            min-height: 40px;
         }
 
         .add-task-row > div {
-            padding: 8px;
+            padding: 4px 8px;
+            border-right: 1px solid #F4F5F7;
+        }
+
+        .add-task-row > div:last-child {
+            border-right: none;
         }
 
         .add-task-input {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #DFE1E6;
+            padding: 6px 8px;
+            border: 1px solid transparent;
             border-radius: 3px;
             font-size: 13px;
-            font-family: inherit;
+            background: transparent;
         }
 
         .add-task-input:focus {
             outline: none;
             border-color: #0052CC;
+            background: #FFFFFF;
         }
 
-        .add-task-date {
+        .add-task-input::placeholder {
+            color: #6B778C;
+        }
+
+        .date-input {
             width: 100%;
-            padding: 6px;
-            border: 1px solid #DFE1E6;
+            padding: 4px;
+            border: 1px solid transparent;
             border-radius: 3px;
-            font-size: 12px;
+            font-size: 11px;
+            background: transparent;
+        }
+
+        .date-input:focus {
+            outline: none;
+            border-color: #0052CC;
+            background: #FFFFFF;
         }
 
         /* Right Panel - Gantt Chart */
@@ -362,12 +375,17 @@
             flex: 1;
             overflow: auto;
             background: #FFFFFF;
+            cursor: grab;
+        }
+
+        .gantt-panel:active {
+            cursor: grabbing;
         }
 
         .gantt-wrapper {
-            min-width: 100%;
             display: flex;
             flex-direction: column;
+            min-width: max-content;
         }
 
         .gantt-header {
@@ -380,15 +398,15 @@
         .gantt-months-row {
             display: flex;
             border-bottom: 1px solid #DFE1E6;
+            background: #F4F5F7;
         }
 
         .gantt-month-cell {
-            padding: 8px 12px;
+            padding: 6px 12px;
             font-size: 12px;
             font-weight: 600;
             color: #172B4D;
             border-right: 1px solid #DFE1E6;
-            background: #F4F5F7;
         }
 
         .gantt-days-row {
@@ -414,7 +432,6 @@
         .gantt-day-cell.today {
             background: #DEEBFF;
             color: #0052CC;
-            font-weight: 600;
         }
 
         .gantt-day-name {
@@ -434,16 +451,13 @@
         .gantt-row {
             display: flex;
             position: relative;
-            height: 41px;
+            height: 40px;
             border-bottom: 1px solid #F4F5F7;
-        }
-
-        .gantt-row.phase {
-            background: #FAFBFC;
         }
 
         .gantt-cell {
             border-right: 1px solid #F4F5F7;
+            height: 100%;
         }
 
         .gantt-cell.weekend {
@@ -463,21 +477,18 @@
             font-weight: 500;
             color: #FFFFFF;
             cursor: pointer;
-            transition: transform 0.1s, box-shadow 0.1s;
             overflow: hidden;
             white-space: nowrap;
         }
 
         .gantt-bar:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            filter: brightness(1.1);
         }
 
         .gantt-bar.blue { background: #0052CC; }
         .gantt-bar.green { background: #36B37E; }
         .gantt-bar.orange { background: #FF9900; }
         .gantt-bar.purple { background: #6554C0; }
-        .gantt-bar.red { background: #DE350B; }
 
         .gantt-bar-progress {
             position: absolute;
@@ -500,18 +511,13 @@
             width: 2px;
             background: #DE350B;
             z-index: 5;
-            pointer-events: none;
         }
 
-        .today-line::before {
-            content: '';
-            position: absolute;
-            top: -6px;
-            left: -4px;
-            width: 10px;
-            height: 10px;
-            background: #DE350B;
-            border-radius: 50%;
+        /* Empty State */
+        .empty-state {
+            padding: 40px 20px;
+            text-align: center;
+            color: #6B778C;
         }
 
         /* Scrollbar */
@@ -528,17 +534,13 @@
             background: #C1C7D0;
             border-radius: 4px;
         }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: #A5ADBA;
-        }
     </style>
 </head>
 <body>
     <!-- Navigation -->
     <div class="global-nav">
         <div class="global-nav-left">
-            <div class="global-nav-logo" onclick="window.location.href='milo-board.html'" style="cursor: pointer;">
+            <div class="global-nav-logo" onclick="window.location.href='milo-board.html'">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="7"></rect>
                     <rect x="14" y="3" width="7" height="7"></rect>
@@ -556,6 +558,14 @@
             </div>
         </div>
         <div class="global-nav-right">
+            <a href="https://summit.codingeverest.com/" target="_blank" class="summit-btn" title="Open Summit">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+                Summit
+            </a>
             <div class="user-avatar" id="userAvatar">U</div>
         </div>
     </div>
@@ -565,20 +575,22 @@
         <!-- Toolbar -->
         <div class="toolbar">
             <div class="toolbar-left">
-                <span style="font-size: 16px; font-weight: 600; color: #172B4D;" id="projectTitle">Project Timeline</span>
+                <span class="project-title" id="projectTitle">Project Timeline</span>
             </div>
             <div class="toolbar-right">
-                <button class="nav-btn" onclick="navigatePeriod(-1)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="15 18 9 12 15 6"></polyline>
-                    </svg>
-                </button>
+                <div class="nav-arrows">
+                    <button class="nav-btn" onclick="navigatePeriod(-1)" title="Previous">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                    </button>
+                    <button class="nav-btn" onclick="navigatePeriod(1)" title="Next">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                </div>
                 <span class="current-period" id="currentPeriod">January 2026</span>
-                <button class="nav-btn" onclick="navigatePeriod(1)">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
-                </button>
                 <div class="view-toggle">
                     <button class="view-btn" id="viewDays" onclick="setView('days')">Days</button>
                     <button class="view-btn active" id="viewWeeks" onclick="setView('weeks')">Weeks</button>
@@ -590,50 +602,24 @@
 
         <!-- Content Area -->
         <div class="content-area">
-            <!-- Left Panel - Task List -->
+            <!-- Left Panel - Task Table -->
             <div class="task-panel">
                 <div class="task-table-header">
-                    <div></div>
-                    <div>Task Name</div>
+                    <div>TASK NAME</div>
                     <div>WBS</div>
-                    <div>Start</div>
-                    <div>Finish</div>
+                    <div>START</div>
+                    <div>FINISH</div>
                 </div>
                 <div class="task-list" id="taskList">
                     <!-- Tasks rendered here -->
-                </div>
-                <!-- Inline Add Task -->
-                <div class="add-task-row" id="addTaskRow">
-                    <div class="task-color">
-                        <select id="newTaskColor" style="width: 100%; border: none; background: transparent; cursor: pointer;">
-                            <option value="blue">🔵</option>
-                            <option value="green">🟢</option>
-                            <option value="orange">🟠</option>
-                            <option value="purple">🟣</option>
-                        </select>
-                    </div>
-                    <div>
-                        <input type="text" class="add-task-input" id="newTaskName" placeholder="+ Add new task..." onkeypress="handleTaskKeypress(event)">
-                    </div>
-                    <div></div>
-                    <div>
-                        <input type="date" class="add-task-date" id="newTaskStart">
-                    </div>
-                    <div>
-                        <input type="date" class="add-task-date" id="newTaskEnd">
-                    </div>
                 </div>
             </div>
 
             <!-- Right Panel - Gantt Chart -->
             <div class="gantt-panel" id="ganttPanel">
                 <div class="gantt-wrapper" id="ganttWrapper">
-                    <div class="gantt-header" id="ganttHeader">
-                        <!-- Calendar header rendered here -->
-                    </div>
-                    <div class="gantt-body" id="ganttBody">
-                        <!-- Gantt rows rendered here -->
-                    </div>
+                    <div class="gantt-header" id="ganttHeader"></div>
+                    <div class="gantt-body" id="ganttBody"></div>
                 </div>
             </div>
         </div>
