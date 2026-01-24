@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Timeline - Milo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1e1e1e;
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Navigation */
+        .global-nav {
+            background: #2d2d2d;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            border-bottom: 1px solid #404040;
+        }
+
+        .global-nav-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .global-nav-logo {
+            cursor: pointer;
+            color: #fff;
+        }
+
+        .global-nav-brand {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .global-nav-links {
+            display: flex;
+            gap: 8px;
+            margin-left: 24px;
+        }
+
+        .global-nav-link {
+            padding: 6px 12px;
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            font-size: 14px;
+            border-radius: 4px;
+        }
+
+        .global-nav-link:hover, .global-nav-link.active {
+            background: #404040;
+            color: #fff;
+        }
+
+        .global-nav-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #0052CC;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            background: #2d2d2d;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid #404040;
+        }
+
+        .toolbar-btn {
+            background: transparent;
+            border: none;
+            color: #a0a0a0;
+            padding: 6px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+        }
+
+        .toolbar-btn:hover {
+            background: #404040;
+            color: #fff;
+        }
+
+        .toolbar-separator {
+            width: 1px;
+            height: 24px;
+            background: #404040;
+            margin: 0 8px;
+        }
+
+        /* Main Container */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 96px);
+            overflow: hidden;
+        }
+
+        /* Left Panel - Task Table */
+        .task-table-container {
+            width: 450px;
+            min-width: 450px;
+            background: #1e1e1e;
+            border-right: 2px solid #404040;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .task-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .task-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .task-table th {
+            background: #2d2d2d;
+            color: #a0a0a0;
+            font-weight: 600;
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 2px solid #404040;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .task-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #333;
+            vertical-align: middle;
+        }
+
+        .task-table tbody tr:hover {
+            background: #2a2a2a;
+        }
+
+        .task-table tbody tr.phase-row {
+            background: #252525;
+        }
+
+        .task-table tbody tr.phase-row td {
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .phase-indicator {
+            display: inline-block;
+            width: 4px;
+            height: 16px;
+            margin-right: 8px;
+            border-radius: 2px;
+        }
+
+        .phase-indicator.blue { background: #4a90d9; }
+        .phase-indicator.green { background: #36B37E; }
+        .phase-indicator.orange { background: #FF9900; }
+        .phase-indicator.purple { background: #6554C0; }
+        .phase-indicator.gray { background: #6B778C; }
+
+        .task-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .task-indent {
+            margin-left: 24px;
+        }
+
+        .wbs-number {
+            color: #a0a0a0;
+            font-family: monospace;
+        }
+
+        .date-cell {
+            color: #a0a0a0;
+            font-size: 12px;
+        }
+
+        /* Right Panel - Gantt Chart */
+        .gantt-container {
+            flex: 1;
+            overflow-x: auto;
+            overflow-y: auto;
+            background: #1e1e1e;
+        }
+
+        .gantt-wrapper {
+            min-width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Gantt Header */
+        .gantt-header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: #2d2d2d;
+            border-bottom: 2px solid #404040;
+        }
+
+        .gantt-header-row {
+            display: flex;
+        }
+
+        .gantt-header-cell {
+            min-width: 40px;
+            padding: 8px 4px;
+            text-align: center;
+            font-size: 10px;
+            color: #a0a0a0;
+            border-right: 1px solid #333;
+        }
+
+        .gantt-header-cell.weekend {
+            background: #252525;
+        }
+
+        .gantt-header-cell.today {
+            background: #3d2020;
+            color: #ff6b6b;
+        }
+
+        .gantt-month-row {
+            display: flex;
+            border-bottom: 1px solid #404040;
+        }
+
+        .gantt-month-cell {
+            padding: 6px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #fff;
+            border-right: 1px solid #404040;
+            text-transform: uppercase;
+        }
+
+        /* Gantt Body */
+        .gantt-body {
+            position: relative;
+        }
+
+        .gantt-row {
+            display: flex;
+            position: relative;
+            height: 36px;
+            border-bottom: 1px solid #333;
+        }
+
+        .gantt-row.phase-row {
+            background: #252525;
+        }
+
+        .gantt-cell {
+            min-width: 40px;
+            border-right: 1px solid #2a2a2a;
+        }
+
+        .gantt-cell.weekend {
+            background: rgba(255,255,255,0.02);
+        }
+
+        /* Gantt Bars */
+        .gantt-bar-container {
+            position: absolute;
+            top: 4px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+        }
+
+        .gantt-bar {
+            height: 20px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .gantt-bar:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .gantt-bar.blue { background: linear-gradient(90deg, #4a90d9, #357abd); }
+        .gantt-bar.green { background: linear-gradient(90deg, #36B37E, #2d9a6a); }
+        .gantt-bar.orange { background: linear-gradient(90deg, #FF9900, #e68a00); }
+        .gantt-bar.purple { background: linear-gradient(90deg, #6554C0, #5243a0); }
+        .gantt-bar.gray { background: linear-gradient(90deg, #6B778C, #5a6678); }
+
+        /* Progress inside bar */
+        .gantt-bar-progress {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px 0 0 4px;
+        }
+
+        .gantt-bar-label {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .gantt-bar-percent {
+            font-weight: 600;
+        }
+
+        .gantt-bar-assignee {
+            font-size: 10px;
+            opacity: 0.9;
+        }
+
+        /* Milestone diamond */
+        .gantt-milestone {
+            width: 16px;
+            height: 16px;
+            background: #36B37E;
+            transform: rotate(45deg);
+            position: absolute;
+            top: 10px;
+        }
+
+        /* Today line */
+        .today-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #ff5630;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #404040;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #505050;
+        }
+
+        /* Table scroll container */
+        .table-scroll {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* Add row button */
+        .add-row-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            color: #a0a0a0;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .add-row-btn:hover {
+            background: #2a2a2a;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <div class="global-nav">
+        <div class="global-nav-left">
+            <div class="global-nav-logo" onclick="window.location.href='milo-board.html'">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                </svg>
+            </div>
+            <span class="global-nav-brand">Milo</span>
+            <div class="global-nav-links">
+                <a href="milo-board.html" class="global-nav-link">Board</a>
+                <a href="milo-backlog.html" class="global-nav-link">Backlog</a>
+                <a href="milo-roadmap.html" class="global-nav-link">Roadmap</a>
+                <a href="milo-project-timeline.html" class="global-nav-link active">Project Timeline</a>
+                <a href="milo-flakes.html" class="global-nav-link">Flakes</a>
+                <a href="milo-teams.html" class="global-nav-link">Teams</a>
+            </div>
+        </div>
+        <div class="global-nav-right">
+            <div class="user-avatar" id="userAvatar">U</div>
+        </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <button class="toolbar-btn" onclick="addPhase()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Phase
+        </button>
+        <button class="toolbar-btn" onclick="addTask()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Task
+        </button>
+        <div class="toolbar-separator"></div>
+        <button class="toolbar-btn" onclick="zoomIn()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                <line x1="11" y1="8" x2="11" y2="14"></line>
+                <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+        </button>
+        <button class="toolbar-btn" onclick="zoomOut()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+        </button>
+        <div class="toolbar-separator"></div>
+        <button class="toolbar-btn" onclick="scrollToToday()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            Today
+        </button>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Left Panel - Task Table -->
+        <div class="task-table-container">
+            <div class="table-scroll">
+                <table class="task-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"></th>
+                            <th>TASK NAME</th>
+                            <th style="width: 60px;">WBS</th>
+                            <th style="width: 100px;">PLANNED START</th>
+                            <th style="width: 100px;">PLANNED FINISH</th>
+                        </tr>
+                    </thead>
+                    <tbody id="taskTableBody">
+                        <!-- Tasks will be rendered here -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="add-row-btn" onclick="addTask()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Add task
+            </div>
+        </div>
+
+        <!-- Right Panel - Gantt Chart -->
+        <div class="gantt-container" id="ganttContainer">
+            <div class="gantt-wrapper" id="ganttWrapper">
+                <div class="gantt-header" id="ganttHeader">
+                    <!-- Month row and day row will be rendered here -->
+                </div>
+                <div class="gantt-body" id="ganttBody">
+                    <!-- Gantt rows will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/api-client.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/project-selector.js"></script>
+    <script src="js/project-timeline.js"></script>
+</body>
+</html>
