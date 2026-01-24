@@ -342,7 +342,11 @@ function showDashboardView() {
     const timelineView = document.getElementById('timelineView');
     
     if (boardContent) boardContent.style.display = 'none';
-    if (dashboardView) dashboardView.style.display = 'block';
+    if (dashboardView) {
+        dashboardView.style.display = 'flex';
+        dashboardView.style.flexDirection = 'column';
+        dashboardView.style.overflowY = 'auto';
+    }
     if (timelineView) timelineView.style.display = 'none';
     
     if (typeof loadDashboardData === 'function') {
@@ -2399,6 +2403,15 @@ window.loadTaskComments = loadTaskComments;
 let collapsedAssignees = {}; // Track which assignees are collapsed
 
 function renderBoard() {
+    console.log('🎨 renderBoard() called');
+    console.log('Current tasks:', {
+        todo: tasks.todo?.length || 0,
+        progress: tasks.progress?.length || 0,
+        review: tasks.review?.length || 0,
+        blocked: tasks.blocked?.length || 0,
+        done: tasks.done?.length || 0
+    });
+    
     // Render grid layout with assignee rows
     renderBoardGrid();
 }
