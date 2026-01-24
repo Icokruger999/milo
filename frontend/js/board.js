@@ -23,6 +23,7 @@ let tasks = {
     todo: [],
     progress: [],
     review: [],
+    blocked: [],
     done: []
 };
 
@@ -511,6 +512,13 @@ function editTask(taskId) {
 }
 
 function updateCounts() {
+    // Safety check: ensure all task arrays exist
+    if (!tasks.todo) tasks.todo = [];
+    if (!tasks.progress) tasks.progress = [];
+    if (!tasks.review) tasks.review = [];
+    if (!tasks.blocked) tasks.blocked = [];
+    if (!tasks.done) tasks.done = [];
+    
     document.getElementById('todoCount').textContent = tasks.todo.length;
     document.getElementById('progressCount').textContent = tasks.progress.length;
     document.getElementById('reviewCount').textContent = tasks.review.length;
