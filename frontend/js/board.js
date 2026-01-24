@@ -269,6 +269,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Errors are already handled gracefully in loadTasksFromAPI - empty board is shown
             // Don't show toast here to avoid flash errors on page refresh
         });
+        
+        // Load project members for assignee filter
+        if (typeof loadProjectMembers === 'function') {
+            loadProjectMembers();
+        }
+        
+        // Load labels for label filter
+        if (typeof loadLabelsForFilter === 'function') {
+            loadLabelsForFilter();
+        }
     }, 300);
     
     // Listen for status changes from backlog page
