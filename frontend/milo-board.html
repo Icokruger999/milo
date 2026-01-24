@@ -2462,20 +2462,15 @@
             }
 
             try {
-                // First try to use existing tasks from board if available
-                if (window.tasks && window.tasks.length > 0) {
-                    console.log('Using existing board tasks for dashboard:', window.tasks.length);
-                    renderDashboard(window.tasks);
-                    return;
-                }
-
-                // If no existing tasks, load fresh data from API
+                // Always load fresh data from API for dashboard
                 console.log('Loading tasks from API for dashboard, project:', currentProject.id);
                 const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
                 console.log('Dashboard API response status:', response.status);
                 
                 if (response.ok) {
-                    const tasks = await response.json();
+                    const data = await response.json();
+                    // Handle both paginated and non-paginated responses
+                    const tasks = data.tasks || data;
                     console.log('Dashboard loaded tasks:', tasks.length, tasks);
                     
                     // Additional debugging - log task statuses
