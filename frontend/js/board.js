@@ -1356,6 +1356,12 @@ async function loadUsersAndProducts() {
             // Add unique users - ensure deduplication happens
             const uniqueUsers = deduplicateUsers(users);
             
+            // Extra safety: ensure uniqueUsers is always an array
+            if (!uniqueUsers || !Array.isArray(uniqueUsers)) {
+                console.error('deduplicateUsers returned invalid data:', uniqueUsers);
+                return; // Exit early if we can't get valid users
+            }
+            
             // Use a Set to track what we've already added (extra safety)
             const addedIds = new Set();
             const addedEmails = new Set();
@@ -1405,7 +1411,7 @@ async function loadUsersAndProducts() {
                 startDateInput.value = preservedStartDateValue;
             }
             
-            console.log(`Populated assignee dropdown with ${uniqueUsers.length} unique users (${addedIds.size} by ID, ${addedEmails.size} by email)`);
+            console.log(`Populated assignee dropdown with ${uniqueUsers ? uniqueUsers.length : 0} unique users (${addedIds.size} by ID, ${addedEmails.size} by email)`);
         };
         
         // Check cache first
