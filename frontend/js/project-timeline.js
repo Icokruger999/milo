@@ -76,29 +76,40 @@ function setupDragScroll() {
     const panel = document.getElementById('ganttPanel');
     
     panel.addEventListener('mousedown', (e) => {
+        // Only start drag if clicking on the panel itself, not on bars
+        if (e.target.closest('.gantt-bar')) return;
+        
         isDragging = true;
-        startX = e.pageX - panel.offsetLeft;
+        startX = e.pageX;
         scrollLeft = panel.scrollLeft;
         panel.style.cursor = 'grabbing';
+        panel.style.userSelect = 'none';
     });
 
-    panel.addEventListener('mouseleave', () => {
-        isDragging = false;
-        panel.style.cursor = 'grab';
+    // Use document level events to handle mouse leaving the panel
+    document.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            panel.style.cursor = 'grab';
+            panel.style.userSelect = '';
+        }
     });
 
-    panel.addEventListener('mouseup', () => {
-        isDragging = false;
-        panel.style.cursor = 'grab';
-    });
-
-    panel.addEventListener('mousemove', (e) => {
+    document.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
         e.preventDefault();
-        const x = e.pageX - panel.offsetLeft;
-        const walk = (x - startX) * 2;
-        panel.scrollLeft = scrollLeft - walk;
+        const x = e.pageX;
+        const walk = (startX - x) * 1.5; // Scroll in opposite direction of drag
+        panel.scrollLeft = scrollLeft + walk;
     });
+
+    // Also handle mouse wheel for horizontal scroll
+    panel.addEventListener('wheel', (e) => {
+        if (e.deltaY !== 0) {
+            e.preventDefault();
+            panel.scrollLeft += e.deltaY;
+        }
+    }, { passive: false });
 }
 
 // Load tasks from API
@@ -145,47 +156,30 @@ function renderTimeline() {
     updatePeriodLabel();
 }
 
-// Render task list with inline add
+// Render task list (without inline add row)
 function renderTaskList() {
     const container = document.getElementById('taskList');
     if (!container) return;
 
     let html = '';
 
-    // Render existing tasks
-    tasks.forEach(task => {
-        html += `
-            <div class="task-row" data-task-id="${task.id}">
-                <div class="task-name">
-                    <div class="color-bar ${task.color}"></div>
-                    <span>${escapeHtml(task.name)}</span>
+    if (tasks.length === 0) {
+        html = '<div class="empty-state">No tasks yet. Click "Add Task" to create one.</div>';
+    } else {
+        tasks.forEach(task => {
+            html += `
+                <div class="task-row" data-task-id="${task.id}">
+                    <div class="task-name">
+                        <div class="color-bar ${task.color}"></div>
+                        <span>${escapeHtml(task.name)}</span>
+                    </div>
+                    <div class="wbs-cell">${task.wbs}</div>
+                    <div class="date-cell">${formatDateShort(task.startDate)}</div>
+                    <div class="date-cell">${formatDateShort(task.endDate)}</div>
                 </div>
-                <div class="wbs-cell">${task.wbs}</div>
-                <div class="date-cell">${formatDateShort(task.startDate)}</div>
-                <div class="date-cell">${formatDateShort(task.endDate)}</div>
-            </div>
-        `;
-    });
-
-    // Add new task row
-    const today = new Date();
-    const nextWeek = new Date(today);
-    nextWeek.setDate(nextWeek.getDate() + 7);
-
-    html += `
-        <div class="add-task-row">
-            <div>
-                <input type="text" class="add-task-input" id="newTaskName" placeholder="+ Add new task..." onkeypress="handleTaskKeypress(event)">
-            </div>
-            <div></div>
-            <div>
-                <input type="date" class="date-input" id="newTaskStart" value="${formatDateInput(today)}">
-            </div>
-            <div>
-                <input type="date" class="date-input" id="newTaskEnd" value="${formatDateInput(nextWeek)}">
-            </div>
-        </div>
-    `;
+            `;
+        });
+    }
 
     container.innerHTML = html;
 }
@@ -399,17 +393,76 @@ async function handleTaskKeypress(event) {
     }
 }
 
-// Create new task
+// Open add task modal
+function openAddTaskModal() {
+    const modal = document.getElementById('addTaskModal');
+    const today = new Date();
+    const nextWeek = new Date(today);
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    
+    document.getElementById('modalTaskName').value = '';
+    document.getElementById('modalTaskStart').value = formatDateInput(today);
+    document.getElementById('modalTaskEnd').value = formatDateInput(nextWeek);
+    
+    modal.classList.add('active');
+    document.getElementById('modalTaskName').focus();
+}
+
+// Close add task modal
+function closeAddTaskModal() {
+    const modal = document.getElementById('addTaskModal');
+    modal.classList.remove('active');
+}
+
+// Create task from modal
+async function createTaskFromModal() {
+    const name = document.getElementById('modalTaskName').value.trim();
+    const startValue = document.getElementById('modalTaskStart').value;
+    const endValue = document.getElementById('modalTaskEnd').value;
+
+    if (!name) {
+        document.getElementById('modalTaskName').focus();
+        return;
+    }
+
+    const startDate = startValue ? new Date(startValue) : new Date();
+    const endDate = endValue ? new Date(endValue) : new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    try {
+        const user = authService.getCurrentUser();
+        
+        const response = await apiClient.post('/tasks', {
+            title: name,
+            projectId: currentProject.id,
+            status: 'todo',
+            startDate: startDate.toISOString(),
+            dueDate: endDate.toISOString(),
+            creatorId: user ? user.id : null
+        });
+
+        if (response.ok) {
+            closeAddTaskModal();
+            await loadTasks();
+            renderTimeline();
+        }
+    } catch (error) {
+        console.error('Error creating task:', error);
+    }
+}
+
+// Create new task (legacy function)
 async function createTask() {
     const nameInput = document.getElementById('newTaskName');
     const startInput = document.getElementById('newTaskStart');
     const endInput = document.getElementById('newTaskEnd');
 
+    if (!nameInput) return;
+    
     const name = nameInput.value.trim();
     if (!name) return;
 
-    const startDate = startInput.value ? new Date(startInput.value) : new Date();
-    const endDate = endInput.value ? new Date(endInput.value) : new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const startDate = startInput && startInput.value ? new Date(startInput.value) : new Date();
+    const endDate = endInput && endInput.value ? new Date(endInput.value) : new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     try {
         const user = authService.getCurrentUser();
@@ -457,3 +510,6 @@ window.navigatePeriod = navigatePeriod;
 window.goToToday = goToToday;
 window.handleTaskKeypress = handleTaskKeypress;
 window.createTask = createTask;
+window.openAddTaskModal = openAddTaskModal;
+window.closeAddTaskModal = closeAddTaskModal;
+window.createTaskFromModal = createTaskFromModal;

@@ -318,56 +318,165 @@
             font-size: 12px;
         }
 
-        /* Add Task Input Row */
-        .add-task-row {
-            display: grid;
-            grid-template-columns: 1fr 60px 80px 80px;
+        /* Add Task Button */
+        .add-task-btn-container {
+            padding: 12px;
             border-bottom: 1px solid #F4F5F7;
+        }
+
+        .add-task-btn {
+            display: flex;
             align-items: center;
-            min-height: 40px;
-        }
-
-        .add-task-row > div {
-            padding: 4px 8px;
-            border-right: 1px solid #F4F5F7;
-        }
-
-        .add-task-row > div:last-child {
-            border-right: none;
-        }
-
-        .add-task-input {
-            width: 100%;
-            padding: 6px 8px;
-            border: 1px solid transparent;
-            border-radius: 3px;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #0052CC;
+            color: white;
+            border: none;
+            border-radius: 4px;
             font-size: 13px;
-            background: transparent;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
         }
 
-        .add-task-input:focus {
-            outline: none;
-            border-color: #0052CC;
-            background: #FFFFFF;
+        .add-task-btn:hover {
+            background: #0747A6;
         }
 
-        .add-task-input::placeholder {
+        .add-task-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Add Task Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #DFE1E6;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #172B4D;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            cursor: pointer;
             color: #6B778C;
-        }
-
-        .date-input {
-            width: 100%;
             padding: 4px;
-            border: 1px solid transparent;
-            border-radius: 3px;
-            font-size: 11px;
-            background: transparent;
         }
 
-        .date-input:focus {
+        .modal-close:hover {
+            color: #172B4D;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6B778C;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #DFE1E6;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.15s;
+        }
+
+        .form-input:focus {
             outline: none;
             border-color: #0052CC;
-            background: #FFFFFF;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #DFE1E6;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            padding: 8px 16px;
+            background: #F4F5F7;
+            color: #42526E;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: #EBECF0;
+        }
+
+        .btn-primary {
+            padding: 8px 16px;
+            background: #0052CC;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            background: #0747A6;
         }
 
         /* Right Panel - Gantt Chart */
@@ -604,6 +713,15 @@
         <div class="content-area">
             <!-- Left Panel - Task Table -->
             <div class="task-panel">
+                <div class="add-task-btn-container">
+                    <button class="add-task-btn" onclick="openAddTaskModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add Task
+                    </button>
+                </div>
                 <div class="task-table-header">
                     <div>TASK NAME</div>
                     <div>WBS</div>
@@ -630,5 +748,40 @@
     <script src="js/auth.js"></script>
     <script src="js/project-selector.js"></script>
     <script src="js/project-timeline.js"></script>
+
+    <!-- Add Task Modal -->
+    <div class="modal-overlay" id="addTaskModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">Add New Task</span>
+                <button class="modal-close" onclick="closeAddTaskModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Task Name</label>
+                    <input type="text" class="form-input" id="modalTaskName" placeholder="Enter task name...">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-input" id="modalTaskStart">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-input" id="modalTaskEnd">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeAddTaskModal()">Cancel</button>
+                <button class="btn-primary" onclick="createTaskFromModal()">Add Task</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
