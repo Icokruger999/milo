@@ -1,7 +1,0 @@
-{
-  "commands": [
-    "sudo systemctl start milo-backend.service",
-    "sleep 3",
-    "sudo systemctl status milo-backend.service --no-pager"
-  ]
-}

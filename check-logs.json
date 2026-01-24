@@ -1,7 +1,0 @@
-{
-  "commands": [
-    "sudo tail -n 50 /home/ec2-user/milo-backend-error.log",
-    "echo '---'",
-    "sudo tail -n 50 /home/ec2-user/milo-backend.log"
-  ]
-}

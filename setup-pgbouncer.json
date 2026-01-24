@@ -1,8 +1,0 @@
-{
-  "commands": [
-    "cd /tmp",
-    "curl -o setup-pgbouncer.sh https://raw.githubusercontent.com/Icokruger999/milo/main/setup-pgbouncer.sh",
-    "chmod +x setup-pgbouncer.sh",
-    "sudo bash setup-pgbouncer.sh"
-  ]
-}

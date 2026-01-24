@@ -1,9 +1,0 @@
-{
-  "commands": [
-    "cd /home/ec2-user",
-    "git clone https://github.com/Icokruger999/milo.git temp-repo || true",
-    "mkdir -p milo-backend-publish",
-    "cp -r temp-repo/backend/Milo.API/publish/* milo-backend-publish/ || true",
-    "rm -rf temp-repo"
-  ]
-}

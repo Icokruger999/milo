@@ -1,8 +1,0 @@
-{
-  "InstanceId": "i-06bc5b2218c041802",
-  "Region": "us-east-1",
-  "PublicIp": "34.246.3.141",
-  "PrivateIp": "172.31.30.186",
-  "Description": "Milo Backend EC2 Instance"
-}
-

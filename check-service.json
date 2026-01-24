@@ -1,3 +1,0 @@
-{
-  "commands": ["sudo systemctl status milo-backend.service --no-pager"]
-}

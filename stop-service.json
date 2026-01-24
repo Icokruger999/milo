@@ -1,3 +1,0 @@
-{
-  "commands": ["sudo systemctl stop milo-backend.service"]
-}

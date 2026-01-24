@@ -1,5 +1,0 @@
-{
-  "commands": [
-    "PGPASSWORD=\"Milo_PgBouncer_2024!Secure#Key\" psql -h localhost -p 5432 -U postgres -d milo -c \"SELECT id, email, name FROM users WHERE LOWER(email) = LOWER('robert.nicol@astutetech.co.za');\""
-  ]
-}
