@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Set HOME environment variable for dotnet
+export HOME=/home/ec2-user
+
 echo "Starting deployment..."
 
 # Clone repo
