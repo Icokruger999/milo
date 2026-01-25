@@ -1622,7 +1622,95 @@ async function loadTeams() {
 // Apply filters when team or assignee filter changes
 window.applyFilters = async function() {
     console.log('Applying filters...');
+    
+    // Get filter values
+    const epicFilter = document.getElementById('epicFilter')?.value || '';
+    const typeFilter = document.getElementById('typeFilter')?.value || '';
+    const priorityFilter = document.getElementById('priorityFilter')?.value || '';
+    const labelFilter = document.getElementById('labelFilter')?.value || '';
+    const assigneeFilter = document.getElementById('assigneeFilter')?.value || '';
+    const searchInput = document.getElementById('boardSearchInput')?.value.toLowerCase() || '';
+    
+    // Load tasks from API
     await loadTasksFromAPI();
+    
+    // Apply client-side filters
+    const allBoardTasks = [];
+    if (tasks && tasks.todo) allBoardTasks.push(...tasks.todo);
+    if (tasks && tasks.progress) allBoardTasks.push(...tasks.progress);
+    if (tasks && tasks.review) allBoardTasks.push(...tasks.review);
+    if (tasks && tasks.blocked) allBoardTasks.push(...tasks.blocked);
+    if (tasks && tasks.done) allBoardTasks.push(...tasks.done);
+    
+    const filteredTasks = {
+        todo: [],
+        progress: [],
+        review: [],
+        blocked: [],
+        done: []
+    };
+    
+    allBoardTasks.forEach(task => {
+        // Search filter
+        if (searchInput) {
+            const matchesSearch = 
+                task.title.toLowerCase().includes(searchInput) ||
+                (task.description || '').toLowerCase().includes(searchInput) ||
+                (task.id || '').toString().includes(searchInput);
+            if (!matchesSearch) return;
+        }
+        
+        // Epic filter (matches label)
+        if (epicFilter && epicFilter !== '' && epicFilter !== 'all') {
+            const taskLabel = (task.label || '').toLowerCase();
+            if (taskLabel !== epicFilter.toLowerCase()) return;
+        }
+        
+        // Type filter
+        if (typeFilter && typeFilter !== '') {
+            const taskType = (task.type || task.label || '').toLowerCase();
+            if (taskType !== typeFilter.toLowerCase()) return;
+        }
+        
+        // Priority filter
+        if (priorityFilter && priorityFilter !== '') {
+            const taskPriority = parseInt(task.priority) || 0;
+            if (taskPriority !== parseInt(priorityFilter)) return;
+        }
+        
+        // Label filter
+        if (labelFilter && labelFilter !== '') {
+            const taskLabel = (task.label || '').toLowerCase();
+            if (taskLabel !== labelFilter.toLowerCase()) return;
+        }
+        
+        // Assignee filter
+        if (assigneeFilter) {
+            if (assigneeFilter === 'unassigned') {
+                if (task.assigneeId) return;
+            } else {
+                const filterAssigneeId = parseInt(assigneeFilter);
+                if (!task.assigneeId || task.assigneeId !== filterAssigneeId) return;
+            }
+        }
+        
+        // Add to appropriate column
+        const status = task.status || 'todo';
+        if (filteredTasks[status]) {
+            filteredTasks[status].push(task);
+        }
+    });
+    
+    // Update tasks and re-render
+    tasks = filteredTasks;
+    renderBoard();
+}
+
+// Handle search input
+window.handleSearch = function(event) {
+    if (event.key === 'Enter' || event.type === 'keyup') {
+        applyFilters();
+    }
 }
 
 async function loadLabels() {
