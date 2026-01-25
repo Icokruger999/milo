@@ -202,12 +202,83 @@ async function handleInviteUser(event) {
             }, 2000);
         } else {
             const error = await response.json();
-            errorDiv.textContent = error.message || 'Failed to send invitation';
+            
+            // Check if invitation already exists
+            if (error.message && error.message.toLowerCase().includes('already')) {
+                errorDiv.innerHTML = `
+                    <div style="margin-bottom: 12px;">${error.message}</div>
+                    <button onclick="resendInvitation('${email}', '${name}')" style="padding: 8px 16px; background: #0052CC; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                        Resend Invitation
+                    </button>
+                `;
+            } else {
+                errorDiv.textContent = error.message || 'Failed to send invitation';
+            }
             errorDiv.style.display = 'block';
         }
     } catch (error) {
         console.error('Failed to send invitation:', error);
         errorDiv.textContent = 'Failed to send invitation. Please try again.';
+        errorDiv.style.display = 'block';
+    }
+}
+
+async function resendInvitation(email, name) {
+    const errorDiv = document.getElementById('inviteError');
+    const successDiv = document.getElementById('inviteSuccess');
+    errorDiv.style.display = 'none';
+    successDiv.style.display = 'none';
+    
+    try {
+        const currentProject = projectSelector.getCurrentProject();
+        const user = authService.getCurrentUser();
+        
+        if (!currentProject || !user) {
+            errorDiv.textContent = 'Project or user not found';
+            errorDiv.style.display = 'block';
+            return;
+        }
+        
+        // Get the existing invitation
+        const getResponse = await apiClient.get(`/invitations?projectId=${currentProject.id}&email=${encodeURIComponent(email)}`);
+        
+        if (!getResponse.ok) {
+            errorDiv.textContent = 'Failed to find existing invitation';
+            errorDiv.style.display = 'block';
+            return;
+        }
+        
+        const invitations = await getResponse.json();
+        const invitation = invitations.find(inv => inv.email.toLowerCase() === email.toLowerCase());
+        
+        if (!invitation) {
+            errorDiv.textContent = 'Invitation not found';
+            errorDiv.style.display = 'block';
+            return;
+        }
+        
+        // Resend the invitation
+        const resendResponse = await apiClient.post(`/invitations/${invitation.id}/resend`, {});
+        
+        if (resendResponse.ok) {
+            successDiv.textContent = `Invitation resent successfully to ${email}`;
+            successDiv.style.display = 'block';
+            document.getElementById('inviteForm').reset();
+            setTimeout(() => {
+                closeInviteModal();
+            }, 2000);
+        } else {
+            const error = await resendResponse.json();
+            errorDiv.textContent = error.message || 'Failed to resend invitation';
+            errorDiv.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Failed to resend invitation:', error);
+        errorDiv.textContent = 'Failed to resend invitation. Please try again.';
         errorDiv.style.display = 'block';
     }
 }
