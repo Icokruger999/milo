@@ -267,11 +267,23 @@ function renderTaskList() {
         html += `
             <div class="subproject-group">
                 <div class="subproject-header" style="border-left: 3px solid ${group.color};">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                    </svg>
-                    <span class="subproject-name">${escapeHtml(group.name)}</span>
-                    <span class="subproject-count">${group.tasks.length}</span>
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        </svg>
+                        <span class="subproject-name">${escapeHtml(group.name)}</span>
+                        <span class="subproject-count">${group.tasks.length}</span>
+                    </div>
+                    <button onclick="deleteSubProject(${subProjectId}, '${escapeHtml(group.name).replace(/'/g, "\\'")}', event)" 
+                            title="Delete Sub-Project" 
+                            style="background: none; border: none; color: #DE350B; cursor: pointer; padding: 4px; display: flex; align-items: center; opacity: 0.7; transition: opacity 0.2s;"
+                            onmouseover="this.style.opacity='1'" 
+                            onmouseout="this.style.opacity='0.7'">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
                 </div>
         `;
         
@@ -702,6 +714,7 @@ async function createSubProjectFromModal() {
     const description = document.getElementById('subProjectDescription').value.trim();
     const key = document.getElementById('subProjectKey').value.trim();
     const errorDiv = document.getElementById('subProjectError');
+    const submitBtn = document.getElementById('createSubProjectBtn');
     
     errorDiv.style.display = 'none';
     
@@ -711,6 +724,10 @@ async function createSubProjectFromModal() {
         document.getElementById('subProjectName').focus();
         return;
     }
+    
+    // Disable button to prevent duplicate submissions
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating...';
     
     try {
         const response = await apiClient.post('/subprojects', {
@@ -726,6 +743,10 @@ async function createSubProjectFromModal() {
             
             closeCreateSubProjectModal();
             
+            // Re-enable button for next use
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create Sub-Project';
+            
             // Reload sub-projects and tasks
             await loadSubProjects();
             await loadTasks();
@@ -737,11 +758,15 @@ async function createSubProjectFromModal() {
             const error = await response.json();
             errorDiv.textContent = error.message || 'Failed to create sub-project';
             errorDiv.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create Sub-Project';
         }
     } catch (error) {
         console.error('Error creating sub-project:', error);
         errorDiv.textContent = 'Error creating sub-project. Please try again.';
         errorDiv.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Sub-Project';
     }
 }
 
@@ -776,3 +801,33 @@ function showToast(message, duration = 3000) {
         setTimeout(() => toast.remove(), 300);
     }, duration);
 }
+
+// Delete Sub-Project
+async function deleteSubProject(subProjectId, subProjectName, event) {
+    event.stopPropagation();
+    
+    if (!confirm(`Are you sure you want to delete the sub-project "${subProjectName}"?\n\nThis will NOT delete the tasks, they will just be moved to "No Sub-Project".`)) {
+        return;
+    }
+    
+    try {
+        const response = await apiClient.delete(`/subprojects/${subProjectId}`);
+        
+        if (response.ok) {
+            showToast(`Sub-project "${subProjectName}" deleted successfully!`);
+            
+            // Reload sub-projects and tasks
+            await loadSubProjects();
+            await loadTasks();
+            renderTimeline();
+        } else {
+            const error = await response.json();
+            showToast(`Failed to delete: ${error.message || 'Unknown error'}`);
+        }
+    } catch (error) {
+        console.error('Error deleting sub-project:', error);
+        showToast('Error deleting sub-project. Please try again.');
+    }
+}
+
+window.deleteSubProject = deleteSubProject;
