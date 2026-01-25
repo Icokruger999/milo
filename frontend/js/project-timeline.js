@@ -462,6 +462,7 @@ async function createTaskFromModal() {
     const endValue = document.getElementById('modalTaskEnd').value;
 
     if (!name) {
+        alert('Please enter a task name');
         document.getElementById('modalTaskName').focus();
         return;
     }
@@ -471,6 +472,14 @@ async function createTaskFromModal() {
 
     try {
         const user = authService.getCurrentUser();
+        
+        console.log('Creating task:', {
+            title: name,
+            projectId: currentProject.id,
+            status: 'todo',
+            startDate: startDate.toISOString(),
+            dueDate: endDate.toISOString()
+        });
         
         const response = await apiClient.post('/tasks', {
             title: name,
@@ -482,12 +491,18 @@ async function createTaskFromModal() {
         });
 
         if (response.ok) {
+            console.log('Task created successfully');
             closeAddTaskModal();
             await loadTasks();
             renderTimeline();
+        } else {
+            const errorData = await response.json().catch(() => ({ message: 'Failed to create task' }));
+            console.error('Failed to create task:', response.status, errorData);
+            alert(`Failed to create task: ${errorData.message || 'Unknown error'}`);
         }
     } catch (error) {
         console.error('Error creating task:', error);
+        alert(`Error creating task: ${error.message || 'Unknown error'}`);
     }
 }
 
