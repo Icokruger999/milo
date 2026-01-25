@@ -1,0 +1,11 @@
+{
+  "commands": [
+    "cd /home/ec2-user/milo-backend-publish",
+    "sudo systemctl stop milo-backend.service",
+    "cp Milo.API.dll Milo.API.dll.broken-jan24",
+    "cp Milo.API.dll.backup-20260123-211449 Milo.API.dll",
+    "sudo systemctl start milo-backend.service",
+    "sleep 3",
+    "sudo systemctl status milo-backend.service --no-pager"
+  ]
+}

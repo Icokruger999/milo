@@ -190,6 +190,7 @@
   9. **PROTECT DLL FILES** - The `Milo.API.dll` and related files in `/home/ec2-user/milo-backend-publish/` are production files. Only rebuild and copy new DLLs when code changes are made. Do NOT delete or edit DLL files directly - always rebuild from source code.
   10. **ONLY REBUILD WHEN NEEDED** - Only rebuild the DLL when there are actual code changes. Do not rebuild unnecessarily.
   11. **USE LOCAL DATABASE SETTINGS** - Ensure DLL is built with local PgBouncer/PostgreSQL settings, not Supabase
+  12. **IGNORE SYSTEMD TIMEOUT WARNINGS** - The service has TimeoutStartSec=300 (5 minutes). If systemd shows "activating" for 1-2 minutes, this is NORMAL. The API is working even if systemd hasn't finished the startup check. Always verify by testing the API endpoints directly with curl.
 
 ### Rule 5: Diagnostic Commands
 - **AVOID** running multiple diagnostic commands with sleep delays

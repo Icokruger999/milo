@@ -29,7 +29,7 @@
 ### Step 1: Connect to EC2
 
 ```powershell
-aws ssm start-session --target i-0e858f1e0d7e6f5a3
+aws ssm start-session --target i-06bc5b2218c041802
 ```
 
 ### Step 2: Pull Latest Code

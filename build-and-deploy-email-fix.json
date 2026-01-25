@@ -1,0 +1,18 @@
+{
+  "commands": [
+    "cd /home/ec2-user",
+    "rm -rf milo-build-temp",
+    "git clone https://github.com/Icokruger999/milo.git milo-build-temp",
+    "cd milo-build-temp/backend/Milo.API",
+    "dotnet publish -c Release -o /tmp/milo-publish-new",
+    "cd /home/ec2-user/milo-backend-publish",
+    "sudo systemctl stop milo-backend.service",
+    "cp Milo.API.dll Milo.API.dll.backup-$(date +%Y%m%d-%H%M%S)",
+    "cp /tmp/milo-publish-new/Milo.API.dll Milo.API.dll",
+    "echo 'DLL updated with email timeout fix'",
+    "sudo systemctl start milo-backend.service",
+    "sleep 3",
+    "sudo systemctl status milo-backend.service --no-pager",
+    "rm -rf /home/ec2-user/milo-build-temp /tmp/milo-publish-new"
+  ]
+}
