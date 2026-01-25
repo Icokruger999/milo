@@ -65,11 +65,52 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Setup drag to scroll
     setupDragScroll();
 
+    // Setup modal handlers
+    setupModalHandlers();
+
     // Load and render
     await loadTasks();
     renderTimeline();
     setTimeout(goToToday, 100);
 });
+
+// Setup modal event handlers
+function setupModalHandlers() {
+    const modal = document.getElementById('addTaskModal');
+    const modalContent = modal.querySelector('.modal');
+    
+    // Close on overlay click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeAddTaskModal();
+        }
+    });
+    
+    // Prevent modal content clicks from closing
+    if (modalContent) {
+        modalContent.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    }
+    
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            closeAddTaskModal();
+        }
+    });
+    
+    // Submit on Enter in task name field
+    const taskNameInput = document.getElementById('modalTaskName');
+    if (taskNameInput) {
+        taskNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                createTaskFromModal();
+            }
+        });
+    }
+}
 
 // Setup drag to scroll on gantt panel
 function setupDragScroll() {
@@ -171,7 +212,7 @@ function renderTaskList() {
                 <div class="task-row" data-task-id="${task.id}">
                     <div class="task-name">
                         <div class="color-bar ${task.color}"></div>
-                        <span>${escapeHtml(task.name)}</span>
+                        <span title="${escapeHtml(task.name)}">${escapeHtml(task.name)}</span>
                     </div>
                     <div class="wbs-cell">${task.wbs}</div>
                     <div class="date-cell">${formatDateShort(task.startDate)}</div>
