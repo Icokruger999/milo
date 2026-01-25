@@ -1232,6 +1232,175 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             z-index: 10;
         }
+
+        /* Responsive Design for Board */
+        @media (max-width: 1400px) {
+            .board-columns {
+                min-width: 1200px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .left-sidebar {
+                width: 48px;
+            }
+
+            .main-content {
+                margin-left: 48px;
+            }
+
+            .sidebar-icon {
+                width: 32px;
+                height: 32px;
+            }
+
+            .board-columns {
+                min-width: 1000px;
+            }
+
+            .board-column {
+                min-width: 250px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .global-nav-links {
+                gap: 4px;
+            }
+
+            .global-nav-link {
+                padding: 6px 8px;
+                font-size: 13px;
+            }
+
+            .board-toolbar {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .board-toolbar > * {
+                flex: 1 1 auto;
+                min-width: 120px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                min-width: 320px;
+            }
+
+            .left-sidebar {
+                width: 40px;
+                padding: 8px 0;
+            }
+
+            .main-content {
+                margin-left: 40px;
+            }
+
+            .sidebar-icon {
+                width: 28px;
+                height: 28px;
+            }
+
+            .sidebar-icon svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            .global-nav {
+                padding: 0 8px;
+            }
+
+            .global-nav-links {
+                display: none;
+            }
+
+            .global-nav-create {
+                padding: 6px 10px;
+                font-size: 13px;
+            }
+
+            .summit-btn {
+                padding: 6px 8px;
+                font-size: 12px;
+            }
+
+            .board-header {
+                padding: 12px 16px;
+            }
+
+            .board-title {
+                font-size: 20px;
+            }
+
+            .board-toolbar {
+                padding: 8px 16px;
+                flex-direction: column;
+            }
+
+            .board-toolbar > * {
+                width: 100%;
+            }
+
+            .board-container {
+                padding: 12px 16px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .board-columns {
+                min-width: 900px;
+            }
+
+            .board-column {
+                min-width: 220px;
+            }
+
+            .board-column-header {
+                padding: 10px 12px;
+            }
+
+            .board-column-title {
+                font-size: 13px;
+            }
+
+            .board-card {
+                padding: 10px;
+            }
+
+            .board-card-title {
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .global-nav-logo {
+                width: 20px;
+                height: 20px;
+            }
+
+            .global-nav-icon {
+                width: 28px;
+                height: 28px;
+            }
+
+            .board-columns {
+                min-width: 800px;
+            }
+
+            .board-column {
+                min-width: 200px;
+            }
+        }
+
+        /* Ensure horizontal scroll on small screens */
+        @media (max-width: 1024px) {
+            .board-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1254,7 +1423,7 @@
                 <a href="milo-flakes.html" class="global-nav-link">Flakes</a>
                 <a href="milo-teams.html" class="global-nav-link">Teams</a>
             </div>
-            <button class="global-nav-create" onclick="window.showCreateTaskModal()">Create</button>
+            <button class="global-nav-create" onclick="showTaskModal('todo'); return false;">Create</button>
         </div>
         <div class="global-nav-right">
             <a href="https://summit.codingeverest.com/" target="_blank" class="summit-btn" title="Open Summit">
@@ -2166,20 +2335,6 @@
             }
         }, 500);
         
-        // Make Create button work
-        document.addEventListener('DOMContentLoaded', function() {
-            const createButton = document.querySelector('.global-nav-create');
-            if (createButton) {
-                createButton.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    if (typeof window.showCreateTaskModal === 'function') {
-                        window.showCreateTaskModal('todo');
-                    } else {
-                        console.error('showCreateTaskModal not available');
-                    }
-                });
-            }
-        });
         
         // Check hash BEFORE loading tasks to determine which view to show
         const initialHash = window.location.hash.substring(1);

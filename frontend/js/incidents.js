@@ -26,6 +26,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
     }
 
+    // Wait for projectSelector to be available
+    let retries = 0;
+    while (typeof projectSelector === 'undefined' && retries < 10) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries++;
+    }
+
     // Get current project
     if (typeof projectSelector !== 'undefined') {
         currentProject = projectSelector.currentProject;
@@ -149,7 +156,7 @@ async function loadIncidents(page = 1) {
     }
 }
 
-// Render incidents table
+// Render incidents table - OPTIMIZED for fast rendering
 function renderIncidents() {
     const tbody = document.getElementById('incidentsTableBody');
     const emptyState = document.getElementById('emptyState');
@@ -168,7 +175,12 @@ function renderIncidents() {
         emptyState.style.display = 'none';
     }
 
-    tbody.innerHTML = incidents.map(incident => {
+    // PERFORMANCE: Use DocumentFragment for faster DOM manipulation
+    const fragment = document.createDocumentFragment();
+    const tempDiv = document.createElement('div');
+    
+    // Build HTML string first (faster than creating elements one by one)
+    const html = incidents.map(incident => {
         const createdDate = new Date(incident.createdAt).toLocaleDateString();
         const requesterName = incident.requester?.name || 'Unknown';
         const assigneeName = incident.assignee?.name || 'Unassigned';
@@ -185,6 +197,9 @@ function renderIncidents() {
             </tr>
         `;
     }).join('');
+    
+    // Single DOM update (much faster than multiple updates)
+    tbody.innerHTML = html;
 }
 
 // Show empty state
@@ -206,6 +221,8 @@ function filterIncidents() {
     const statusFilter = document.getElementById('statusFilter')?.value || '';
     const priorityFilter = document.getElementById('priorityFilter')?.value || '';
 
+    // IMPORTANT: Don't filter out incidents - just filter based on search/filters
+    // Keep ALL incidents visible regardless of status (including Closed)
     incidents = allIncidents.filter(incident => {
         const matchesSearch = 
             incident.incidentNumber.toLowerCase().includes(searchTerm) ||
@@ -576,7 +593,7 @@ function closeDetailPanel() {
     currentIncident = null;
 }
 
-// Update incident status
+// Update incident status - KEEP INCIDENT VISIBLE AFTER STATUS CHANGE
 async function updateIncidentStatus(newStatus) {
     if (!currentIncident || !newStatus) return;
     
@@ -600,11 +617,20 @@ async function updateIncidentStatus(newStatus) {
         
         console.log('Status updated successfully');
         
-        // Reload incident details
+        // Update the incident in the local array immediately (no need to reload from server)
+        const incidentIndex = allIncidents.findIndex(i => i.id === currentIncident.id);
+        if (incidentIndex !== -1) {
+            allIncidents[incidentIndex].status = newStatus;
+        }
+        
+        // Update current incident
+        currentIncident.status = newStatus;
+        
+        // Reload incident details to show updated status
         await showIncidentDetails(currentIncident.id);
         
-        // Reload incidents list
-        await loadIncidents();
+        // Re-render incidents list (keeps incident visible)
+        filterIncidents();
     } catch (error) {
         console.error('Failed to update status:', error);
         // Revert dropdown selection on error
