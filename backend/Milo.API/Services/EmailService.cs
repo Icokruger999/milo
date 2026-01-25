@@ -530,6 +530,7 @@ This is an automated notification from Milo
         {
             _logger.LogInformation("Fetching active report recipients for daily incident report...");
 
+            // 1. Fetch Recipients
             var recipientsQuery = dbContext.ReportRecipients
                 .Where(r => r.IsActive && r.ReportType == "DailyIncidents");
 
@@ -551,6 +552,7 @@ This is an automated notification from Milo
 
             _logger.LogInformation($"Found {recipients.Count} unique active recipients. Generating daily incident report...");
 
+            // 2. Fetch Incidents
             var incidentsQuery = dbContext.Incidents
                 .Include(i => i.Requester)
                 .Include(i => i.Assignee)
@@ -565,11 +567,10 @@ This is an automated notification from Milo
                 .OrderByDescending(i => i.CreatedAt)
                 .ToListAsync();
 
-            var today = DateTime.UtcNow.Date;
-
+            // 3. Prepare Report Data
             var reportData = new DailyReportData
             {
-                Date = today,
+                Date = DateTime.UtcNow.Date,
                 TotalCount = incidents.Count,
                 NewCount = incidents.Count(i => i.Status == "New"),
                 OpenCount = incidents.Count(i => i.Status == "Open"),
@@ -591,46 +592,109 @@ This is an automated notification from Milo
                 }).ToList()
             };
 
-            int successCount = 0;
-            var failedRecipients = new List<string>();
-            var sentEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // 4. SMTP Configuration
+            var smtpHost = _configuration["Email:SmtpHost"] ?? "smtp.gmail.com";
+            var smtpPort = int.Parse(_configuration["Email:SmtpPort"] ?? "587");
+            var smtpUser = _configuration["Email:SmtpUser"] ?? _configuration["Email:Username"] ?? "";
+            var smtpPass = _configuration["Email:SmtpPassword"] ?? _configuration["Email:Password"] ?? "";
+            var fromEmail = _configuration["Email:FromEmail"] ?? "";
+            var fromName = _configuration["Email:FromName"] ?? "Milo - Incident Management";
 
-            foreach (var recipient in recipients)
+            if (string.IsNullOrEmpty(smtpUser) || string.IsNullOrEmpty(smtpPass) || string.IsNullOrEmpty(fromEmail))
             {
-                if (sentEmails.Contains(recipient.Email))
-                {
-                    _logger.LogWarning($"Skipping duplicate email to {recipient.Email}");
-                    continue;
-                }
+                _logger.LogWarning("SMTP credentials not configured. Cannot send bulk emails.");
+                return 0;
+            }
 
+            int successCount = 0;
+            var sentEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var failedRecipients = new List<string>();
+
+            // 5. SINGLE CONNECTION LIFECYCLE - Reuse connection for all emails
+            using (var client = new SmtpClient())
+            {
                 try
                 {
-                    var sent = await SendDailyIncidentReportAsync(
-                        recipient.Email,
-                        recipient.Name,
-                        reportData
-                    );
+                    // Set timeout to prevent hanging
+                    client.Timeout = 30000; // 30 seconds
 
-                    if (sent)
+                    // Connect ONCE
+                    _logger.LogInformation($"Connecting to SMTP server {smtpHost}:{smtpPort}...");
+                    await client.ConnectAsync(smtpHost, smtpPort, MailKit.Security.SecureSocketOptions.StartTls);
+                    await client.AuthenticateAsync(smtpUser, smtpPass);
+                    _logger.LogInformation("SMTP connection established successfully");
+
+                    // Send to all recipients using the same connection
+                    foreach (var recipient in recipients)
                     {
-                        sentEmails.Add(recipient.Email);
-                        recipient.LastSentAt = DateTime.UtcNow;
-                        successCount++;
-                        _logger.LogInformation($"Daily incident report sent to {recipient.Email}");
+                        if (sentEmails.Contains(recipient.Email))
+                        {
+                            _logger.LogWarning($"Skipping duplicate email to {recipient.Email}");
+                            continue;
+                        }
+
+                        try
+                        {
+                            // Generate content
+                            var plainTextBody = GenerateReportPlainText(recipient.Name, reportData);
+                            var subject = $"Daily Incident Report - {reportData.Date:MMMM dd, yyyy}";
+
+                            // Create message
+                            var message = new MimeMessage();
+                            message.From.Add(new MailboxAddress(fromName, fromEmail));
+                            message.To.Add(new MailboxAddress(recipient.Name, recipient.Email));
+                            message.Subject = subject;
+
+                            var builder = new BodyBuilder { TextBody = plainTextBody };
+                            message.Body = builder.ToMessageBody();
+
+                            // Send using the EXISTING connection
+                            await client.SendAsync(message);
+
+                            sentEmails.Add(recipient.Email);
+                            recipient.LastSentAt = DateTime.UtcNow;
+                            successCount++;
+                            _logger.LogInformation($"Daily incident report sent to {recipient.Email} ({successCount}/{recipients.Count})");
+                        }
+                        catch (Exception ex)
+                        {
+                            failedRecipients.Add(recipient.Email);
+                            _logger.LogError(ex, $"Failed to send bulk report to {recipient.Email}");
+
+                            // Verify connection is still alive, if not, reconnect
+                            if (!client.IsConnected)
+                            {
+                                _logger.LogWarning("SMTP connection lost. Attempting to reconnect...");
+                                try
+                                {
+                                    await client.ConnectAsync(smtpHost, smtpPort, MailKit.Security.SecureSocketOptions.StartTls);
+                                    await client.AuthenticateAsync(smtpUser, smtpPass);
+                                    _logger.LogInformation("SMTP connection re-established");
+                                }
+                                catch (Exception reconnectEx)
+                                {
+                                    _logger.LogError(reconnectEx, "Failed to reconnect to SMTP server. Aborting bulk send.");
+                                    break;
+                                }
+                            }
+                        }
                     }
-                    else
+
+                    // Disconnect ONCE
+                    if (client.IsConnected)
                     {
-                        failedRecipients.Add(recipient.Email);
-                        _logger.LogWarning($"Failed to send daily incident report to {recipient.Email}");
+                        await client.DisconnectAsync(true);
+                        _logger.LogInformation("SMTP connection closed");
                     }
                 }
                 catch (Exception ex)
                 {
-                    failedRecipients.Add(recipient.Email);
-                    _logger.LogError(ex, $"Error sending daily incident report to {recipient.Email}");
+                    _logger.LogError(ex, "Error establishing SMTP connection for bulk send");
+                    return 0;
                 }
             }
 
+            // 6. Batch Save
             if (successCount > 0)
             {
                 await dbContext.SaveChangesAsync();
@@ -646,7 +710,7 @@ This is an automated notification from Milo
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending daily incident reports to all recipients");
+            _logger.LogError(ex, "Critical error in SendDailyIncidentReportsToAllRecipientsAsync");
             return 0;
         }
     }
