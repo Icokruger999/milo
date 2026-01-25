@@ -1,6 +1,7 @@
 // Roadmap functionality - JIRA-style roadmap with timeline
 
 let roadmapTasks = [];
+let subProjects = [];
 let selectedTask = null;
 let timelineMonths = [];
 let currentDatePosition = 0;
@@ -80,7 +81,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Initialize simple timeline (fallback)
         initializeTimeline();
         
-        // Load roadmap data immediately
+        // Load sub-projects and roadmap data
+        await loadSubProjects();
         await loadRoadmap();
         
         // Auto-refresh every 30 seconds
@@ -203,6 +205,29 @@ function updateCurrentDateLine() {
     }
 }
 
+// Load sub-projects from API
+async function loadSubProjects() {
+    try {
+        const currentProject = projectSelector.getCurrentProject();
+        if (!currentProject) {
+            subProjects = [];
+            return;
+        }
+        
+        const response = await apiClient.get(`/subprojects?projectId=${currentProject.id}`);
+        if (!response.ok) {
+            subProjects = [];
+            return;
+        }
+
+        subProjects = await response.json();
+        console.log(`Loaded ${subProjects.length} sub-projects for roadmap`);
+    } catch (error) {
+        console.error('Error loading sub-projects:', error);
+        subProjects = [];
+    }
+}
+
 // Load roadmap tasks - optimized for fast loading
 async function loadRoadmap() {
     try {
@@ -248,9 +273,8 @@ function renderRoadmap() {
     renderTimeline();
 }
 
-// Render epic list (left column)
+// Render epic list (left column) with sub-project grouping
 function renderEpicList() {
-    // Render to tasksTree instead of epicList (based on actual HTML structure)
     const tasksTree = document.getElementById('tasksTree');
     const timelineRows = document.getElementById('timelineRows');
     
@@ -261,10 +285,32 @@ function renderEpicList() {
     }
 
     if (tasksTree) {
-        tasksTree.innerHTML = roadmapTasks.map(task => {
+        // Group tasks by sub-project
+        const grouped = {};
+        const noSubProject = [];
+        
+        roadmapTasks.forEach(task => {
+            if (task.subProjectId) {
+                if (!grouped[task.subProjectId]) {
+                    const subProject = subProjects.find(sp => sp.id === task.subProjectId);
+                    grouped[task.subProjectId] = {
+                        name: subProject ? subProject.name : 'Unknown Sub-Project',
+                        tasks: []
+                    };
+                }
+                grouped[task.subProjectId].tasks.push(task);
+            } else {
+                noSubProject.push(task);
+            }
+        });
+        
+        let html = '';
+        
+        // Render tasks without sub-project first
+        noSubProject.forEach(task => {
             const isSelected = selectedTask && selectedTask.id === task.id;
             const taskId = task.taskId || `TASK-${task.id}`;
-            return `
+            html += `
             <div class="epic-item ${isSelected ? 'selected' : ''}" 
                  onclick="selectTask(${task.id})"
                  style="padding: 8px 12px; cursor: pointer; border-radius: 3px; margin-bottom: 4px; ${isSelected ? 'background: #DEEBFF;' : ''}">
@@ -274,7 +320,41 @@ function renderEpicList() {
                 </div>
             </div>
             `;
-        }).join('');
+        });
+        
+        // Render sub-project groups
+        Object.keys(grouped).forEach(subProjectId => {
+            const group = grouped[subProjectId];
+            html += `
+                <div class="subproject-group" style="margin: 12px 0;">
+                    <div class="subproject-header" style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #DEEBFF; border-left: 3px solid #0052CC; font-weight: 600; font-size: 13px; color: #0052CC; margin-bottom: 4px;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        </svg>
+                        <span style="flex: 1;">${escapeHtml(group.name)}</span>
+                        <span style="background: #0052CC; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px;">${group.tasks.length}</span>
+                    </div>
+            `;
+            
+            group.tasks.forEach(task => {
+                const isSelected = selectedTask && selectedTask.id === task.id;
+                const taskId = task.taskId || `TASK-${task.id}`;
+                html += `
+                <div class="epic-item ${isSelected ? 'selected' : ''}" 
+                     onclick="selectTask(${task.id})"
+                     style="padding: 8px 12px 8px 32px; cursor: pointer; border-radius: 3px; margin-bottom: 4px; background: #F9FAFB; ${isSelected ? 'background: #DEEBFF;' : ''}">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div class="epic-icon" style="width: 8px; height: 8px; border-radius: 2px; background: #0052CC;"></div>
+                        <div style="flex: 1; font-size: 13px; color: #172B4D;">${escapeHtml(task.title || 'Untitled Task')} <span style="color: #6B778C; font-size: 11px;">(${taskId})</span></div>
+                    </div>
+                </div>
+                `;
+            });
+            
+            html += '</div>';
+        });
+        
+        tasksTree.innerHTML = html;
     }
 }
 
@@ -432,7 +512,7 @@ async function loadTaskComments(taskId) {
     return [];
 }
 
-// Render detail panel
+// Render detail panel with edit functionality
 function renderDetailPanel(task, childTasks, linkedTasks, comments) {
     const content = document.getElementById('detailPanelContent');
     const title = document.getElementById('detailPanelTitle');
@@ -451,11 +531,23 @@ function renderDetailPanel(task, childTasks, linkedTasks, comments) {
         }
     }
     
+    // Format dates for input fields
+    const formatDateForInput = (date) => {
+        if (!date) return '';
+        const d = new Date(date);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+    
     content.innerHTML = `
         <div class="detail-section">
             <div class="detail-field">
+                <div class="detail-field-label">Title</div>
+                <input type="text" class="detail-input" id="taskTitleInput" value="${escapeHtml(task.title || '')}" onchange="updateTaskField(${task.id}, 'title', this.value)" />
+            </div>
+            
+            <div class="detail-field">
                 <div class="detail-field-label">Status</div>
-                <select class="detail-select" id="taskStatusSelect" onchange="updateTaskStatus(${task.id}, this.value)">
+                <select class="detail-select" id="taskStatusSelect" onchange="updateTaskField(${task.id}, 'status', this.value)">
                     <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>Backlog</option>
                     <option value="progress" ${task.status === 'progress' ? 'selected' : ''}>In Progress</option>
                     <option value="review" ${task.status === 'review' ? 'selected' : ''}>In Review</option>
@@ -464,8 +556,28 @@ function renderDetailPanel(task, childTasks, linkedTasks, comments) {
             </div>
             
             <div class="detail-field">
+                <div class="detail-field-label">Sub-Project</div>
+                <select class="detail-select" id="taskSubProjectSelect" onchange="updateTaskField(${task.id}, 'subProjectId', this.value)">
+                    <option value="">No Sub-Project</option>
+                    ${subProjects.map(sp => `
+                        <option value="${sp.id}" ${task.subProjectId === sp.id ? 'selected' : ''}>${escapeHtml(sp.name)}</option>
+                    `).join('')}
+                </select>
+            </div>
+            
+            <div class="detail-field">
                 <div class="detail-field-label">Description</div>
-                <div class="detail-field-value">${task.description || 'No description'}</div>
+                <textarea class="detail-textarea" id="taskDescriptionInput" onchange="updateTaskField(${task.id}, 'description', this.value)" rows="4">${escapeHtml(task.description || '')}</textarea>
+            </div>
+            
+            <div class="detail-field">
+                <div class="detail-field-label">Start Date</div>
+                <input type="date" class="detail-input" id="taskStartDateInput" value="${formatDateForInput(task.startDate)}" onchange="updateTaskField(${task.id}, 'startDate', this.value)" />
+            </div>
+            
+            <div class="detail-field">
+                <div class="detail-field-label">Due Date</div>
+                <input type="date" class="detail-input" id="taskDueDateInput" value="${formatDateForInput(task.dueDate)}" onchange="updateTaskField(${task.id}, 'dueDate', this.value)" />
             </div>
             
             <div class="detail-field">
@@ -548,21 +660,44 @@ function getStatusLabel(status) {
     return labels[status] || status.toUpperCase();
 }
 
-// Update task status
-async function updateTaskStatus(taskId, newStatus) {
+// Update task field (generic function for all fields)
+async function updateTaskField(taskId, field, value) {
     try {
-        const response = await apiClient.put(`/tasks/${taskId}`, { status: newStatus });
+        const updateData = {};
+        
+        // Handle different field types
+        if (field === 'subProjectId') {
+            updateData[field] = value ? parseInt(value) : null;
+        } else if (field === 'startDate' || field === 'dueDate') {
+            updateData[field] = value ? new Date(value).toISOString() : null;
+        } else {
+            updateData[field] = value;
+        }
+        
+        console.log('Updating task field:', field, value, updateData);
+        
+        const response = await apiClient.put(`/tasks/${taskId}`, updateData);
         if (response.ok) {
-            // Reload roadmap
+            console.log('Task updated successfully');
+            // Reload roadmap to reflect changes
             await loadRoadmap();
             // Reload task details if this task is selected
             if (selectedTask && selectedTask.id === taskId) {
                 await loadTaskDetails(taskId);
             }
+        } else {
+            console.error('Failed to update task:', response.status);
+            alert('Failed to update task. Please try again.');
         }
     } catch (error) {
-        console.error('Error updating task status:', error);
+        console.error('Error updating task field:', error);
+        alert('Error updating task. Please try again.');
     }
+}
+
+// Update task status (kept for backward compatibility)
+async function updateTaskStatus(taskId, newStatus) {
+    await updateTaskField(taskId, 'status', newStatus);
 }
 
 // Add comment
@@ -608,6 +743,7 @@ function showCreateTaskModal() {
 
 // Make functions globally available
 window.selectTask = selectTask;
+window.updateTaskField = updateTaskField;
 window.updateTaskStatus = updateTaskStatus;
 window.addComment = addComment;
 window.closeDetailPanel = closeDetailPanel;
