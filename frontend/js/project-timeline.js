@@ -855,9 +855,6 @@ window.createTask = createTask;
 window.openAddTaskModal = openAddTaskModal;
 window.closeAddTaskModal = closeAddTaskModal;
 window.createTaskFromModal = createTaskFromModal;
-window.openCreateSubProjectModal = openCreateSubProjectModal;
-window.closeCreateSubProjectModal = closeCreateSubProjectModal;
-window.createSubProjectFromModal = createSubProjectFromModal;
 
 // Create Sub-Project Modal Functions
 function openCreateSubProjectModal() {
@@ -885,25 +882,27 @@ async function createSubProjectFromModal() {
     if (!name) {
         errorDiv.textContent = 'Sub-project name is required';
         errorDiv.style.display = 'block';
-        document.getElementById('subProjectName').focus();
         return;
     }
     
-    // Disable button to prevent duplicate submissions
     submitBtn.disabled = true;
     submitBtn.textContent = 'Creating...';
     
     try {
-        const response = await apiClient.post('/subprojects', {
-            Name: name,
-            Description: description || null,
-            ProjectId: currentProject.id
+        const response = await fetch(`${API_BASE_URL}/subprojects`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({
+                Name: name,
+                Description: description || null,
+                ProjectId: currentProjectId
+            })
         });
         
         if (response.ok) {
-            const subProject = await response.json();
-            console.log('Sub-project created:', subProject);
-            
             closeCreateSubProjectModal();
             
             // Re-enable button for next use
@@ -914,9 +913,6 @@ async function createSubProjectFromModal() {
             await loadSubProjects();
             await loadTasks();
             renderTimeline();
-            
-            // Show success message (no popup)
-            showToast(`Sub-project "${name}" created successfully!`);
         } else {
             const error = await response.json();
             errorDiv.textContent = error.message || 'Failed to create sub-project';
@@ -925,14 +921,17 @@ async function createSubProjectFromModal() {
             submitBtn.textContent = 'Create Sub-Project';
         }
     } catch (error) {
-        console.error('Error creating sub-project:', error);
-        errorDiv.textContent = 'Error creating sub-project. Please try again.';
+        errorDiv.textContent = 'Error creating sub-project: ' + error.message;
         errorDiv.style.display = 'block';
         submitBtn.disabled = false;
         submitBtn.textContent = 'Create Sub-Project';
     }
 }
 
+// Expose sub-project functions to window
+window.openCreateSubProjectModal = openCreateSubProjectModal;
+window.closeCreateSubProjectModal = closeCreateSubProjectModal;
+window.createSubProjectFromModal = createSubProjectFromModal;
 
 // Show toast notification (no popup)
 function showToast(message, duration = 3000) {
