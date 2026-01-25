@@ -866,6 +866,14 @@
             <!-- Left Panel - Task Table -->
             <div class="task-panel">
                 <div class="add-task-btn-container">
+                    <button class="add-task-btn" onclick="openCreateSubProjectModal()" style="background: #36B37E; margin-bottom: 8px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <line x1="12" y1="5" x2="12" y2="15"></line>
+                            <line x1="7" y1="10" x2="17" y2="10"></line>
+                        </svg>
+                        Create Sub-Project
+                    </button>
                     <button class="add-task-btn" onclick="openAddTaskModal()">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -938,6 +946,40 @@
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="closeAddTaskModal()">Cancel</button>
                 <button class="btn-primary" onclick="createTaskFromModal()">Add Task</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Sub-Project Modal -->
+    <div class="modal-overlay" id="createSubProjectModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">Create Sub-Project</span>
+                <button class="modal-close" onclick="closeCreateSubProjectModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="subProjectError" style="display: none; background: #FFEBE6; border: 1px solid #DE350B; border-radius: 4px; padding: 12px; margin-bottom: 16px; color: #DE350B; font-size: 14px;"></div>
+                <div class="form-group">
+                    <label class="form-label">Sub-Project Name</label>
+                    <input type="text" class="form-input" id="subProjectName" placeholder="e.g., Phase 1, Backend Development">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description (Optional)</label>
+                    <textarea class="form-input" id="subProjectDescription" rows="3" placeholder="Describe the sub-project..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Key (Optional)</label>
+                    <input type="text" class="form-input" id="subProjectKey" placeholder="e.g., PHASE1, BACKEND">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeCreateSubProjectModal()">Cancel</button>
+                <button class="btn-primary" onclick="createSubProjectFromModal()" style="background: #36B37E;">Create Sub-Project</button>
             </div>
         </div>
     </div>

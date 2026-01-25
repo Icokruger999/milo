@@ -668,3 +668,69 @@ window.createTask = createTask;
 window.openAddTaskModal = openAddTaskModal;
 window.closeAddTaskModal = closeAddTaskModal;
 window.createTaskFromModal = createTaskFromModal;
+window.openCreateSubProjectModal = openCreateSubProjectModal;
+window.closeCreateSubProjectModal = closeCreateSubProjectModal;
+window.createSubProjectFromModal = createSubProjectFromModal;
+
+// Create Sub-Project Modal Functions
+function openCreateSubProjectModal() {
+    const modal = document.getElementById('createSubProjectModal');
+    document.getElementById('subProjectName').value = '';
+    document.getElementById('subProjectDescription').value = '';
+    document.getElementById('subProjectKey').value = '';
+    document.getElementById('subProjectError').style.display = 'none';
+    modal.classList.add('active');
+    document.getElementById('subProjectName').focus();
+}
+
+function closeCreateSubProjectModal() {
+    const modal = document.getElementById('createSubProjectModal');
+    modal.classList.remove('active');
+}
+
+async function createSubProjectFromModal() {
+    const name = document.getElementById('subProjectName').value.trim();
+    const description = document.getElementById('subProjectDescription').value.trim();
+    const key = document.getElementById('subProjectKey').value.trim();
+    const errorDiv = document.getElementById('subProjectError');
+    
+    errorDiv.style.display = 'none';
+    
+    if (!name) {
+        errorDiv.textContent = 'Sub-project name is required';
+        errorDiv.style.display = 'block';
+        document.getElementById('subProjectName').focus();
+        return;
+    }
+    
+    try {
+        const response = await apiClient.post('/subprojects', {
+            name: name,
+            description: description || null,
+            key: key || null,
+            projectId: currentProject.id
+        });
+        
+        if (response.ok) {
+            const subProject = await response.json();
+            console.log('Sub-project created:', subProject);
+            
+            closeCreateSubProjectModal();
+            
+            // Reload sub-projects and tasks
+            await loadSubProjects();
+            await loadTasks();
+            renderTimeline();
+            
+            alert(`Sub-project "${name}" created successfully!`);
+        } else {
+            const error = await response.json();
+            errorDiv.textContent = error.message || 'Failed to create sub-project';
+            errorDiv.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error creating sub-project:', error);
+        errorDiv.textContent = 'Error creating sub-project. Please try again.';
+        errorDiv.style.display = 'block';
+    }
+}
