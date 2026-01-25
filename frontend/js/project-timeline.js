@@ -157,9 +157,19 @@ function setupDragScroll() {
 async function loadTasks() {
     try {
         const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
-        if (!response.ok) return;
+        if (!response.ok) {
+            tasks = [];
+            return;
+        }
 
         const rawTasks = await response.json();
+        
+        // Ensure rawTasks is an array
+        if (!Array.isArray(rawTasks)) {
+            console.error('Tasks response is not an array:', rawTasks);
+            tasks = [];
+            return;
+        }
         
         tasks = rawTasks.map((task, index) => {
             let progress = 0;
@@ -187,6 +197,7 @@ async function loadTasks() {
         });
     } catch (error) {
         console.error('Error loading tasks:', error);
+        tasks = [];
     }
 }
 
@@ -462,7 +473,6 @@ async function createTaskFromModal() {
     const endValue = document.getElementById('modalTaskEnd').value;
 
     if (!name) {
-        alert('Please enter a task name');
         document.getElementById('modalTaskName').focus();
         return;
     }
@@ -498,11 +508,9 @@ async function createTaskFromModal() {
         } else {
             const errorData = await response.json().catch(() => ({ message: 'Failed to create task' }));
             console.error('Failed to create task:', response.status, errorData);
-            alert(`Failed to create task: ${errorData.message || 'Unknown error'}`);
         }
     } catch (error) {
         console.error('Error creating task:', error);
-        alert(`Error creating task: ${error.message || 'Unknown error'}`);
     }
 }
 
