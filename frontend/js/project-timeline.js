@@ -861,7 +861,6 @@ function openCreateSubProjectModal() {
     const modal = document.getElementById('createSubProjectModal');
     document.getElementById('subProjectName').value = '';
     document.getElementById('subProjectDescription').value = '';
-    document.getElementById('subProjectKey').value = '';
     document.getElementById('subProjectError').style.display = 'none';
     modal.classList.add('active');
     document.getElementById('subProjectName').focus();
@@ -875,7 +874,6 @@ function closeCreateSubProjectModal() {
 async function createSubProjectFromModal() {
     const name = document.getElementById('subProjectName').value.trim();
     const description = document.getElementById('subProjectDescription').value.trim();
-    const key = document.getElementById('subProjectKey').value.trim();
     const errorDiv = document.getElementById('subProjectError');
     const submitBtn = document.getElementById('createSubProjectBtn');
     
@@ -894,10 +892,9 @@ async function createSubProjectFromModal() {
     
     try {
         const response = await apiClient.post('/subprojects', {
-            name: name,
-            description: description || null,
-            key: key || null,
-            projectId: currentProject.id
+            Name: name,
+            Description: description || null,
+            ProjectId: currentProject.id
         });
         
         if (response.ok) {
