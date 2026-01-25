@@ -160,15 +160,18 @@ async function loadSubProjects() {
     try {
         const response = await apiClient.get(`/subprojects?projectId=${currentProject.id}`);
         if (!response.ok) {
+            console.warn('SubProjects API returned error, continuing without sub-projects');
             subProjects = [];
             return;
         }
 
-        subProjects = await response.json();
+        const data = await response.json();
+        subProjects = Array.isArray(data) ? data : [];
         console.log(`Loaded ${subProjects.length} sub-projects`);
     } catch (error) {
         console.error('Error loading sub-projects:', error);
         subProjects = [];
+        // Don't throw - continue without sub-projects
     }
 }
 
@@ -328,7 +331,7 @@ function renderTaskList() {
     }
     
     if (tasks.length === 0 && subProjects.length === 0) {
-        html = '<div class="empty-state">No tasks yet. Click "Add Task" to create one.</div>';
+        html = '<div class="empty-state" style="padding: 40px; text-align: center; color: #666;">No tasks or sub-projects yet. Click "Add Task" or "Create Sub-Project" to get started.</div>';
     }
 
     container.innerHTML = html;
