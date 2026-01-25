@@ -240,58 +240,44 @@ function renderTaskList() {
 
     let html = '';
 
-    if (tasks.length === 0) {
-        html = '<div class="empty-state">No tasks yet. Click "Add Task" to create one.</div>';
-    } else {
-        // Group tasks by sub-project
-        const grouped = {};
-        const noSubProject = [];
-        
-        tasks.forEach(task => {
-            if (task.subProjectId) {
-                if (!grouped[task.subProjectId]) {
-                    grouped[task.subProjectId] = {
-                        name: task.subProjectName || 'Unknown Sub-Project',
-                        tasks: []
-                    };
-                }
-                grouped[task.subProjectId].tasks.push(task);
-            } else {
-                noSubProject.push(task);
-            }
-        });
-        
-        // Render tasks without sub-project first
-        if (noSubProject.length > 0) {
-            noSubProject.forEach(task => {
-                html += `
-                    <div class="task-row" data-task-id="${task.id}">
-                        <div class="task-name">
-                            <div class="color-bar ${task.color}"></div>
-                            <span title="${escapeHtml(task.name)}">${escapeHtml(task.name)}</span>
-                        </div>
-                        <div class="wbs-cell">${task.wbs}</div>
-                        <div class="date-cell">${formatDateShort(task.startDate)}</div>
-                        <div class="date-cell">${formatDateShort(task.endDate)}</div>
-                    </div>
-                `;
-            });
+    // Group tasks by sub-project
+    const grouped = {};
+    const noSubProject = [];
+    
+    // Initialize groups for all sub-projects (even empty ones)
+    subProjects.forEach(sp => {
+        grouped[sp.id] = {
+            name: sp.name,
+            color: sp.color || '#0052CC',
+            tasks: []
+        };
+    });
+    
+    tasks.forEach(task => {
+        if (task.subProjectId && grouped[task.subProjectId]) {
+            grouped[task.subProjectId].tasks.push(task);
+        } else {
+            noSubProject.push(task);
         }
+    });
+    
+    // Render sub-project groups first (including empty ones)
+    Object.keys(grouped).forEach(subProjectId => {
+        const group = grouped[subProjectId];
+        html += `
+            <div class="subproject-group">
+                <div class="subproject-header" style="border-left: 3px solid ${group.color};">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    </svg>
+                    <span class="subproject-name">${escapeHtml(group.name)}</span>
+                    <span class="subproject-count">${group.tasks.length}</span>
+                </div>
+        `;
         
-        // Render sub-project groups
-        Object.keys(grouped).forEach(subProjectId => {
-            const group = grouped[subProjectId];
-            html += `
-                <div class="subproject-group">
-                    <div class="subproject-header">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                        </svg>
-                        <span class="subproject-name">${escapeHtml(group.name)}</span>
-                        <span class="subproject-count">${group.tasks.length}</span>
-                    </div>
-            `;
-            
+        if (group.tasks.length === 0) {
+            html += `<div class="empty-subproject">No tasks yet</div>`;
+        } else {
             group.tasks.forEach(task => {
                 html += `
                     <div class="task-row subproject-task" data-task-id="${task.id}">
@@ -305,9 +291,32 @@ function renderTaskList() {
                     </div>
                 `;
             });
-            
-            html += '</div>';
+        }
+        
+        html += '</div>';
+    });
+    
+    // Render tasks without sub-project
+    if (noSubProject.length > 0) {
+        html += `<div class="no-subproject-section">`;
+        noSubProject.forEach(task => {
+            html += `
+                <div class="task-row" data-task-id="${task.id}">
+                    <div class="task-name">
+                        <div class="color-bar ${task.color}"></div>
+                        <span title="${escapeHtml(task.name)}">${escapeHtml(task.name)}</span>
+                    </div>
+                    <div class="wbs-cell">${task.wbs}</div>
+                    <div class="date-cell">${formatDateShort(task.startDate)}</div>
+                    <div class="date-cell">${formatDateShort(task.endDate)}</div>
+                </div>
+            `;
         });
+        html += `</div>`;
+    }
+    
+    if (tasks.length === 0 && subProjects.length === 0) {
+        html = '<div class="empty-state">No tasks yet. Click "Add Task" to create one.</div>';
     }
 
     container.innerHTML = html;
@@ -722,7 +731,8 @@ async function createSubProjectFromModal() {
             await loadTasks();
             renderTimeline();
             
-            alert(`Sub-project "${name}" created successfully!`);
+            // Show success message (no popup)
+            showToast(`Sub-project "${name}" created successfully!`);
         } else {
             const error = await response.json();
             errorDiv.textContent = error.message || 'Failed to create sub-project';
@@ -733,4 +743,36 @@ async function createSubProjectFromModal() {
         errorDiv.textContent = 'Error creating sub-project. Please try again.';
         errorDiv.style.display = 'block';
     }
+}
+
+
+// Show toast notification (no popup)
+function showToast(message, duration = 3000) {
+    // Remove existing toast
+    const existingToast = document.querySelector('.toast-notification');
+    if (existingToast) existingToast.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast-notification';
+    toast.textContent = message;
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #36B37E;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 4px;
+        font-size: 14px;
+        z-index: 10000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: slideIn 0.3s ease;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
 }

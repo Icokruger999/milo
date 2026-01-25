@@ -359,7 +359,6 @@
             gap: 8px;
             padding: 8px 12px;
             background: #DEEBFF;
-            border-left: 3px solid #0052CC;
             font-weight: 600;
             font-size: 13px;
             color: #0052CC;
@@ -381,6 +380,14 @@
             font-weight: 600;
         }
 
+        .empty-subproject {
+            padding: 12px 20px;
+            color: #97A0AF;
+            font-size: 12px;
+            font-style: italic;
+            background: #FAFBFC;
+        }
+
         .task-row.subproject-task {
             background: #F9FAFB;
         }
@@ -391,6 +398,16 @@
 
         .task-row.subproject-task .task-name {
             padding-left: 20px;
+        }
+
+        /* Toast notification animation */
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
         }
 
         /* Add Task Button */
