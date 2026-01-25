@@ -4,22 +4,22 @@ set -e
 echo "Starting deployment..."
 
 # Clone repo
-cd /home/ubuntu
+cd ~
 if [ -d milo-temp ]; then rm -rf milo-temp; fi
 git clone https://github.com/Icokruger999/milo.git milo-temp
 
 # Build
 cd milo-temp/backend/Milo.API
-dotnet publish -c Release -o /home/ubuntu/milo-backend-new
+dotnet publish -c Release -o ~/milo-backend-new
 
 # Stop service
 sudo systemctl stop milo-backend
-pkill -9 dotnet || true
+sudo pkill -9 dotnet || true
 sleep 2
 
 # Backup and deploy
-cp /home/ubuntu/milo-backend/Milo.API.dll /home/ubuntu/milo-backend/Milo.API.dll.backup
-cp /home/ubuntu/milo-backend-new/Milo.API.dll /home/ubuntu/milo-backend/Milo.API.dll
+sudo cp ~/milo-backend/Milo.API.dll ~/milo-backend/Milo.API.dll.backup
+sudo cp ~/milo-backend-new/Milo.API.dll ~/milo-backend/Milo.API.dll
 
 # Start service
 sudo systemctl start milo-backend
@@ -27,7 +27,7 @@ sleep 3
 sudo systemctl status milo-backend --no-pager
 
 # Cleanup
-cd /home/ubuntu
+cd ~
 rm -rf milo-temp milo-backend-new
 
 echo "Deployment complete!"
