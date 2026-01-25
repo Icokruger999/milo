@@ -41,6 +41,9 @@ builder.Services.AddDbContext<MiloDbContext>(options =>
     })
     .EnableSensitiveDataLogging(false));
 
+// Add HttpClient for Resend API
+builder.Services.AddHttpClient();
+
 // Add email service
 builder.Services.AddScoped<Milo.API.Services.IEmailService, Milo.API.Services.EmailService>();
 
