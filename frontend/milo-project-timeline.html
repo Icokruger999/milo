@@ -930,7 +930,7 @@
     <div class="modal-overlay" id="addTaskModal">
         <div class="modal">
             <div class="modal-header">
-                <span class="modal-title">Add New Task</span>
+                <span class="modal-title">Add Task</span>
                 <button class="modal-close" onclick="closeAddTaskModal()">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -939,30 +939,56 @@
                 </button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">Task Name</label>
-                    <input type="text" class="form-input" id="modalTaskName" placeholder="Enter task name...">
+                <!-- Toggle between Create New and Link Existing -->
+                <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid #E8E8E8;">
+                    <button id="tabCreateNew" onclick="switchTaskTab('create')" style="flex: 1; padding: 10px; background: none; border: none; border-bottom: 3px solid #0052CC; color: #0052CC; font-weight: 600; cursor: pointer; font-size: 14px;">Create New Task</button>
+                    <button id="tabLinkExisting" onclick="switchTaskTab('link')" style="flex: 1; padding: 10px; background: none; border: none; border-bottom: 3px solid transparent; color: #666; font-weight: 500; cursor: pointer; font-size: 14px;">Link Existing Task</button>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Sub-Project (Optional)</label>
-                    <select class="form-input" id="modalSubProject">
-                        <option value="">No Sub-Project</option>
-                    </select>
-                </div>
-                <div class="form-row">
+                
+                <!-- Create New Task Form -->
+                <div id="createTaskForm">
                     <div class="form-group">
-                        <label class="form-label">Start Date</label>
-                        <input type="date" class="form-input" id="modalTaskStart">
+                        <label class="form-label">Task Name</label>
+                        <input type="text" class="form-input" id="modalTaskName" placeholder="Enter task name...">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">End Date</label>
-                        <input type="date" class="form-input" id="modalTaskEnd">
+                        <label class="form-label">Sub-Project (Optional)</label>
+                        <select class="form-input" id="modalSubProject">
+                            <option value="">No Sub-Project</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="form-input" id="modalTaskStart">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">End Date</label>
+                            <input type="date" class="form-input" id="modalTaskEnd">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Link Existing Task Form -->
+                <div id="linkTaskForm" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Select Task from Board</label>
+                        <input type="text" class="form-input" id="taskSearchInput" placeholder="Search tasks..." style="margin-bottom: 12px;">
+                        <div id="existingTasksList" style="max-height: 300px; overflow-y: auto; border: 1px solid #DFE1E6; border-radius: 4px;">
+                            <!-- Tasks will be loaded here -->
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Sub-Project (Optional)</label>
+                        <select class="form-input" id="modalSubProjectLink">
+                            <option value="">No Sub-Project</option>
+                        </select>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="closeAddTaskModal()">Cancel</button>
-                <button class="btn-primary" onclick="createTaskFromModal()">Add Task</button>
+                <button class="btn-primary" id="addTaskSubmitBtn" onclick="createTaskFromModal()">Add Task</button>
             </div>
         </div>
     </div>

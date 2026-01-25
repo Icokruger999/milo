@@ -554,19 +554,140 @@ function openAddTaskModal() {
     document.getElementById('modalTaskStart').value = formatDateInput(today);
     document.getElementById('modalTaskEnd').value = formatDateInput(nextWeek);
     
-    // Populate sub-projects dropdown
+    // Populate sub-projects dropdown for both forms
     const subProjectSelect = document.getElementById('modalSubProject');
-    subProjectSelect.innerHTML = '<option value="">No Sub-Project</option>';
-    subProjects.forEach(sp => {
-        const option = document.createElement('option');
-        option.value = sp.id;
-        option.textContent = sp.name;
-        subProjectSelect.appendChild(option);
+    const subProjectSelectLink = document.getElementById('modalSubProjectLink');
+    
+    [subProjectSelect, subProjectSelectLink].forEach(select => {
+        select.innerHTML = '<option value="">No Sub-Project</option>';
+        subProjects.forEach(sp => {
+            const option = document.createElement('option');
+            option.value = sp.id;
+            option.textContent = sp.name;
+            select.appendChild(option);
+        });
     });
+    
+    // Reset to "Create New" tab
+    switchTaskTab('create');
+    
+    // Load existing tasks for linking
+    loadExistingTasksForLinking();
     
     modal.classList.add('active');
     document.getElementById('modalTaskName').focus();
 }
+
+// Switch between Create New and Link Existing tabs
+let currentTaskMode = 'create';
+let selectedTaskForLink = null;
+
+function switchTaskTab(mode) {
+    currentTaskMode = mode;
+    selectedTaskForLink = null;
+    
+    const tabCreate = document.getElementById('tabCreateNew');
+    const tabLink = document.getElementById('tabLinkExisting');
+    const formCreate = document.getElementById('createTaskForm');
+    const formLink = document.getElementById('linkTaskForm');
+    const submitBtn = document.getElementById('addTaskSubmitBtn');
+    
+    if (mode === 'create') {
+        tabCreate.style.borderBottom = '3px solid #0052CC';
+        tabCreate.style.color = '#0052CC';
+        tabCreate.style.fontWeight = '600';
+        tabLink.style.borderBottom = '3px solid transparent';
+        tabLink.style.color = '#666';
+        tabLink.style.fontWeight = '500';
+        formCreate.style.display = 'block';
+        formLink.style.display = 'none';
+        submitBtn.textContent = 'Add Task';
+    } else {
+        tabLink.style.borderBottom = '3px solid #0052CC';
+        tabLink.style.color = '#0052CC';
+        tabLink.style.fontWeight = '600';
+        tabCreate.style.borderBottom = '3px solid transparent';
+        tabCreate.style.color = '#666';
+        tabCreate.style.fontWeight = '500';
+        formCreate.style.display = 'none';
+        formLink.style.display = 'block';
+        submitBtn.textContent = 'Link Task';
+    }
+}
+
+window.switchTaskTab = switchTaskTab;
+
+// Load existing tasks from board for linking
+async function loadExistingTasksForLinking() {
+    try {
+        const response = await apiClient.get(`/tasks?projectId=${currentProject.id}`);
+        if (response.ok) {
+            const allTasks = await response.json();
+            
+            // Filter out tasks already on timeline
+            const timelineTaskIds = new Set(tasks.map(t => t.id));
+            const availableTasks = allTasks.filter(t => !timelineTaskIds.has(t.id));
+            
+            renderExistingTasksList(availableTasks);
+        }
+    } catch (error) {
+        console.error('Error loading existing tasks:', error);
+    }
+}
+
+// Render existing tasks list
+function renderExistingTasksList(availableTasks) {
+    const container = document.getElementById('existingTasksList');
+    const searchInput = document.getElementById('taskSearchInput');
+    
+    if (availableTasks.length === 0) {
+        container.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">All tasks are already on the timeline</div>';
+        return;
+    }
+    
+    const renderFiltered = (searchTerm = '') => {
+        const filtered = availableTasks.filter(task => 
+            task.title.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        
+        if (filtered.length === 0) {
+            container.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No tasks found</div>';
+            return;
+        }
+        
+        container.innerHTML = filtered.map(task => `
+            <div class="existing-task-item" data-task-id="${task.id}" onclick="selectTaskForLink(${task.id}, '${escapeHtml(task.title).replace(/'/g, "\\'")}', event)" 
+                 style="padding: 12px; border-bottom: 1px solid #E8E8E8; cursor: pointer; transition: background 0.15s;"
+                 onmouseover="this.style.background='#F4F5F7'" 
+                 onmouseout="if(!this.classList.contains('selected')) this.style.background='white'">
+                <div style="font-weight: 500; font-size: 14px; margin-bottom: 4px;">${escapeHtml(task.title)}</div>
+                <div style="font-size: 12px; color: #666;">
+                    <span style="display: inline-block; padding: 2px 8px; background: #DFE1E6; border-radius: 3px; margin-right: 8px;">${task.status || 'todo'}</span>
+                    ${task.assigneeName ? `<span>Assigned to: ${escapeHtml(task.assigneeName)}</span>` : '<span>Unassigned</span>'}
+                </div>
+            </div>
+        `).join('');
+    };
+    
+    searchInput.oninput = (e) => renderFiltered(e.target.value);
+    renderFiltered();
+}
+
+// Select task for linking
+function selectTaskForLink(taskId, taskTitle, event) {
+    selectedTaskForLink = taskId;
+    
+    // Update UI
+    document.querySelectorAll('.existing-task-item').forEach(item => {
+        item.classList.remove('selected');
+        item.style.background = 'white';
+    });
+    
+    event.currentTarget.classList.add('selected');
+    event.currentTarget.style.background = '#DEEBFF';
+}
+
+window.selectTaskForLink = selectTaskForLink;
 
 // Close add task modal
 function closeAddTaskModal() {
@@ -576,6 +697,40 @@ function closeAddTaskModal() {
 
 // Create task from modal
 async function createTaskFromModal() {
+    if (currentTaskMode === 'link') {
+        // Link existing task
+        if (!selectedTaskForLink) {
+            showToast('Please select a task to link');
+            return;
+        }
+        
+        const subProjectId = document.getElementById('modalSubProjectLink').value;
+        
+        try {
+            // Update the task with subProjectId
+            const updateData = {};
+            if (subProjectId) {
+                updateData.subProjectId = parseInt(subProjectId);
+            }
+            
+            const response = await apiClient.put(`/tasks/${selectedTaskForLink}`, updateData);
+            
+            if (response.ok) {
+                closeAddTaskModal();
+                await loadTasks();
+                renderTimeline();
+                showToast('Task linked successfully!');
+            } else {
+                showToast('Failed to link task');
+            }
+        } catch (error) {
+            console.error('Error linking task:', error);
+            showToast('Error linking task. Please try again.');
+        }
+        return;
+    }
+    
+    // Create new task
     const name = document.getElementById('modalTaskName').value.trim();
     const startValue = document.getElementById('modalTaskStart').value;
     const endValue = document.getElementById('modalTaskEnd').value;
@@ -615,9 +770,17 @@ async function createTaskFromModal() {
             closeAddTaskModal();
             await loadTasks();
             renderTimeline();
+            showToast('Task created successfully!');
         } else {
             const errorData = await response.json().catch(() => ({ message: 'Failed to create task' }));
             console.error('Failed to create task:', response.status, errorData);
+            showToast('Failed to create task');
+        }
+    } catch (error) {
+        console.error('Error creating task:', error);
+        showToast('Error creating task. Please try again.');
+    }
+}
             alert('Failed to create task. Please try again.');
         }
     } catch (error) {
@@ -806,28 +969,60 @@ function showToast(message, duration = 3000) {
 async function deleteSubProject(subProjectId, subProjectName, event) {
     event.stopPropagation();
     
-    if (!confirm(`Are you sure you want to delete the sub-project "${subProjectName}"?\n\nThis will NOT delete the tasks, they will just be moved to "No Sub-Project".`)) {
-        return;
-    }
+    // Create custom confirmation dialog (no popup)
+    const confirmDialog = document.createElement('div');
+    confirmDialog.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    `;
     
-    try {
-        const response = await apiClient.delete(`/subprojects/${subProjectId}`);
+    confirmDialog.innerHTML = `
+        <div style="background: white; border-radius: 8px; padding: 24px; max-width: 400px; box-shadow: 0 8px 24px rgba(0,0,0,0.2);">
+            <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 600;">Delete Sub-Project?</h3>
+            <p style="margin: 0 0 20px 0; color: #666; font-size: 14px; line-height: 1.5;">
+                Are you sure you want to delete "${subProjectName}"?<br><br>
+                Tasks will NOT be deleted, they'll be moved to "No Sub-Project".
+            </p>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button id="cancelDelete" style="padding: 8px 16px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 14px;">Cancel</button>
+                <button id="confirmDelete" style="padding: 8px 16px; background: #DE350B; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">Delete</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(confirmDialog);
+    
+    document.getElementById('cancelDelete').onclick = () => confirmDialog.remove();
+    document.getElementById('confirmDelete').onclick = async () => {
+        confirmDialog.remove();
         
-        if (response.ok) {
-            showToast(`Sub-project "${subProjectName}" deleted successfully!`);
+        try {
+            const response = await apiClient.delete(`/subprojects/${subProjectId}`);
             
-            // Reload sub-projects and tasks
-            await loadSubProjects();
-            await loadTasks();
-            renderTimeline();
-        } else {
-            const error = await response.json();
-            showToast(`Failed to delete: ${error.message || 'Unknown error'}`);
+            if (response.ok) {
+                showToast(`Sub-project "${subProjectName}" deleted successfully!`);
+                
+                // Reload sub-projects and tasks
+                await loadSubProjects();
+                await loadTasks();
+                renderTimeline();
+            } else {
+                const error = await response.json();
+                showToast(`Failed to delete: ${error.message || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error deleting sub-project:', error);
+            showToast('Error deleting sub-project. Please try again.');
         }
-    } catch (error) {
-        console.error('Error deleting sub-project:', error);
-        showToast('Error deleting sub-project. Please try again.');
-    }
+    };
 }
 
 window.deleteSubProject = deleteSubProject;
