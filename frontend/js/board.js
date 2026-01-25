@@ -2892,8 +2892,14 @@ function renderBoardGrid() {
         
         const row = document.createElement('div');
         row.className = `assignee-row ${isCollapsed ? 'collapsed' : ''}`;
-        row.style.height = 'auto';
-        row.style.minHeight = '120px';
+        if (isCollapsed) {
+            row.style.height = '28px';
+            row.style.minHeight = '28px';
+            row.style.maxHeight = '28px';
+        } else {
+            row.style.height = 'auto';
+            row.style.minHeight = '120px';
+        }
         row.dataset.assignee = groupName;
         
         row.innerHTML = `
@@ -2941,10 +2947,16 @@ function toggleAssigneeRow(assigneeName) {
     if (row.classList.contains('collapsed')) {
         row.classList.remove('collapsed');
         toggle.classList.remove('collapsed');
+        row.style.height = 'auto';
+        row.style.minHeight = '120px';
+        row.style.maxHeight = '';
         collapsedAssignees[assigneeName] = false;
     } else {
         row.classList.add('collapsed');
         toggle.classList.add('collapsed');
+        row.style.height = '28px';
+        row.style.minHeight = '28px';
+        row.style.maxHeight = '28px';
         collapsedAssignees[assigneeName] = true;
     }
 }
