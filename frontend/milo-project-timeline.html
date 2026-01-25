@@ -348,6 +348,51 @@
             font-size: 12px;
         }
 
+        /* Sub-Project Grouping */
+        .subproject-group {
+            margin: 8px 0;
+        }
+
+        .subproject-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #DEEBFF;
+            border-left: 3px solid #0052CC;
+            font-weight: 600;
+            font-size: 13px;
+            color: #0052CC;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        .subproject-name {
+            flex: 1;
+        }
+
+        .subproject-count {
+            background: #0052CC;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .task-row.subproject-task {
+            background: #F9FAFB;
+        }
+
+        .task-row.subproject-task:hover {
+            background: #F4F5F7;
+        }
+
+        .task-row.subproject-task .task-name {
+            padding-left: 20px;
+        }
+
         /* Add Task Button */
         .add-task-btn-container {
             padding: 12px;
@@ -872,6 +917,12 @@
                 <div class="form-group">
                     <label class="form-label">Task Name</label>
                     <input type="text" class="form-input" id="modalTaskName" placeholder="Enter task name...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sub-Project (Optional)</label>
+                    <select class="form-input" id="modalSubProject">
+                        <option value="">No Sub-Project</option>
+                    </select>
                 </div>
                 <div class="form-row">
                     <div class="form-group">

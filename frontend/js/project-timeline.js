@@ -1,6 +1,7 @@
 // Project Timeline - Gantt Chart View
 
 let tasks = [];
+let subProjects = [];
 let currentProject = null;
 let currentView = 'weeks'; // days, weeks, months
 let currentDate = new Date();
@@ -68,7 +69,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Setup modal handlers
     setupModalHandlers();
 
-    // Load and render
+    // Load sub-projects and tasks
+    await loadSubProjects();
     await loadTasks();
     renderTimeline();
     setTimeout(goToToday, 100);
@@ -153,6 +155,23 @@ function setupDragScroll() {
     }, { passive: false });
 }
 
+// Load sub-projects from API
+async function loadSubProjects() {
+    try {
+        const response = await apiClient.get(`/subprojects?projectId=${currentProject.id}`);
+        if (!response.ok) {
+            subProjects = [];
+            return;
+        }
+
+        subProjects = await response.json();
+        console.log(`Loaded ${subProjects.length} sub-projects`);
+    } catch (error) {
+        console.error('Error loading sub-projects:', error);
+        subProjects = [];
+    }
+}
+
 // Load tasks from API
 async function loadTasks() {
     try {
@@ -171,23 +190,27 @@ async function loadTasks() {
             return;
         }
         
-        tasks = rawTasks.map((task, index) => {
-            let progress = 0;
-            if (task.status === 'done') progress = 100;
-            else if (task.status === 'review') progress = 75;
-            else if (task.status === 'progress') progress = 50;
+        tasks = rawTasks
+            .filter(task => !task.isDeleted) // Filter out deleted tasks
+            .map((task, index) => {
+                let progress = 0;
+                if (task.status === 'done') progress = 100;
+                else if (task.status === 'review') progress = 75;
+                else if (task.status === 'progress') progress = 50;
 
-            return {
-                id: task.id,
-                name: task.title || 'Untitled',
-                wbs: (index + 1).toString(),
-                startDate: task.startDate ? new Date(task.startDate) : new Date(task.createdAt || Date.now()),
-                endDate: task.dueDate ? new Date(task.dueDate) : null,
-                progress: progress,
-                color: taskColors[index % taskColors.length],
-                status: task.status
-            };
-        });
+                return {
+                    id: task.id,
+                    name: task.title || 'Untitled',
+                    wbs: (index + 1).toString(),
+                    startDate: task.startDate ? new Date(task.startDate) : new Date(task.createdAt || Date.now()),
+                    endDate: task.dueDate ? new Date(task.dueDate) : null,
+                    progress: progress,
+                    color: taskColors[index % taskColors.length],
+                    status: task.status,
+                    subProjectId: task.subProjectId,
+                    subProjectName: task.subProject?.name || null
+                };
+            });
 
         tasks.forEach(task => {
             if (!task.endDate) {
@@ -195,6 +218,8 @@ async function loadTasks() {
                 task.endDate.setDate(task.endDate.getDate() + 7);
             }
         });
+        
+        console.log(`Loaded ${tasks.length} tasks for timeline`);
     } catch (error) {
         console.error('Error loading tasks:', error);
         tasks = [];
@@ -208,7 +233,7 @@ function renderTimeline() {
     updatePeriodLabel();
 }
 
-// Render task list (without inline add row)
+// Render task list (with sub-project grouping)
 function renderTaskList() {
     const container = document.getElementById('taskList');
     if (!container) return;
@@ -218,18 +243,70 @@ function renderTaskList() {
     if (tasks.length === 0) {
         html = '<div class="empty-state">No tasks yet. Click "Add Task" to create one.</div>';
     } else {
+        // Group tasks by sub-project
+        const grouped = {};
+        const noSubProject = [];
+        
         tasks.forEach(task => {
-            html += `
-                <div class="task-row" data-task-id="${task.id}">
-                    <div class="task-name">
-                        <div class="color-bar ${task.color}"></div>
-                        <span title="${escapeHtml(task.name)}">${escapeHtml(task.name)}</span>
+            if (task.subProjectId) {
+                if (!grouped[task.subProjectId]) {
+                    grouped[task.subProjectId] = {
+                        name: task.subProjectName || 'Unknown Sub-Project',
+                        tasks: []
+                    };
+                }
+                grouped[task.subProjectId].tasks.push(task);
+            } else {
+                noSubProject.push(task);
+            }
+        });
+        
+        // Render tasks without sub-project first
+        if (noSubProject.length > 0) {
+            noSubProject.forEach(task => {
+                html += `
+                    <div class="task-row" data-task-id="${task.id}">
+                        <div class="task-name">
+                            <div class="color-bar ${task.color}"></div>
+                            <span title="${escapeHtml(task.name)}">${escapeHtml(task.name)}</span>
+                        </div>
+                        <div class="wbs-cell">${task.wbs}</div>
+                        <div class="date-cell">${formatDateShort(task.startDate)}</div>
+                        <div class="date-cell">${formatDateShort(task.endDate)}</div>
                     </div>
-                    <div class="wbs-cell">${task.wbs}</div>
-                    <div class="date-cell">${formatDateShort(task.startDate)}</div>
-                    <div class="date-cell">${formatDateShort(task.endDate)}</div>
-                </div>
+                `;
+            });
+        }
+        
+        // Render sub-project groups
+        Object.keys(grouped).forEach(subProjectId => {
+            const group = grouped[subProjectId];
+            html += `
+                <div class="subproject-group">
+                    <div class="subproject-header">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        </svg>
+                        <span class="subproject-name">${escapeHtml(group.name)}</span>
+                        <span class="subproject-count">${group.tasks.length}</span>
+                    </div>
             `;
+            
+            group.tasks.forEach(task => {
+                html += `
+                    <div class="task-row subproject-task" data-task-id="${task.id}">
+                        <div class="task-name">
+                            <div class="color-bar ${task.color}"></div>
+                            <span title="${escapeHtml(task.name)}">${escapeHtml(task.name)}</span>
+                        </div>
+                        <div class="wbs-cell">${task.wbs}</div>
+                        <div class="date-cell">${formatDateShort(task.startDate)}</div>
+                        <div class="date-cell">${formatDateShort(task.endDate)}</div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
         });
     }
 
@@ -456,6 +533,16 @@ function openAddTaskModal() {
     document.getElementById('modalTaskStart').value = formatDateInput(today);
     document.getElementById('modalTaskEnd').value = formatDateInput(nextWeek);
     
+    // Populate sub-projects dropdown
+    const subProjectSelect = document.getElementById('modalSubProject');
+    subProjectSelect.innerHTML = '<option value="">No Sub-Project</option>';
+    subProjects.forEach(sp => {
+        const option = document.createElement('option');
+        option.value = sp.id;
+        option.textContent = sp.name;
+        subProjectSelect.appendChild(option);
+    });
+    
     modal.classList.add('active');
     document.getElementById('modalTaskName').focus();
 }
@@ -471,6 +558,7 @@ async function createTaskFromModal() {
     const name = document.getElementById('modalTaskName').value.trim();
     const startValue = document.getElementById('modalTaskStart').value;
     const endValue = document.getElementById('modalTaskEnd').value;
+    const subProjectId = document.getElementById('modalSubProject').value;
 
     if (!name) {
         document.getElementById('modalTaskName').focus();
@@ -483,22 +571,23 @@ async function createTaskFromModal() {
     try {
         const user = authService.getCurrentUser();
         
-        console.log('Creating task:', {
-            title: name,
-            projectId: currentProject.id,
-            status: 'todo',
-            startDate: startDate.toISOString(),
-            dueDate: endDate.toISOString()
-        });
-        
-        const response = await apiClient.post('/tasks', {
+        const taskData = {
             title: name,
             projectId: currentProject.id,
             status: 'todo',
             startDate: startDate.toISOString(),
             dueDate: endDate.toISOString(),
             creatorId: user ? user.id : null
-        });
+        };
+        
+        // Add subProjectId if selected
+        if (subProjectId) {
+            taskData.subProjectId = parseInt(subProjectId);
+        }
+        
+        console.log('Creating task:', taskData);
+        
+        const response = await apiClient.post('/tasks', taskData);
 
         if (response.ok) {
             console.log('Task created successfully');
@@ -508,9 +597,11 @@ async function createTaskFromModal() {
         } else {
             const errorData = await response.json().catch(() => ({ message: 'Failed to create task' }));
             console.error('Failed to create task:', response.status, errorData);
+            alert('Failed to create task. Please try again.');
         }
     } catch (error) {
         console.error('Error creating task:', error);
+        alert('Error creating task. Please try again.');
     }
 }
 
