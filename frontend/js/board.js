@@ -1762,6 +1762,105 @@ async function handleCreateLabel(event) {
     }
 }
 
+// Create Sub-Project Modal Functions
+function showCreateSubProjectModal() {
+    const modal = document.createElement('div');
+    modal.id = 'createSubProjectModal';
+    modal.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;';
+    
+    modal.innerHTML = `
+        <div style="background: white; border-radius: 8px; padding: 24px; width: 90%; max-width: 500px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Create Sub-Project</h2>
+                <button onclick="closeCreateSubProjectModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
+            </div>
+            <div id="createSubProjectError" style="display: none; background: #FFEBE6; border: 1px solid #DE350B; border-radius: 4px; padding: 12px; margin-bottom: 16px; color: #DE350B; font-size: 14px;"></div>
+            <form id="createSubProjectForm" onsubmit="handleCreateSubProject(event)">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Sub-Project Name *</label>
+                    <input type="text" id="subProjectName" name="name" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;" placeholder="e.g., Phase 1, Backend Development">
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Description (optional)</label>
+                    <textarea id="subProjectDescription" name="description" rows="3" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box; resize: vertical;" placeholder="Describe the sub-project..."></textarea>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Key (optional)</label>
+                    <input type="text" id="subProjectKey" name="key" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;" placeholder="e.g., PHASE1, BACKEND">
+                </div>
+                <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                    <button type="button" onclick="closeCreateSubProjectModal()" style="padding: 10px 20px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 14px;">Cancel</button>
+                    <button type="submit" style="padding: 10px 20px; background: #36B37E; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">Create Sub-Project</button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    document.getElementById('subProjectName').focus();
+}
+
+function closeCreateSubProjectModal() {
+    const modal = document.getElementById('createSubProjectModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+async function handleCreateSubProject(event) {
+    event.preventDefault();
+    const errorDiv = document.getElementById('createSubProjectError');
+    errorDiv.style.display = 'none';
+    
+    const name = document.getElementById('subProjectName').value.trim();
+    const description = document.getElementById('subProjectDescription').value.trim();
+    const key = document.getElementById('subProjectKey').value.trim();
+    
+    if (!name) {
+        errorDiv.textContent = 'Sub-project name is required';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    
+    try {
+        const currentProject = projectSelector.getCurrentProject();
+        if (!currentProject) {
+            errorDiv.textContent = 'No project selected';
+            errorDiv.style.display = 'block';
+            return;
+        }
+        
+        const response = await apiClient.post('/subprojects', {
+            name: name,
+            description: description || null,
+            key: key || null,
+            projectId: currentProject.id
+        });
+        
+        if (response.ok) {
+            const subProject = await response.json();
+            console.log('Sub-project created:', subProject);
+            
+            // Close modal
+            closeCreateSubProjectModal();
+            
+            // Show success message
+            alert(`Sub-project "${name}" created successfully! You can now assign tasks to it.`);
+            
+            // Reload the board to show the new sub-project
+            await loadTasks();
+        } else {
+            const error = await response.json();
+            errorDiv.textContent = error.message || 'Failed to create sub-project';
+            errorDiv.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Failed to create sub-project:', error);
+        errorDiv.textContent = 'Failed to create sub-project. Please try again.';
+        errorDiv.style.display = 'block';
+    }
+}
+
 async function handleTaskSubmit(event) {
     event.preventDefault();
     
