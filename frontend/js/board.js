@@ -1619,6 +1619,9 @@ async function loadTeams() {
     }
 }
 
+// Store original tasks before filtering
+let originalTasks = null;
+
 // Apply filters when team or assignee filter changes
 window.applyFilters = async function() {
     console.log('Applying filters...');
@@ -1631,16 +1634,31 @@ window.applyFilters = async function() {
     const assigneeFilter = document.getElementById('assigneeFilter')?.value || '';
     const searchInput = document.getElementById('boardSearchInput')?.value.toLowerCase() || '';
     
-    // Load tasks from API
-    await loadTasksFromAPI();
+    // Check if any filters are active
+    const hasActiveFilters = epicFilter || typeFilter || priorityFilter || labelFilter || assigneeFilter || searchInput;
     
-    // Apply client-side filters
+    // If no filters, restore original tasks and render
+    if (!hasActiveFilters) {
+        if (originalTasks) {
+            tasks = originalTasks;
+            originalTasks = null;
+        }
+        renderBoard();
+        return;
+    }
+    
+    // Save original tasks if not already saved
+    if (!originalTasks) {
+        originalTasks = JSON.parse(JSON.stringify(tasks)); // Deep copy
+    }
+    
+    // Apply client-side filters to original tasks
     const allBoardTasks = [];
-    if (tasks && tasks.todo) allBoardTasks.push(...tasks.todo);
-    if (tasks && tasks.progress) allBoardTasks.push(...tasks.progress);
-    if (tasks && tasks.review) allBoardTasks.push(...tasks.review);
-    if (tasks && tasks.blocked) allBoardTasks.push(...tasks.blocked);
-    if (tasks && tasks.done) allBoardTasks.push(...tasks.done);
+    if (originalTasks.todo) allBoardTasks.push(...originalTasks.todo);
+    if (originalTasks.progress) allBoardTasks.push(...originalTasks.progress);
+    if (originalTasks.review) allBoardTasks.push(...originalTasks.review);
+    if (originalTasks.blocked) allBoardTasks.push(...originalTasks.blocked);
+    if (originalTasks.done) allBoardTasks.push(...originalTasks.done);
     
     const filteredTasks = {
         todo: [],
