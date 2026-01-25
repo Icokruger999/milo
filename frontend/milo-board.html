@@ -573,6 +573,7 @@
             min-height: 120px;
             height: auto;
             flex-shrink: 0;
+            transition: min-height 0.2s ease;
         }
 
         /* Alternating row colors */
@@ -585,6 +586,7 @@
         }
 
         .assignee-row.collapsed {
+            min-height: 0;
             height: auto;
             flex-shrink: 0;
             background: transparent;
@@ -593,13 +595,16 @@
 
         .assignee-row.collapsed .status-cell {
             display: none;
+            padding: 0;
+            min-height: 0;
         }
 
         .assignee-row.collapsed .assignee-info {
             border-right: none;
             background: transparent;
-            padding: 8px 12px;
+            padding: 4px 12px;
             height: auto;
+            min-height: 0;
         }
 
         .assignee-info {
