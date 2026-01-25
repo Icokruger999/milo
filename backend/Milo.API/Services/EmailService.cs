@@ -178,14 +178,25 @@ public class EmailService : IEmailService
             builder.TextBody = plainTextBody;
             message.Body = builder.ToMessageBody();
 
+            // Use timeout to prevent hanging
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             using var client = new SmtpClient();
-            await client.ConnectAsync(smtpHost, smtpPort, MailKit.Security.SecureSocketOptions.StartTls);
-            await client.AuthenticateAsync(smtpUsername, smtpPassword);
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
+            
+            // Set timeout for operations
+            client.Timeout = 30000; // 30 seconds
+            
+            await client.ConnectAsync(smtpHost, smtpPort, MailKit.Security.SecureSocketOptions.StartTls, cts.Token);
+            await client.AuthenticateAsync(smtpUsername, smtpPassword, cts.Token);
+            await client.SendAsync(message, cts.Token);
+            await client.DisconnectAsync(true, cts.Token);
 
             _logger.LogInformation("Email sent successfully via MailKit to {To}", to);
             return true;
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("Email send to {To} timed out after 30 seconds", to);
+            return false;
         }
         catch (Exception ex)
         {
