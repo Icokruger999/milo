@@ -592,6 +592,230 @@
             font-size: 14px;
             margin-bottom: 20px;
         }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .incidents-toolbar {
+                flex-wrap: wrap;
+            }
+
+            .search-box {
+                max-width: 100%;
+                flex: 1 1 100%;
+                margin-bottom: 8px;
+            }
+
+            .detail-panel {
+                width: 400px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                min-width: 320px;
+            }
+
+            .left-sidebar {
+                width: 48px;
+            }
+
+            .main-content {
+                margin-left: 48px;
+            }
+
+            .sidebar-icon {
+                width: 32px;
+                height: 32px;
+            }
+
+            .global-nav-links {
+                display: none;
+            }
+
+            .incidents-header {
+                padding: 12px 16px;
+            }
+
+            .incidents-title {
+                font-size: 20px;
+            }
+
+            .incidents-toolbar {
+                padding: 8px 16px;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                max-width: 100%;
+                margin-bottom: 8px;
+            }
+
+            .filter-button {
+                width: 100%;
+                margin-bottom: 4px;
+            }
+
+            .incidents-container {
+                padding: 12px 16px;
+                overflow-x: auto;
+            }
+
+            .incidents-table {
+                min-width: 800px;
+            }
+
+            .incidents-table th,
+            .incidents-table td {
+                padding: 8px;
+                font-size: 13px;
+            }
+
+            .detail-panel {
+                width: 100%;
+                right: -100%;
+            }
+
+            .detail-panel.active {
+                right: 0;
+            }
+
+            .modal-content {
+                width: 95%;
+                max-width: 95%;
+                margin: 0 auto;
+            }
+
+            .form-row-split {
+                grid-template-columns: 1fr;
+            }
+
+            .incidents-title-actions {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .global-nav {
+                padding: 0 8px;
+            }
+
+            .global-nav-logo {
+                width: 20px;
+                height: 20px;
+            }
+
+            .global-nav-create {
+                padding: 6px 8px;
+                font-size: 13px;
+            }
+
+            .summit-btn {
+                padding: 6px 8px;
+                font-size: 12px;
+                gap: 4px;
+            }
+
+            .summit-btn svg {
+                width: 14px;
+                height: 14px;
+            }
+
+            .global-nav-icon {
+                width: 28px;
+                height: 28px;
+            }
+
+            .left-sidebar {
+                width: 40px;
+                padding: 8px 0;
+            }
+
+            .main-content {
+                margin-left: 40px;
+            }
+
+            .sidebar-icon {
+                width: 28px;
+                height: 28px;
+            }
+
+            .sidebar-icon svg {
+                width: 16px;
+                height: 16px;
+            }
+
+            .incidents-header {
+                padding: 8px 12px;
+            }
+
+            .breadcrumb {
+                font-size: 11px;
+            }
+
+            .incidents-title {
+                font-size: 18px;
+            }
+
+            .incidents-toolbar {
+                padding: 8px 12px;
+            }
+
+            .incidents-container {
+                padding: 8px 12px;
+            }
+
+            .incidents-table {
+                min-width: 700px;
+            }
+
+            .incidents-table th,
+            .incidents-table td {
+                padding: 6px;
+                font-size: 12px;
+            }
+
+            /* Hide less important columns on mobile */
+            .incidents-table th:nth-child(7),
+            .incidents-table td:nth-child(7) {
+                display: none;
+            }
+
+            .modal-header {
+                padding: 16px;
+            }
+
+            .modal-title {
+                font-size: 18px;
+            }
+
+            .modal-body {
+                padding: 16px;
+            }
+
+            .modal-footer {
+                padding: 12px 16px;
+            }
+
+            .detail-header {
+                padding: 16px;
+            }
+
+            .detail-incident-number {
+                font-size: 18px;
+            }
+
+            .detail-body {
+                padding: 16px;
+            }
+        }
+
+        /* Ensure horizontal scroll on small screens */
+        @media (max-width: 768px) {
+            .incidents-container {
+                -webkit-overflow-scrolling: touch;
+            }
+        }
     </style>
 </head>
 <body>
