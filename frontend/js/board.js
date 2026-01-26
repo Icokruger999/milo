@@ -623,7 +623,9 @@ async function showTaskModal(column, task = null) {
     modal.dataset.column = column;
     const taskIdValue = task ? (task.id || task.taskId) : '';
     modal.dataset.taskId = taskIdValue;
-    currentTaskId = task ? task.id : null;
+    // CRITICAL FIX: Ensure currentTaskId is set correctly (use id, not taskId string)
+    currentTaskId = task ? (task.id || parseInt(taskIdValue)) : null;
+    console.log('[MODAL] Opening task modal - currentTaskId set to:', currentTaskId);
     
     // Set hidden input field for delete button
     const taskIdInput = document.getElementById('taskId');
@@ -1108,6 +1110,7 @@ function populateTaskForm(task) {
 }
 
 async function loadTaskComments(taskId) {
+    console.log('[COMMENTS] Loading comments for task:', taskId, '| currentTaskId:', currentTaskId);
     try {
         const response = await apiClient.get(`/comments/task/${taskId}`);
         if (response.ok) {
@@ -1115,9 +1118,10 @@ async function loadTaskComments(taskId) {
             // Prevents race condition where comments from Task A appear on Task B
             if (currentTaskId === taskId) {
                 currentTaskComments = await response.json();
+                console.log('[COMMENTS] Loaded', currentTaskComments.length, 'comments for task', taskId);
                 renderTaskComments();
             } else {
-                console.log(`Ignoring comments for task ${taskId} - current task is ${currentTaskId}`);
+                console.log(`[COMMENTS] Ignoring comments for task ${taskId} - current task is ${currentTaskId}`);
             }
         }
     } catch (error) {
@@ -1163,8 +1167,10 @@ async function addCommentToTaskModal() {
     const input = document.getElementById('newCommentInput');
     if (!input || !input.value.trim()) return;
     
+    console.log('[COMMENTS] Adding comment to task:', currentTaskId);
+    
     if (!currentTaskId) {
-        console.warn('Cannot add comment: task must be saved first');
+        console.warn('[COMMENTS] Cannot add comment: task must be saved first');
         // Silently prevent comment if task not saved
         return;
     }
@@ -1175,7 +1181,7 @@ async function addCommentToTaskModal() {
     try {
         const user = authService.getCurrentUser();
         if (!user || !user.id) {
-            console.warn('Cannot add comment: user not logged in');
+            console.warn('[COMMENTS] Cannot add comment: user not logged in');
             // Silently prevent comment if not logged in
             return;
         }
@@ -1183,6 +1189,7 @@ async function addCommentToTaskModal() {
         // Clear input immediately for better UX
         input.value = '';
         
+        console.log('[COMMENTS] Posting comment to API for task:', currentTaskId);
         const response = await apiClient.post('/comments', {
             taskId: currentTaskId,
             text: commentText,
@@ -1191,13 +1198,14 @@ async function addCommentToTaskModal() {
         
         if (response.ok) {
             const newComment = await response.json();
+            console.log('[COMMENTS] Comment added successfully:', newComment);
             currentTaskComments.push(newComment);
             renderTaskComments();
         } else {
             // Restore input value on error
             input.value = originalValue;
             const error = await response.json().catch(() => ({ message: 'Failed to add comment' }));
-            console.error('Failed to add comment:', error.message || 'Unknown error');
+            console.error('[COMMENTS] Failed to add comment:', error.message || 'Unknown error');
             // Silently fail - no popup
         }
     } catch (error) {
@@ -2490,11 +2498,12 @@ async function handleDrop(e) {
         return;
     }
 
-    // Get new status from column
+    // Get new status from column - FIXED: Added blocked column support
     const newColumnId = e.currentTarget.id;
     let newStatus = 'todo';
     if (newColumnId === 'progressItems') newStatus = 'progress';
     else if (newColumnId === 'reviewItems') newStatus = 'review';
+    else if (newColumnId === 'blockedItems') newStatus = 'blocked'; // FIXED: Added blocked
     else if (newColumnId === 'doneItems') newStatus = 'done';
 
     console.log(`Moving task ${taskId} to status: ${newStatus}`);
@@ -2552,9 +2561,8 @@ async function handleDrop(e) {
                     if (tasks[newStatus]) {
                         tasks[newStatus].push(task);
                     }
-                    debouncedRender();
-                    // Reload from API in background to ensure sync
-                    setTimeout(() => loadTasksFromAPI(), 500);
+                    // FIXED: Only render once, don't reload from API (causes flashing)
+                    renderBoard();
                 } else {
                     const error = await updateResponse.json();
                     console.error('Failed to update task status:', error);
