@@ -1771,6 +1771,45 @@ async function loadLabels() {
     }
 }
 
+// Load labels for the filter dropdown
+async function loadLabelsForFilter() {
+    try {
+        const currentProject = projectSelector.getCurrentProject();
+        let url = '/labels';
+        if (currentProject && currentProject.id) {
+            url += `?projectId=${currentProject.id}`;
+        }
+        
+        const response = await apiClient.get(url);
+        if (response.ok) {
+            const labels = await response.json();
+            const labelFilterSelect = document.getElementById('labelFilter');
+            if (labelFilterSelect) {
+                // Preserve the currently selected value before clearing
+                const currentValue = labelFilterSelect.value || '';
+                
+                // Clear and add default option
+                labelFilterSelect.innerHTML = '<option value="">Label</option>';
+                
+                // Add each label as an option
+                labels.forEach(label => {
+                    const option = document.createElement('option');
+                    option.value = label.name.toLowerCase();
+                    option.textContent = label.name;
+                    labelFilterSelect.appendChild(option);
+                });
+                
+                // Restore the selected value if it still exists
+                if (currentValue && labelFilterSelect.querySelector(`option[value="${currentValue}"]`)) {
+                    labelFilterSelect.value = currentValue;
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load labels for filter:', error);
+    }
+}
+
 function showCreateLabelModal() {
     const modal = document.createElement('div');
     modal.id = 'createLabelModal';
