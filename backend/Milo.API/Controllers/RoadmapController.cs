@@ -123,7 +123,6 @@ public class RoadmapController : ControllerBase
             item.Priority = request.Priority.Value;
         }
 
-        item.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
         return Ok(new
