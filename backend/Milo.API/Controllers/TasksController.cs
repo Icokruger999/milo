@@ -311,6 +311,56 @@ public class TasksController : ControllerBase
                 checklistJson = System.Text.Json.JsonSerializer.Serialize(request.Checklist);
             }
 
+            // Auto-assign SubProject based on label
+            int? subProjectId = request.SubProjectId;
+            if (!subProjectId.HasValue && request.ProjectId.HasValue)
+            {
+                // Get SubProjects for this project
+                var subProjects = await _context.SubProjects
+                    .Where(sp => sp.ProjectId == request.ProjectId.Value)
+                    .ToListAsync();
+                
+                if (subProjects.Any())
+                {
+                    // If label matches a SubProject name (case-insensitive), assign it
+                    if (!string.IsNullOrEmpty(request.Label))
+                    {
+                        var matchingSubProject = subProjects
+                            .FirstOrDefault(sp => sp.Name.Equals(request.Label, StringComparison.OrdinalIgnoreCase));
+                        
+                        if (matchingSubProject != null)
+                        {
+                            subProjectId = matchingSubProject.Id;
+                            _logger.LogInformation($"[AUTO-ASSIGN] Task with label '{request.Label}' assigned to SubProject '{matchingSubProject.Name}' (ID: {subProjectId})");
+                        }
+                        else
+                        {
+                            // Label doesn't match any SubProject, assign to "Unknown"
+                            var unknownSubProject = subProjects
+                                .FirstOrDefault(sp => sp.Name.Equals("Unknown", StringComparison.OrdinalIgnoreCase));
+                            
+                            if (unknownSubProject != null)
+                            {
+                                subProjectId = unknownSubProject.Id;
+                                _logger.LogInformation($"[AUTO-ASSIGN] Task with label '{request.Label}' (no matching SubProject) assigned to 'Unknown' (ID: {subProjectId})");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // No label, assign to "Unknown"
+                        var unknownSubProject = subProjects
+                            .FirstOrDefault(sp => sp.Name.Equals("Unknown", StringComparison.OrdinalIgnoreCase));
+                        
+                        if (unknownSubProject != null)
+                        {
+                            subProjectId = unknownSubProject.Id;
+                            _logger.LogInformation($"[AUTO-ASSIGN] Task with no label assigned to 'Unknown' (ID: {subProjectId})");
+                        }
+                    }
+                }
+            }
+
             var task = new Models.Task
             {
                 Title = request.Title,
@@ -323,7 +373,7 @@ public class TasksController : ControllerBase
                 CreatorId = request.CreatorId,
                 ProductId = request.ProductId,
                 ProjectId = request.ProjectId,
-                SubProjectId = request.SubProjectId,
+                SubProjectId = subProjectId,
                 Priority = request.Priority ?? 0,
                 DueDate = dueDateUtc,
                 StartDate = startDateUtc,
