@@ -1,13 +1,5 @@
 // Project Creation and Invitation Modals
 
-// Make functions globally accessible
-window.showCreateProjectModal = showCreateProjectModal;
-window.closeCreateProjectModal = closeCreateProjectModal;
-window.handleCreateProject = handleCreateProject;
-window.showInviteModal = showInviteModal;
-window.closeInviteModal = closeInviteModal;
-window.handleInviteUser = handleInviteUser;
-
 // Project Creation Modal
 function showCreateProjectModal() {
     const modal = document.createElement('div');
@@ -296,3 +288,11 @@ function showProjectSettings() {
     console.log('Project settings coming soon!');
 }
 
+// Make functions globally accessible (after they're defined)
+window.showCreateProjectModal = showCreateProjectModal;
+window.closeCreateProjectModal = closeCreateProjectModal;
+window.handleCreateProject = handleCreateProject;
+window.showInviteModal = showInviteModal;
+window.closeInviteModal = closeInviteModal;
+window.handleInviteUser = handleInviteUser;
+window.showProjectSettings = showProjectSettings;
