@@ -457,6 +457,43 @@
                 document.getElementById('userAvatar').textContent = user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
             }
 
+            // Load project info - try multiple sources
+            let currentProject = projectSelector.getCurrentProject();
+            
+            // If not in memory, try localStorage
+            if (!currentProject) {
+                const stored = localStorage.getItem('milo_current_project');
+                if (stored) {
+                    try {
+                        currentProject = JSON.parse(stored);
+                        projectSelector.setCurrentProject(currentProject);
+                    } catch (e) {
+                        console.error('Error parsing stored project:', e);
+                    }
+                }
+            }
+            
+            // If still no project, try loading from API
+            if (!currentProject && user) {
+                try {
+                    await projectSelector.loadProjects(user.id);
+                    currentProject = projectSelector.getCurrentProject();
+                    
+                    // If still no project but we have projects, use the first one
+                    if (!currentProject && projectSelector.projects && projectSelector.projects.length > 0) {
+                        currentProject = projectSelector.projects[0];
+                        projectSelector.setCurrentProject(currentProject);
+                    }
+                } catch (error) {
+                    console.error('Failed to load projects:', error);
+                }
+            }
+            
+            if (!currentProject) {
+                window.location.href = 'milo-select-project.html';
+                return;
+            }
+
             await loadDeliveryItems();
         });
 
@@ -464,22 +501,17 @@
             try {
                 const currentProject = projectSelector.getCurrentProject();
                 if (!currentProject) {
-                    // Try to get from localStorage
-                    const stored = localStorage.getItem('currentProject');
-                    if (!stored) {
-                        window.location.href = 'milo-select-project.html';
-                        return;
-                    }
+                    window.location.href = 'milo-select-project.html';
+                    return;
                 }
 
-                const projectId = currentProject?.id || JSON.parse(localStorage.getItem('currentProject')).id;
-
                 // Load roadmap items as delivery items
-                const response = await apiClient.get(`/roadmap?projectId=${projectId}`);
+                const response = await apiClient.get(`/roadmap?projectId=${currentProject.id}`);
                 if (response.ok) {
                     deliveryItems = await response.json();
                     renderList();
                 } else {
+                    console.error('Failed to load roadmap items:', response.status);
                     document.getElementById('itemCount').textContent = 'Failed to load items';
                     document.getElementById('deliveryList').innerHTML = '<div style="padding: 40px; text-align: center; color: #6B778C;">Failed to load delivery items</div>';
                 }
