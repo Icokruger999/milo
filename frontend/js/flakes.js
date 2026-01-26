@@ -109,18 +109,33 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup user menu dropdown
     setupUserMenu();
 
-    // Load project info
-    const currentProject = projectSelector.getCurrentProject();
+    // Load project info - use cached project for instant load
+    let currentProject = projectSelector.getCurrentProject();
+    
+    // If no cached project, try localStorage
+    if (!currentProject) {
+        const stored = localStorage.getItem('milo_current_project');
+        if (stored) {
+            try {
+                currentProject = JSON.parse(stored);
+                projectSelector.setCurrentProject(currentProject);
+            } catch (e) {
+                console.error('Failed to parse stored project:', e);
+            }
+        }
+    }
+    
     if (currentProject) {
         document.getElementById('projectName').textContent = currentProject.name;
         document.getElementById('projectIcon').textContent = (currentProject.key || currentProject.name).substring(0, 1).toUpperCase();
+        
+        // Load flakes immediately with cached project
+        loadFlakes();
     } else {
+        // No project found, redirect
         window.location.href = 'milo-select-project.html';
         return;
     }
-
-    // Load flakes
-    loadFlakes();
 });
 
 // Setup user menu with dropdown
