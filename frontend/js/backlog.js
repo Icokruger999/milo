@@ -574,9 +574,6 @@ function applyCurrentFilter() {
     
     renderBacklog();
 }
-    
-    renderBacklog();
-}
 
 function applyBacklogFilter() {
     applyCurrentFilter();
