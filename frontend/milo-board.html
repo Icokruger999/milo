@@ -1547,24 +1547,6 @@
                                 <select id="projectSelector" style="padding: 6px 12px; border: 1px solid #DFE1E6; border-radius: 3px; background: white; font-size: 14px; color: #42526E; cursor: pointer; min-width: 200px;">
                                     <option value="">Loading projects...</option>
                                 </select>
-                                <script>
-                                    // Immediately populate selector from localStorage
-                                    (function() {
-                                        try {
-                                            const stored = localStorage.getItem('milo_current_project');
-                                            if (stored) {
-                                                const project = JSON.parse(stored);
-                                                const selector = document.getElementById('projectSelector');
-                                                if (selector && project.name) {
-                                                    selector.innerHTML = `<option value="${project.id}" selected>${project.name}</option><option value="create">+ Create New Project</option>`;
-                                                    console.log('✅ [INLINE] Selector populated:', project.name);
-                                                }
-                                            }
-                                        } catch (e) {
-                                            console.error('Inline selector setup failed:', e);
-                                        }
-                                    })();
-                                </script>
                             </div>
                             <!-- Direct Create Project Button - Always Works -->
                             <a href="milo-select-project.html" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #0052CC; color: white; text-decoration: none; border-radius: 3px; font-size: 13px; font-weight: 500; cursor: pointer;">
@@ -1945,30 +1927,7 @@
         // Setup project selector (use enhanced if available, otherwise fallback)
         console.log('Setting up project selector...');
         
-        // Immediate fallback: populate from localStorage if available
-        let storedProjectData = localStorage.getItem('milo_current_project');
-        console.log('📦 Stored project from localStorage:', storedProjectData);
-        if (storedProjectData) {
-            try {
-                const project = JSON.parse(storedProjectData);
-                const selector = document.getElementById('projectSelector');
-                console.log('📦 Selector element found:', !!selector);
-                console.log('📦 Selector element ID:', selector?.id);
-                console.log('📦 Selector current HTML:', selector?.innerHTML);
-                if (selector && project.name) {
-                    const newHTML = `<option value="${project.id}" selected>${project.name}</option><option value="create">+ Create New Project</option>`;
-                    selector.innerHTML = newHTML;
-                    console.log('✅ Selector populated immediately from storage:', project.name);
-                    console.log('✅ Selector new HTML:', selector.innerHTML);
-                }
-            } catch (e) {
-                console.error('Failed to parse stored project:', e);
-            }
-        } else {
-            console.warn('⚠️ No stored project found in localStorage');
-        }
-        
-        // Wait a bit to ensure all scripts are loaded
+        // Wait a bit to ensure all scripts are loaded, then load all projects
         setTimeout(async () => {
             try {
                 console.log('🔄 Attempting to setup project selector (async)...');
