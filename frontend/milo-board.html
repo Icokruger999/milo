@@ -1037,71 +1037,6 @@
             height: 100%;
         }
 
-        /* Dashboard View Styles */
-        .dashboard-view {
-            background: #F4F5F7 !important;
-            min-height: 100%;
-            overflow-y: auto;
-            padding-bottom: 40px; /* Extra space at bottom */
-        }
-        
-        /* Hide scrollbar but keep mouse wheel functionality for dashboard */
-        .dashboard-view::-webkit-scrollbar {
-            width: 0px;
-            background: transparent;
-        }
-        
-        .dashboard-view {
-            scrollbar-width: none; /* Firefox */
-            -ms-overflow-style: none; /* IE and Edge */
-        }
-        
-        .dashboard-view h2 {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        .dashboard-stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-        
-        .dashboard-stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #DFE1E6;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .dashboard-charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 16px;
-        }
-        
-        .dashboard-chart-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #DFE1E6;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .dashboard-chart-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #172B4D;
-            margin-bottom: 16px;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        .dashboard-chart-container {
-            position: relative;
-            height: 300px;
-        }
-
         /* Timeline View Styles */
         .timeline-view {
             flex: 1;
@@ -1823,273 +1758,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Dashboard View (Hidden by default) -->
-                <div class="dashboard-view" id="dashboardView" style="display: none; flex: 1; overflow-y: auto; padding: 32px; background: #f4f5f7;">
-                    <!-- Hide scrollbar but keep mouse wheel functionality -->
-                    <style>
-                        #dashboardView::-webkit-scrollbar {
-                            width: 8px;
-                            background: transparent;
-                        }
-                        
-                        #dashboardView::-webkit-scrollbar-thumb {
-                            background: rgba(0, 0, 0, 0.2);
-                            border-radius: 4px;
-                        }
-                        
-                        #dashboardView {
-                            scrollbar-width: thin;
-                            scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
-                        }
-                        
-                        /* Power BI Style Dashboard */
-                        .dashboard-container {
-                            max-width: 100%;
-                            width: 100%;
-                            margin: 0;
-                            padding: 0 20px 60px 20px;
-                        }
-                        
-                        .dashboard-header {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: center;
-                            margin-bottom: 32px;
-                            padding: 24px 32px;
-                            background: white;
-                            border-radius: 8px;
-                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-                        }
-                        
-                        .dashboard-title {
-                            font-size: 28px;
-                            font-weight: 700;
-                            color: #172B4D;
-                            margin: 0;
-                            letter-spacing: -0.5px;
-                        }
-                        
-                        .dashboard-subtitle {
-                            font-size: 14px;
-                            color: #6B778C;
-                            margin-top: 4px;
-                        }
-                        
-                        /* Stats Cards - Power BI Style */
-                        .dashboard-stats-grid {
-                            display: grid;
-                            grid-template-columns: repeat(4, 1fr);
-                            gap: 20px;
-                            margin-bottom: 32px;
-                        }
-                        
-                        @media (max-width: 1200px) {
-                            .dashboard-stats-grid {
-                                grid-template-columns: repeat(2, 1fr);
-                            }
-                        }
-                        
-                        @media (max-width: 768px) {
-                            .dashboard-stats-grid {
-                                grid-template-columns: 1fr;
-                            }
-                        }
-                        
-                        .dashboard-stat-card {
-                            background: white;
-                            padding: 24px;
-                            border-radius: 8px;
-                            border: 1px solid #DFE1E6;
-                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-                            transition: transform 0.2s, box-shadow 0.2s;
-                            position: relative;
-                            overflow: hidden;
-                        }
-                        
-                        .dashboard-stat-card::before {
-                            content: '';
-                            position: absolute;
-                            top: 0;
-                            left: 0;
-                            right: 0;
-                            height: 3px;
-                            background: #0052CC;
-                        }
-                        
-                        .dashboard-stat-card:nth-child(2)::before {
-                            background: #FFAB00;
-                        }
-                        
-                        .dashboard-stat-card:nth-child(3)::before {
-                            background: #36B37E;
-                        }
-                        
-                        .dashboard-stat-card:nth-child(4)::before {
-                            background: #6554C0;
-                        }
-                        
-                        .dashboard-stat-card:hover {
-                            transform: translateY(-2px);
-                            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-                        }
-                        
-                        .dashboard-stat-label {
-                            font-size: 12px;
-                            font-weight: 600;
-                            color: #6B778C;
-                            text-transform: uppercase;
-                            letter-spacing: 0.5px;
-                            margin-bottom: 12px;
-                        }
-                        
-                        .dashboard-stat-value {
-                            font-size: 36px;
-                            font-weight: 700;
-                            color: #172B4D;
-                            line-height: 1;
-                            margin-bottom: 8px;
-                        }
-                        
-                        .dashboard-stat-change {
-                            font-size: 12px;
-                            color: #6B778C;
-                            font-weight: 500;
-                        }
-                        
-                        /* Charts Grid - Power BI Style */
-                        .dashboard-charts-grid {
-                            display: grid;
-                            grid-template-columns: repeat(2, 1fr);
-                            gap: 20px;
-                            margin-bottom: 40px;
-                        }
-                        
-                        @media (max-width: 1200px) {
-                            .dashboard-charts-grid {
-                                grid-template-columns: 1fr;
-                            }
-                        }
-                        
-                        .dashboard-chart-card {
-                            background: white;
-                            padding: 24px;
-                            border-radius: 8px;
-                            border: 1px solid #DFE1E6;
-                            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-                            transition: transform 0.2s, box-shadow 0.2s;
-                            min-height: 400px;
-                        }
-                        
-                        .dashboard-chart-card:hover {
-                            transform: translateY(-2px);
-                            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-                        }
-                        
-                        .dashboard-chart-title {
-                            font-size: 16px;
-                            font-weight: 600;
-                            color: #172B4D;
-                            margin-bottom: 20px;
-                            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                        }
-                        
-                        .dashboard-chart-container {
-                            position: relative;
-                            height: 300px;
-                            width: 100%;
-                        }
-                        
-                        .dashboard-chart-container canvas {
-                            max-height: 300px !important;
-                        }
-                        
-                        /* Large chart cards */
-                        .dashboard-chart-card.large {
-                            grid-column: span 2;
-                        }
-                        
-                        @media (max-width: 1200px) {
-                            .dashboard-chart-card.large {
-                                grid-column: span 1;
-                            }
-                        }
-                    </style>
-                    
-                    <div class="dashboard-container">
-                        <!-- Header -->
-                        <div class="dashboard-header">
-                            <div>
-                                <h1 class="dashboard-title">Project Dashboard</h1>
-                                <div class="dashboard-subtitle">Real-time insights and analytics</div>
-                            </div>
-                        </div>
-                        
-                        <!-- Stats Cards -->
-                        <div class="dashboard-stats-grid">
-                            <div class="dashboard-stat-card">
-                                <div class="dashboard-stat-label">Total Tasks</div>
-                                <div id="dashTotalTasks" class="dashboard-stat-value">0</div>
-                                <div class="dashboard-stat-change">↑ Active tasks</div>
-                            </div>
-                            <div class="dashboard-stat-card">
-                                <div class="dashboard-stat-label">In Progress</div>
-                                <div id="dashInProgress" class="dashboard-stat-value" style="color: #FFAB00;">0</div>
-                                <div class="dashboard-stat-change">Currently working</div>
-                            </div>
-                            <div class="dashboard-stat-card">
-                                <div class="dashboard-stat-label">Completed</div>
-                                <div id="dashCompleted" class="dashboard-stat-value" style="color: #36B37E;">0</div>
-                                <div class="dashboard-stat-change">✓ Done</div>
-                            </div>
-                            <div class="dashboard-stat-card">
-                                <div class="dashboard-stat-label">Completion Rate</div>
-                                <div id="dashCompletionRate" class="dashboard-stat-value" style="color: #0052CC;">0%</div>
-                                <div class="dashboard-stat-change">Overall progress</div>
-                            </div>
-                        </div>
-
-                        <!-- Charts -->
-                        <div class="dashboard-charts-grid">
-                            <div class="dashboard-chart-card">
-                                <div class="dashboard-chart-title">📊 Tasks by Status</div>
-                                <div class="dashboard-chart-container">
-                                    <canvas id="dashStatusChart"></canvas>
-                                </div>
-                            </div>
-                            <div class="dashboard-chart-card">
-                                <div class="dashboard-chart-title">🎯 Tasks by Priority</div>
-                                <div class="dashboard-chart-container">
-                                    <canvas id="dashPriorityChart"></canvas>
-                                </div>
-                            </div>
-                            <div class="dashboard-chart-card large">
-                                <div class="dashboard-chart-title">📈 Task Completion Over Time</div>
-                                <div class="dashboard-chart-container">
-                                    <canvas id="dashCompletionChart"></canvas>
-                                </div>
-                            </div>
-                            <div class="dashboard-chart-card">
-                                <div class="dashboard-chart-title">👥 Tasks by Assignee</div>
-                                <div class="dashboard-chart-container">
-                                    <canvas id="dashAssigneeChart"></canvas>
-                                </div>
-                            </div>
-                            <div class="dashboard-chart-card">
-                                <div class="dashboard-chart-title">🏷️ Tasks by Label</div>
-                                <div class="dashboard-chart-container">
-                                    <canvas id="dashLabelChart"></canvas>
-                                </div>
-                            </div>
-                            <div class="dashboard-chart-card">
-                                <div class="dashboard-chart-title">⏱️ Average Task Age by Status</div>
-                                <div class="dashboard-chart-container">
-                                    <canvas id="dashAgeChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -2737,23 +2405,13 @@
                 // Ensure tasks are loaded first, then load dashboard
                 if (typeof loadTasks === 'function') {
                     loadTasks().then(() => {
-                        console.log('Tasks loaded, now loading dashboard data');
-                        if (typeof loadDashboardData === 'function') {
-                            loadDashboardData();
-                        } else {
-                            console.error('loadDashboardData function not found');
-                        }
+                        console.log('Tasks loaded');
+                        // Dashboard removed - no longer calling loadDashboardData
                     }).catch(error => {
-                        console.error('Failed to load tasks for dashboard:', error);
-                        if (typeof loadDashboardData === 'function') {
-                            loadDashboardData(); // Try to load dashboard anyway
-                        }
+                        console.error('Failed to load tasks:', error);
                     });
                 } else {
                     console.error('loadTasks function not found');
-                    if (typeof loadDashboardData === 'function') {
-                        loadDashboardData();
-                    }
                 }
                 
                 console.log('showDashboardView completed successfully');
@@ -2817,7 +2475,8 @@
             alert('Roadmap item creation coming soon! For now, use the standalone Roadmap page.');
         }
 
-        // Dashboard Functions
+        // Dashboard Functions - DISABLED (Dashboard page removed)
+        /*
         async function loadDashboardData() {
             console.log('loadDashboardData called');
             const currentProject = projectSelector.getCurrentProject();
@@ -3282,6 +2941,7 @@
                 console.error('Error rendering dashboard charts:', error);
             }
         }
+        */
 
         async function loadTimelineData() {
             console.log('loadTimelineData called - Program Timeline');
