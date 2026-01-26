@@ -1547,6 +1547,21 @@
                                 <select id="projectSelector" style="padding: 6px 12px; border: 1px solid #DFE1E6; border-radius: 3px; background: white; font-size: 14px; color: #42526E; cursor: pointer; min-width: 200px;">
                                     <option value="">Loading projects...</option>
                                 </select>
+                                <script>
+                                    // Immediately populate from localStorage
+                                    (function() {
+                                        const stored = localStorage.getItem('milo_current_project');
+                                        if (stored) {
+                                            try {
+                                                const project = JSON.parse(stored);
+                                                const sel = document.getElementById('projectSelector');
+                                                if (sel && project.name) {
+                                                    sel.innerHTML = '<option value="' + project.id + '" selected>' + project.name + '</option><option value="create">+ Create New Project</option>';
+                                                }
+                                            } catch(e) {}
+                                        }
+                                    })();
+                                </script>
                             </div>
                             <!-- Direct Create Project Button - Always Works -->
                             <a href="milo-select-project.html" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: #0052CC; color: white; text-decoration: none; border-radius: 3px; font-size: 13px; font-weight: 500; cursor: pointer;">
@@ -4680,6 +4695,88 @@
             const left = (daysSinceBase / 30) * monthWidth;
             todayLine.style.left = `${left}px`;
         }
+    </script>
+    
+    <!-- Direct project selector loader - runs after all scripts are loaded -->
+    <script>
+        (function loadProjectsDirectly() {
+            console.log('🚀 Direct project loader starting...');
+            
+            // Wait for DOM and scripts to be ready
+            setTimeout(async function() {
+                const selector = document.getElementById('projectSelector');
+                if (!selector) {
+                    console.error('Selector not found');
+                    return;
+                }
+                
+                try {
+                    // Get user
+                    const user = authService.getCurrentUser();
+                    if (!user || !user.id) {
+                        console.log('No user, redirecting to login');
+                        return;
+                    }
+                    
+                    console.log('🚀 Fetching projects for user:', user.id);
+                    
+                    // Fetch projects directly
+                    const response = await fetch(API_CONFIG.baseURL + '/projects?userId=' + user.id);
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch projects: ' + response.status);
+                    }
+                    
+                    const projects = await response.json();
+                    console.log('🚀 Projects fetched:', projects.length);
+                    
+                    // Get current project
+                    const stored = localStorage.getItem('milo_current_project');
+                    let currentProjectId = null;
+                    if (stored) {
+                        try {
+                            currentProjectId = JSON.parse(stored).id;
+                        } catch(e) {}
+                    }
+                    
+                    // Populate selector
+                    if (projects.length === 0) {
+                        selector.innerHTML = '<option value="create">+ Create New Project</option>';
+                    } else {
+                        selector.innerHTML = projects.map(p => 
+                            '<option value="' + p.id + '"' + (p.id === currentProjectId ? ' selected' : '') + '>' + p.name + (p.key ? ' (' + p.key + ')' : '') + '</option>'
+                        ).join('') + '<option value="create">+ Create New Project</option>';
+                    }
+                    
+                    console.log('🚀 Selector populated with', projects.length, 'projects');
+                    
+                    // Add change handler
+                    selector.onchange = function() {
+                        if (this.value === 'create') {
+                            window.location.href = 'milo-select-project.html';
+                        } else if (this.value) {
+                            const project = projects.find(p => p.id === parseInt(this.value));
+                            if (project) {
+                                localStorage.setItem('milo_current_project', JSON.stringify(project));
+                                window.location.reload();
+                            }
+                        }
+                    };
+                    
+                } catch (error) {
+                    console.error('🚀 Error loading projects:', error);
+                    // Keep current project in selector
+                    const stored = localStorage.getItem('milo_current_project');
+                    if (stored) {
+                        try {
+                            const project = JSON.parse(stored);
+                            selector.innerHTML = '<option value="' + project.id + '" selected>' + project.name + '</option><option value="create">+ Create New Project</option>';
+                        } catch(e) {
+                            selector.innerHTML = '<option value="">Error loading</option>';
+                        }
+                    }
+                }
+            }, 100);
+        })();
     </script>
 </body>
 </html>
