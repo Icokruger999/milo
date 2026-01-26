@@ -174,11 +174,14 @@ async function loadProjectMembers() {
                 return;
             }
             
-            // Show all members (no limit)
-            avatarsContainer.innerHTML = members.map((member, index) => {
+            // Show all members with consistent colors based on user ID
+            avatarsContainer.innerHTML = members.map((member) => {
                 const initials = (member.name || member.email || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-                const colors = ['#DE350B', '#36B37E', '#0052CC', '#6554C0', '#FFAB00'];
-                return `<div class="user-avatar-small" style="background: ${colors[index % colors.length]};" title="${member.name || member.email}">${initials}</div>`;
+                // Use getAssigneeColor from board.js for consistent colors
+                const color = typeof getAssigneeColor === 'function' 
+                    ? getAssigneeColor(member.id, member.name)
+                    : { bg: '#0052CC', text: '#FFFFFF' };
+                return `<div class="user-avatar-small" style="background: ${color.bg}; color: ${color.text};" title="${member.name || member.email}">${initials}</div>`;
             }).join('');
             
             // Also populate assignee filter
