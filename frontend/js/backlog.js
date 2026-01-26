@@ -383,6 +383,7 @@ function renderBacklog() {
                         <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>To Do</option>
                         <option value="progress" ${task.status === 'progress' || task.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
                         <option value="review" ${task.status === 'review' || task.status === 'in-review' ? 'selected' : ''}>In Review</option>
+                        <option value="blocked" ${task.status === 'blocked' ? 'selected' : ''}>Blocked</option>
                         <option value="done" ${task.status === 'done' || task.status === 'completed' ? 'selected' : ''}>Done</option>
                     </select>
                     <div class="backlog-item-assignee" title="${task.assignee ? task.assignee.name : 'Unassigned'}" style="background: ${task.assignee ? '#0052CC' : '#DFE1E6'}; color: ${task.assignee ? '#FFFFFF' : '#42526E'};">
@@ -556,6 +557,7 @@ function applyCurrentFilter() {
     const filterValue = filterSelect ? filterSelect.value : 'all';
     
     console.log('Applying filter:', filterValue);
+    console.log('All tasks before filter:', allTasks.length, allTasks.map(t => ({ id: t.id, title: t.title, status: t.status })));
     
     if (filterValue === 'backlog') {
         // Show only backlog tasks
@@ -563,10 +565,12 @@ function applyCurrentFilter() {
             t.status === 'backlog' || !t.status || t.status === ''
         );
         console.log(`Filtered to ${backlogTasks.length} backlog tasks from ${allTasks.length} total`);
+        console.log('Backlog tasks:', backlogTasks.map(t => ({ id: t.id, title: t.title, status: t.status })));
     } else {
         // Show all tasks
         backlogTasks = [...allTasks];
         console.log(`Showing all ${backlogTasks.length} tasks`);
+    }
     }
     
     renderBacklog();
