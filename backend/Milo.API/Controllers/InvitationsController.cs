@@ -235,6 +235,13 @@ public class InvitationsController : ControllerBase
             return BadRequest(new { message = "User email does not match invitation email" });
         }
 
+        // Update user's name if invitation has a name and it's different
+        if (!string.IsNullOrEmpty(invitation.Name) && user.Name != invitation.Name)
+        {
+            _logger.LogInformation($"Updating user {user.Id} name from '{user.Name}' to '{invitation.Name}'");
+            user.Name = invitation.Name;
+        }
+
         // Check if user is already a member (prevent duplicates)
         var existingMember = await _context.ProjectMembers
             .FirstOrDefaultAsync(pm => pm.ProjectId == invitation.ProjectId && pm.UserId == user.Id);
