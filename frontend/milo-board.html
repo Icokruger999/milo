@@ -1543,14 +1543,10 @@
                     <div class="board-title-row">
                         <div style="display: flex; align-items: center; gap: 12px; position: relative;">
                             <div class="board-title" id="pageTitle">Board</div>
-                            <div style="position: relative; display: inline-block;">
-                                <select id="projectSelector" style="padding: 6px 32px 6px 12px; border: 1px solid #DFE1E6; border-radius: 3px; background: white; font-size: 14px; color: #42526E; cursor: pointer; min-width: 200px;">
+                            <div style="display: inline-block;">
+                                <select id="projectSelector" style="padding: 6px 12px; border: 1px solid #DFE1E6; border-radius: 3px; background: white; font-size: 14px; color: #42526E; cursor: pointer; min-width: 200px;">
                                     <option value="">Loading projects...</option>
                                 </select>
-                                <!-- Dropdown arrow -->
-                                <svg style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; width: 12px; height: 12px;" viewBox="0 0 24 24" fill="none" stroke="#42526E" stroke-width="2">
-                                    <polyline points="6 9 12 15 18 9"></polyline>
-                                </svg>
                                 <script>
                                     // Immediately populate selector from localStorage
                                     (function() {
