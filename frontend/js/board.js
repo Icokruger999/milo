@@ -1293,6 +1293,7 @@ function createTaskModal() {
                                 <option value="todo">To Do</option>
                                 <option value="progress">In Progress</option>
                                 <option value="review">In Review</option>
+                                <option value="blocked">Blocked</option>
                                 <option value="done">Done</option>
                             </select>
                         </div>
