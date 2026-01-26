@@ -5,36 +5,59 @@
 </head>
 <body>
     <h1>Test Create Project Modal</h1>
+    <p>Check console for logs...</p>
     <button onclick="testModal()" style="padding: 10px 20px; background: #0052CC; color: white; border: none; border-radius: 4px; cursor: pointer;">
         Click to Test Modal
     </button>
 
-    <script src="js/config.js"></script>
-    <script src="js/api-client.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/project-selector.js"></script>
-    <script src="js/project-modals.js"></script>
-    
+    <div id="status" style="margin-top: 20px; padding: 10px; background: #f0f0f0; border-radius: 4px;"></div>
+
     <script>
-        function testModal() {
-            console.log('Test button clicked');
-            console.log('typeof showCreateProjectModal:', typeof showCreateProjectModal);
-            console.log('window.showCreateProjectModal:', typeof window.showCreateProjectModal);
-            
-            if (typeof showCreateProjectModal === 'function') {
-                console.log('Calling showCreateProjectModal...');
-                showCreateProjectModal();
-            } else {
-                alert('showCreateProjectModal is not defined! Type: ' + typeof showCreateProjectModal);
+        console.log('=== SCRIPT STARTED ===');
+        const statusDiv = document.getElementById('status');
+        
+        function updateStatus(msg) {
+            console.log(msg);
+            if (statusDiv) {
+                statusDiv.innerHTML += msg + '<br>';
             }
         }
         
-        // Check on page load
-        window.addEventListener('load', function() {
-            console.log('Page loaded');
-            console.log('showCreateProjectModal type:', typeof showCreateProjectModal);
-            console.log('window.showCreateProjectModal type:', typeof window.showCreateProjectModal);
-        });
+        updateStatus('1. Script loading...');
+    </script>
+
+    <script src="js/config.js"></script>
+    <script>updateStatus('2. config.js loaded');</script>
+    
+    <script src="js/api-client.js"></script>
+    <script>updateStatus('3. api-client.js loaded');</script>
+    
+    <script src="js/project-modals.js"></script>
+    <script>updateStatus('4. project-modals.js loaded');</script>
+    
+    <script>
+        updateStatus('5. Checking if showCreateProjectModal exists...');
+        updateStatus('   typeof showCreateProjectModal: ' + typeof showCreateProjectModal);
+        updateStatus('   typeof window.showCreateProjectModal: ' + typeof window.showCreateProjectModal);
+        
+        function testModal() {
+            updateStatus('=== BUTTON CLICKED ===');
+            updateStatus('typeof showCreateProjectModal: ' + typeof showCreateProjectModal);
+            
+            if (typeof showCreateProjectModal === 'function') {
+                updateStatus('Calling showCreateProjectModal...');
+                try {
+                    showCreateProjectModal();
+                    updateStatus('Modal function called successfully!');
+                } catch (e) {
+                    updateStatus('ERROR calling modal: ' + e.message);
+                }
+            } else {
+                updateStatus('ERROR: showCreateProjectModal is not defined!');
+            }
+        }
+        
+        updateStatus('6. Test page ready!');
     </script>
 </body>
 </html>
