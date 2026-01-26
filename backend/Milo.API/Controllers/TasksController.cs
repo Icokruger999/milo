@@ -126,6 +126,8 @@ public class TasksController : ControllerBase
                     product = t.Product,
                     projectId = t.ProjectId,
                     project = t.Project,
+                    subProjectId = t.SubProjectId,
+                    subProject = t.SubProject,
                     priority = t.Priority,
                     dueDate = t.DueDate,
                     startDate = t.StartDate,
