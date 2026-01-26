@@ -352,18 +352,30 @@ function getViewDateRange() {
     if (currentView === 'days') {
         start.setDate(start.getDate() - 7);
         days = 21;
-        dayWidth = 60; // Increased from 50
+        dayWidth = 60;
     } else if (currentView === 'weeks') {
         start.setDate(1);
-        const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
-        days = end.getDate();
-        dayWidth = 40; // Increased from 30
+        // Show current month + next month to ensure all tasks are visible
+        const end = new Date(start.getFullYear(), start.getMonth() + 2, 0);
+        days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+        dayWidth = 40;
     } else {
         start.setDate(1);
         const end = new Date(start.getFullYear(), start.getMonth() + 3, 0);
         days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-        dayWidth = 18; // Increased from 12
+        dayWidth = 18;
     }
+
+    // Extend range to include all task dates
+    tasks.forEach(task => {
+        if (task.endDate) {
+            const taskEnd = new Date(task.endDate);
+            const daysSinceStart = Math.ceil((taskEnd - start) / (1000 * 60 * 60 * 24));
+            if (daysSinceStart > days) {
+                days = daysSinceStart + 7; // Add 7 days buffer
+            }
+        }
+    });
 
     return { startDate: start, days: days };
 }
