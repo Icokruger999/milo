@@ -1568,7 +1568,7 @@
                                 <div id="projectDropdown" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 4px; background: white; border: 1px solid #DFE1E6; border-radius: 3px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 200px; max-height: 300px; overflow-y: auto;">
                                     <div id="projectDropdownItems"></div>
                                     <div style="border-top: 1px solid #DFE1E6; padding: 8px;">
-                                        <button onclick="showInlineCreateModal(); document.getElementById('projectDropdown').style.display='none'; return false;" style="width: 100%; padding: 8px 12px; background: #0052CC; color: white; border: none; border-radius: 3px; font-size: 13px; font-weight: 500; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px;">
+                                        <button onclick="window.location.href='milo-select-project.html'; return false;" style="width: 100%; padding: 8px 12px; background: #0052CC; color: white; border: none; border-radius: 3px; font-size: 13px; font-weight: 500; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px;">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                 <line x1="12" y1="5" x2="12" y2="19"></line>
                                                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -1912,14 +1912,8 @@
                 // Handle project change
                 selector.addEventListener('change', function() {
                     if (this.value === 'create') {
-                        // Create new project
-                        showInlineCreateModal();
-                        // Reset selector to current project after a moment
-                        setTimeout(() => {
-                            if (currentProject) {
-                                this.value = currentProject.id;
-                            }
-                        }, 100);
+                        // Navigate to project selection page
+                        window.location.href = 'milo-select-project.html';
                     } else if (this.value) {
                         const selectedProject = projectSelector.getProjectById(parseInt(this.value));
                         if (selectedProject) {
@@ -4735,118 +4729,6 @@
             const left = (daysSinceBase / 30) * monthWidth;
             todayLine.style.left = `${left}px`;
         }
-    </script>
-
-    <!-- Create Project Modal - Inline -->
-    <div id="inlineCreateProjectModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 8px; padding: 24px; width: 90%; max-width: 500px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Create New Project</h2>
-                <button onclick="closeInlineModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666;">&times;</button>
-            </div>
-            <div id="inlineError" style="display: none; background: #FFEBE6; border: 1px solid #DE350B; border-radius: 4px; padding: 12px; margin-bottom: 16px; color: #DE350B; font-size: 14px;"></div>
-            <form id="inlineCreateForm" onsubmit="handleInlineCreate(event)">
-                <div style="margin-bottom: 16px;">
-                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Project Name *</label>
-                    <input type="text" id="inlineProjectName" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box;">
-                </div>
-                <div style="margin-bottom: 16px;">
-                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Project Key (optional)</label>
-                    <input type="text" id="inlineProjectKey" maxlength="10" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box; text-transform: uppercase;">
-                    <small style="color: #6B778C; font-size: 12px;">Short identifier (e.g., MILO, BG)</small>
-                </div>
-                <div style="margin-bottom: 16px;">
-                    <label style="display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px;">Description (optional)</label>
-                    <textarea id="inlineProjectDesc" rows="3" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; box-sizing: border-box; resize: vertical;"></textarea>
-                </div>
-                <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                    <button type="button" onclick="closeInlineModal()" style="padding: 10px 20px; border: 1px solid #ddd; background: white; border-radius: 4px; cursor: pointer; font-size: 14px;">Cancel</button>
-                    <button type="submit" style="padding: 10px 20px; background: #0052CC; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">Create Project</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        // Inline modal functions - guaranteed to work
-        function showInlineCreateModal() {
-            console.log('showInlineCreateModal called');
-            const modal = document.getElementById('inlineCreateProjectModal');
-            if (modal) {
-                modal.style.display = 'flex';
-                document.getElementById('inlineProjectName').focus();
-            } else {
-                console.error('Modal element not found!');
-            }
-        }
-
-        function closeInlineModal() {
-            const modal = document.getElementById('inlineCreateProjectModal');
-            if (modal) {
-                modal.style.display = 'none';
-                document.getElementById('inlineCreateForm').reset();
-                document.getElementById('inlineError').style.display = 'none';
-            }
-        }
-
-        async function handleInlineCreate(event) {
-            event.preventDefault();
-            const errorDiv = document.getElementById('inlineError');
-            errorDiv.style.display = 'none';
-            
-            const name = document.getElementById('inlineProjectName').value.trim();
-            const key = document.getElementById('inlineProjectKey').value.trim().toUpperCase();
-            const description = document.getElementById('inlineProjectDesc').value.trim();
-            
-            if (!name) {
-                errorDiv.textContent = 'Project name is required';
-                errorDiv.style.display = 'block';
-                return;
-            }
-            
-            try {
-                const user = authService.getCurrentUser();
-                const response = await apiClient.post('/projects', {
-                    name: name,
-                    key: key || null,
-                    description: description || null,
-                    ownerId: user.id
-                });
-                
-                if (response.ok) {
-                    const project = await response.json();
-                    
-                    // Store project
-                    const projectData = {
-                        id: project.id,
-                        name: project.name || name,
-                        key: project.key,
-                        description: project.description,
-                        status: project.status || 'active'
-                    };
-                    
-                    localStorage.setItem('milo_current_project', JSON.stringify(projectData));
-                    
-                    closeInlineModal();
-                    
-                    // Reload page to show new project
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 200);
-                } else {
-                    const error = await response.json();
-                    errorDiv.textContent = error.message || 'Failed to create project';
-                    errorDiv.style.display = 'block';
-                }
-            } catch (error) {
-                console.error('Failed to create project:', error);
-                errorDiv.textContent = 'Failed to create project. Please try again.';
-                errorDiv.style.display = 'block';
-            }
-        }
-
-        // Make it globally available
-        window.showInlineCreateModal = showInlineCreateModal;
     </script>
 </body>
 </html>
