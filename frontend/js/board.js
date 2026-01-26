@@ -1699,7 +1699,7 @@ window.applyFilters = async function() {
         // Label filter
         if (labelFilter && labelFilter !== '') {
             const taskLabel = (task.label || '').toLowerCase();
-            if (taskLabel !== labelFilter.toLowerCase()) return false;
+            if (taskLabel !== labelFilter.toLowerCase()) return;
         }
         
         // Assignee filter
