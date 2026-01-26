@@ -135,17 +135,7 @@ public class TasksController : ControllerBase
                 };
             }).ToList();
 
-            return Ok(new
-            {
-                tasks = result,
-                pagination = new
-                {
-                    page,
-                    pageSize,
-                    totalCount,
-                    totalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
-                }
-            });
+            return Ok(result);
         }
         catch (Exception ex)
         {
@@ -329,6 +319,7 @@ public class TasksController : ControllerBase
                 CreatorId = request.CreatorId,
                 ProductId = request.ProductId,
                 ProjectId = request.ProjectId,
+                SubProjectId = request.SubProjectId,
                 Priority = request.Priority ?? 0,
                 DueDate = dueDateUtc,
                 StartDate = startDateUtc,
@@ -587,6 +578,10 @@ public class TasksController : ControllerBase
         {
             task.ProductId = request.ProductId;
         }
+        if (request.SubProjectId.HasValue)
+        {
+            task.SubProjectId = request.SubProjectId;
+        }
         if (request.Priority.HasValue)
         {
             task.Priority = request.Priority.Value;
@@ -739,6 +734,7 @@ public class CreateTaskRequest
     public int? CreatorId { get; set; }
     public int? ProductId { get; set; }
     public int? ProjectId { get; set; }
+    public int? SubProjectId { get; set; }
     public int? Priority { get; set; }
     public DateTime? DueDate { get; set; }
     public DateTime? StartDate { get; set; }
@@ -755,6 +751,7 @@ public class UpdateTaskRequest
     public string? TaskType { get; set; } // Epic, Task, Bug, Story
     public int? AssigneeId { get; set; }
     public int? ProductId { get; set; }
+    public int? SubProjectId { get; set; }
     public int? Priority { get; set; }
     public DateTime? DueDate { get; set; }
     public DateTime? StartDate { get; set; }
