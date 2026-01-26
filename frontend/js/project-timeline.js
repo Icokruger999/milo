@@ -352,17 +352,17 @@ function getViewDateRange() {
     if (currentView === 'days') {
         start.setDate(start.getDate() - 7);
         days = 21;
-        dayWidth = 50;
+        dayWidth = 60; // Increased from 50
     } else if (currentView === 'weeks') {
         start.setDate(1);
         const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
         days = end.getDate();
-        dayWidth = 30;
+        dayWidth = 40; // Increased from 30
     } else {
         start.setDate(1);
         const end = new Date(start.getFullYear(), start.getMonth() + 3, 0);
         days = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-        dayWidth = 12;
+        dayWidth = 18; // Increased from 12
     }
 
     return { startDate: start, days: days };
@@ -462,7 +462,7 @@ function renderGanttBody(viewStart, totalDays) {
                 html += `
                     <div class="gantt-bar ${task.color}" style="left: ${left}px; width: ${width}px;" title="${escapeHtml(task.name)} - ${task.progress}%">
                         <div class="gantt-bar-progress" style="width: ${progressWidth}px;"></div>
-                        <span class="gantt-bar-label">${escapeHtml(task.name)} ${task.progress}%</span>
+                        <span class="gantt-bar-label">${escapeHtml(task.name)} ${task.progress > 0 ? task.progress + '%' : ''}</span>
                     </div>
                 `;
             }
