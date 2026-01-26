@@ -22,11 +22,16 @@
         }
 
         .list-panel {
-            width: 50%;
+            width: 100%;
             background: white;
             border-right: 1px solid #DFE1E6;
             display: flex;
             flex-direction: column;
+            transition: width 0.3s;
+        }
+
+        .list-panel.with-detail {
+            width: 50%;
         }
 
         .list-header {
@@ -176,11 +181,44 @@
         }
 
         .detail-panel {
-            flex: 1;
+            position: fixed;
+            right: 0;
+            top: 48px;
+            width: 0;
+            height: calc(100vh - 48px);
             background: white;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            transition: width 0.3s;
+            box-shadow: -2px 0 8px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .detail-panel.open {
+            width: 50%;
+        }
+
+        .detail-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            cursor: pointer;
+            color: #6B778C;
+            background: transparent;
+            border: none;
+            z-index: 10;
+        }
+
+        .detail-close:hover {
+            background: #F4F5F7;
+            color: #172B4D;
         }
 
         .detail-header {
@@ -324,25 +362,22 @@
         </div>
 
         <!-- Detail Panel -->
-        <div class="detail-panel">
-            <div id="detailEmpty" class="empty-state">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
+        <div class="detail-panel" id="detailPanel">
+            <button class="detail-close" onclick="closeDetail()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
                 </svg>
-                <p>Select an item to view details</p>
+            </button>
+            <div class="detail-header">
+                <h2 class="detail-title" id="detailTitle">Item Title</h2>
+                <div class="detail-tabs">
+                    <div class="detail-tab active" onclick="switchTab('overview')">Overview</div>
+                    <div class="detail-tab" onclick="switchTab('delivery')">Delivery</div>
+                </div>
             </div>
-            <div id="detailContent" style="display: none; flex: 1; display: flex; flex-direction: column;">
-                <div class="detail-header">
-                    <h2 class="detail-title" id="detailTitle">Item Title</h2>
-                    <div class="detail-tabs">
-                        <div class="detail-tab active" onclick="switchTab('overview')">Overview</div>
-                        <div class="detail-tab" onclick="switchTab('delivery')">Delivery</div>
-                    </div>
-                </div>
-                <div class="detail-content" id="detailBody">
-                    <!-- Content will be loaded here -->
-                </div>
+            <div class="detail-content" id="detailBody">
+                <!-- Content will be loaded here -->
             </div>
         </div>
     </div>
@@ -370,18 +405,29 @@
             try {
                 const currentProject = projectSelector.getCurrentProject();
                 if (!currentProject) {
-                    window.location.href = 'milo-select-project.html';
-                    return;
+                    // Try to get from localStorage
+                    const stored = localStorage.getItem('currentProject');
+                    if (!stored) {
+                        window.location.href = 'milo-select-project.html';
+                        return;
+                    }
                 }
 
+                const projectId = currentProject?.id || JSON.parse(localStorage.getItem('currentProject')).id;
+
                 // Load roadmap items as delivery items
-                const response = await apiClient.get(`/roadmap?projectId=${currentProject.id}`);
+                const response = await apiClient.get(`/roadmap?projectId=${projectId}`);
                 if (response.ok) {
                     deliveryItems = await response.json();
                     renderList();
+                } else {
+                    document.getElementById('itemCount').textContent = 'Failed to load items';
+                    document.getElementById('deliveryList').innerHTML = '<div style="padding: 40px; text-align: center; color: #6B778C;">Failed to load delivery items</div>';
                 }
             } catch (error) {
                 console.error('Failed to load delivery items:', error);
+                document.getElementById('itemCount').textContent = 'Error loading items';
+                document.getElementById('deliveryList').innerHTML = '<div style="padding: 40px; text-align: center; color: #6B778C;">Error loading delivery items</div>';
             }
         }
 
@@ -439,12 +485,19 @@
                 el.classList.toggle('active', i === index);
             });
 
-            // Show detail panel
-            document.getElementById('detailEmpty').style.display = 'none';
-            document.getElementById('detailContent').style.display = 'flex';
+            // Open detail panel
+            document.getElementById('detailPanel').classList.add('open');
+            document.querySelector('.list-panel').classList.add('with-detail');
             document.getElementById('detailTitle').textContent = selectedItem.title;
 
             renderDetail();
+        }
+
+        function closeDetail() {
+            document.getElementById('detailPanel').classList.remove('open');
+            document.querySelector('.list-panel').classList.remove('with-detail');
+            document.querySelectorAll('.delivery-item').forEach(el => el.classList.remove('active'));
+            selectedItem = null;
         }
 
         function renderDetail() {
