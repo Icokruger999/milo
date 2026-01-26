@@ -882,17 +882,10 @@ async function createSubProjectFromModal() {
     submitBtn.textContent = 'Creating...';
     
     try {
-        const response = await fetch(`${API_BASE_URL}/subprojects`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: JSON.stringify({
-                Name: name,
-                Description: description || null,
-                ProjectId: currentProjectId
-            })
+        const response = await apiClient.post('/subprojects', {
+            Name: name,
+            Description: description || null,
+            ProjectId: currentProject.id
         });
         
         if (response.ok) {
@@ -906,8 +899,9 @@ async function createSubProjectFromModal() {
             await loadSubProjects();
             await loadTasks();
             renderTimeline();
+            showToast('Sub-project created successfully!');
         } else {
-            const error = await response.json();
+            const error = await response.json().catch(() => ({ message: 'Failed to create sub-project' }));
             errorDiv.textContent = error.message || 'Failed to create sub-project';
             errorDiv.style.display = 'block';
             submitBtn.disabled = false;
