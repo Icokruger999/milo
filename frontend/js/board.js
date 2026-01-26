@@ -1111,13 +1111,22 @@ async function loadTaskComments(taskId) {
     try {
         const response = await apiClient.get(`/comments/task/${taskId}`);
         if (response.ok) {
-            currentTaskComments = await response.json();
-            renderTaskComments();
+            // CRITICAL: Only update comments if this is still the current task
+            // Prevents race condition where comments from Task A appear on Task B
+            if (currentTaskId === taskId) {
+                currentTaskComments = await response.json();
+                renderTaskComments();
+            } else {
+                console.log(`Ignoring comments for task ${taskId} - current task is ${currentTaskId}`);
+            }
         }
     } catch (error) {
         console.error('Failed to load comments:', error);
-        currentTaskComments = [];
-        renderTaskComments();
+        // Only clear if still the current task
+        if (currentTaskId === taskId) {
+            currentTaskComments = [];
+            renderTaskComments();
+        }
     }
 }
 
