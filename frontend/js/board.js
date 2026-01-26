@@ -604,10 +604,20 @@ let currentTaskComments = [];
 let currentTaskId = null;
 
 async function showTaskModal(column, task = null) {
+    // CRITICAL: Reset all global state first to prevent data leakage between tasks
+    currentTaskId = null;
+    currentTaskComments = [];
+    
     let modal = document.getElementById('taskModal');
     if (!modal) {
         createTaskModal();
         modal = document.getElementById('taskModal');
+    }
+    
+    // Clear comments display immediately
+    const commentsDiv = document.getElementById('taskCommentsList');
+    if (commentsDiv) {
+        commentsDiv.innerHTML = '<div style="color: #6B778C; font-size: 13px; text-align: center; padding: 8px;">No comments yet</div>';
     }
     
     modal.dataset.column = column;
