@@ -55,16 +55,18 @@ function getAssigneeColor(assigneeId, assigneeName) {
         hash = hash & hash; // Convert to 32bit integer
     }
     
-    // Color palette - green and red variations for visibility
+    // Color palette - all unique colors for visibility
     const colors = [
-        { bg: '#36B37E', text: '#FFFFFF' }, // Green
-        { bg: '#DE350B', text: '#FFFFFF' }, // Red
         { bg: '#0052CC', text: '#FFFFFF' }, // Blue
-        { bg: '#FFAB00', text: '#172B4D' }, // Orange
         { bg: '#6554C0', text: '#FFFFFF' }, // Purple
+        { bg: '#FFAB00', text: '#172B4D' }, // Orange
         { bg: '#00B8D9', text: '#FFFFFF' }, // Cyan
-        { bg: '#36B37E', text: '#FFFFFF' }, // Green again
-        { bg: '#DE350B', text: '#FFFFFF' }, // Red again
+        { bg: '#FF5630', text: '#FFFFFF' }, // Coral
+        { bg: '#00875A', text: '#FFFFFF' }, // Dark Green
+        { bg: '#5243AA', text: '#FFFFFF' }, // Indigo
+        { bg: '#FF8B00', text: '#FFFFFF' }, // Dark Orange
+        { bg: '#0065FF', text: '#FFFFFF' }, // Bright Blue
+        { bg: '#8777D9', text: '#FFFFFF' }, // Light Purple
     ];
     
     // Use absolute value of hash to get index
