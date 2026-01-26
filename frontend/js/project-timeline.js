@@ -784,13 +784,6 @@ async function createTaskFromModal() {
         showToast('Error creating task. Please try again.');
     }
 }
-            alert('Failed to create task. Please try again.');
-        }
-    } catch (error) {
-        console.error('Error creating task:', error);
-        alert('Error creating task. Please try again.');
-    }
-}
 
 // Create new task (legacy function)
 async function createTask() {
