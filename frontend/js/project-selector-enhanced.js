@@ -15,6 +15,21 @@ window.selectProjectFromDropdown = function(projectId) {
 
 // Enhanced setup function
 async function setupProjectSelectorEnhanced() {
+    const selector = document.getElementById('projectSelector');
+    
+    // Immediately show current project from localStorage while loading
+    const storedProject = localStorage.getItem('milo_current_project');
+    if (storedProject && selector) {
+        try {
+            const project = JSON.parse(storedProject);
+            if (project.name) {
+                selector.innerHTML = `<option value="${project.id}" selected>${project.name}</option><option value="">Loading more...</option>`;
+            }
+        } catch (e) {
+            console.error('Failed to parse stored project:', e);
+        }
+    }
+    
     try {
         console.log('🔄 setupProjectSelectorEnhanced starting...');
         const user = authService.getCurrentUser();
@@ -29,7 +44,6 @@ async function setupProjectSelectorEnhanced() {
         console.log('🔄 Projects loaded:', projects.length, 'projects');
         console.log('🔄 Projects data:', projects);
         
-        const selector = document.getElementById('projectSelector');
         const dropdown = document.getElementById('projectDropdown');
         const dropdownItems = document.getElementById('projectDropdownItems');
         const currentProject = projectSelector.getCurrentProject();
@@ -143,6 +157,16 @@ async function setupProjectSelectorEnhanced() {
     } catch (error) {
         console.error('Failed to setup project selector:', error);
         console.error('Error stack:', error.stack);
+        
+        // Fallback: show current project from localStorage
+        if (selector && storedProject) {
+            try {
+                const project = JSON.parse(storedProject);
+                selector.innerHTML = `<option value="${project.id}" selected>${project.name}</option><option value="create">+ Create New Project</option>`;
+            } catch (e) {
+                selector.innerHTML = '<option value="">Error loading projects</option>';
+            }
+        }
     }
 }
 
