@@ -1591,6 +1591,7 @@
 
                 <!-- Board Toolbar -->
                 <div class="board-toolbar">
+                    <!-- Left side: Search, Avatars, Invite -->
                     <div class="board-search">
                         <input type="text" id="boardSearchInput" placeholder="Search tasks" onkeyup="handleSearch(event)">
                         <div class="board-search-icon">
@@ -1613,6 +1614,10 @@
                         Invite
                     </button>
 
+                    <!-- Spacer to push filters to the right -->
+                    <div style="flex: 1;"></div>
+
+                    <!-- Right side: All filters -->
                     <select class="board-filter" id="epicFilter" onchange="applyFilters()">
                         <option value="">Epic</option>
                         <option value="all">All Epics</option>
