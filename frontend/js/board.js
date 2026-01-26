@@ -892,7 +892,9 @@ async function showTaskModal(column, task = null) {
             }
         }
         
-        // Load comments asynchronously (non-blocking)
+        // Clear and load comments asynchronously (non-blocking)
+        currentTaskComments = [];
+        document.getElementById('taskCommentsList').innerHTML = '<div style="color: #6B778C; font-size: 13px; text-align: center; padding: 8px;">Loading comments...</div>';
         loadTaskComments(task.id).catch(err => console.error('Error loading comments:', err));
         
         // Load checklist if exists
@@ -1084,8 +1086,13 @@ function populateTaskForm(task) {
         }
     }
     
-    // Load comments asynchronously (non-blocking)
+    // Clear and load comments asynchronously (non-blocking)
     if (task.id) {
+        currentTaskComments = [];
+        const commentsDiv = document.getElementById('taskCommentsList');
+        if (commentsDiv) {
+            commentsDiv.innerHTML = '<div style="color: #6B778C; font-size: 13px; text-align: center; padding: 8px;">Loading comments...</div>';
+        }
         loadTaskComments(task.id).catch(err => console.error('Error loading comments:', err));
     }
 }
