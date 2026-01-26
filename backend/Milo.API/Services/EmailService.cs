@@ -116,7 +116,45 @@ public class EmailService : IEmailService
     public async Task<bool> SendTemporaryPasswordEmailAsync(string email, string name, string temporaryPassword)
     {
         var subject = "Your Temporary Password - Milo";
-        var htmlBody = $"<html><body style='font-family:Arial;'><h1>Your Temporary Password</h1><p>Hello {name},</p><p>Your temporary password is: <strong>{temporaryPassword}</strong></p><p>Please change it after login.</p><a href='https://www.codingeverest.com/milo-login.html'>Log In</a></body></html>";
+        var htmlBody = $@"<!DOCTYPE html>
+<html>
+<head><meta charset=""utf-8""></head>
+<body style=""font-family: Arial, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 20px;"">
+    <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px;"">
+        <tr>
+            <td style=""background-color: #0052CC; color: #FFFFFF; padding: 32px 24px; text-align: center; border-radius: 8px 8px 0 0;"">
+                <h1 style=""margin: 0; font-size: 24px;"">Your Temporary Password</h1>
+            </td>
+        </tr>
+        <tr>
+            <td style=""padding: 32px 24px;"">
+                <p style=""margin: 0 0 16px 0;"">Hello {name},</p>
+                <p style=""margin: 0 0 16px 0;"">Your temporary password has been generated:</p>
+                <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""margin: 24px 0;"">
+                    <tr>
+                        <td style=""background-color: #F4F5F7; border: 2px dashed #0052CC; border-radius: 6px; padding: 20px; text-align: center;"">
+                            <span style=""font-size: 28px; font-weight: 700; color: #0052CC; letter-spacing: 3px; font-family: monospace;"">{temporaryPassword}</span>
+                        </td>
+                    </tr>
+                </table>
+                <p style=""margin: 0 0 24px 0; color: #DE350B;""><strong>IMPORTANT:</strong> Please change this password after your first login.</p>
+                <table cellpadding=""0"" cellspacing=""0"" style=""margin: 0 auto;"">
+                    <tr>
+                        <td style=""background-color: #0052CC; border-radius: 6px;"">
+                            <a href=""https://www.codingeverest.com/milo-login.html"" style=""display: inline-block; padding: 12px 24px; color: #FFFFFF; text-decoration: none; font-weight: 600;"">Log In Now</a>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td style=""background-color: #F4F5F7; padding: 16px 24px; text-align: center; border-radius: 0 0 8px 8px;"">
+                <p style=""margin: 0; font-size: 12px; color: #6B778C;"">This is an automated message from Milo</p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
         return await SendEmailAsync(email, subject, htmlBody);
     }
 
@@ -124,7 +162,38 @@ public class EmailService : IEmailService
     {
         var subject = $"Project Invitation: {projectName}";
         var inviteLink = $"https://www.codingeverest.com/milo-accept-invitation.html?token={invitationToken}";
-        var htmlBody = $"<html><body style='font-family:Arial;'><h1>Project Invitation</h1><p>Hello {name},</p><p>You've been invited to join: <strong>{projectName}</strong></p><a href='{inviteLink}'>Accept Invitation</a><p style='font-size:12px;'>Or copy: {inviteLink}</p></body></html>";
+        var htmlBody = $@"<!DOCTYPE html>
+<html>
+<head><meta charset=""utf-8""></head>
+<body style=""font-family: Arial, sans-serif; line-height: 1.6; color: #172B4D; background-color: #F4F5F7; margin: 0; padding: 20px;"">
+    <table width=""100%"" cellpadding=""0"" cellspacing=""0"" style=""max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 8px;"">
+        <tr>
+            <td style=""background-color: #0052CC; color: #FFFFFF; padding: 32px 24px; text-align: center; border-radius: 8px 8px 0 0;"">
+                <h1 style=""margin: 0; font-size: 24px;"">Project Invitation</h1>
+            </td>
+        </tr>
+        <tr>
+            <td style=""padding: 32px 24px;"">
+                <p style=""margin: 0 0 16px 0;"">Hello {name},</p>
+                <p style=""margin: 0 0 24px 0;"">You've been invited to join the project: <strong>{projectName}</strong></p>
+                <table cellpadding=""0"" cellspacing=""0"" style=""margin: 0 auto;"">
+                    <tr>
+                        <td style=""background-color: #36B37E; border-radius: 6px;"">
+                            <a href=""{inviteLink}"" style=""display: inline-block; padding: 12px 24px; color: #FFFFFF; text-decoration: none; font-weight: 600;"">Accept Invitation</a>
+                        </td>
+                    </tr>
+                </table>
+                <p style=""margin: 24px 0 0 0; font-size: 12px; color: #6B778C;"">Or copy this link: <a href=""{inviteLink}"" style=""color: #0052CC;"">{inviteLink}</a></p>
+            </td>
+        </tr>
+        <tr>
+            <td style=""background-color: #F4F5F7; padding: 16px 24px; text-align: center; border-radius: 0 0 8px 8px;"">
+                <p style=""margin: 0; font-size: 12px; color: #6B778C;"">This is an automated message from Milo</p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>";
         return await SendEmailAsync(email, subject, htmlBody);
     }
 
