@@ -1,0 +1,5 @@
+{
+  "commands": [
+    "docker exec milo_postgres psql -U postgres -d milo -c \"INSERT INTO sub_projects (name, project_id, created_at) VALUES ('Unknown', 1, NOW()) ON CONFLICT DO NOTHING;\""
+  ]
+}

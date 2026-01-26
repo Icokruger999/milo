@@ -1,0 +1,5 @@
+{
+  "commands": [
+    "curl -X POST http://localhost:8080/api/projects -H 'Content-Type: application/json' -d '{\"name\":\"Test Project\",\"key\":\"TEST\",\"description\":\"Test project\",\"ownerId\":1}'"
+  ]
+}

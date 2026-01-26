@@ -48,14 +48,10 @@ async function setupProjectSelectorEnhanced() {
                 dropdownItems.innerHTML = '<div style="padding: 12px; color: #6B778C; font-size: 13px; text-align: center;">No projects yet</div>';
             }
             
-            // Handle create option
+            // Handle create option - navigate to project selection page
             selector.addEventListener('change', function() {
                 if (this.value === 'create') {
-                    if (typeof showCreateProjectModal === 'function') {
-                        showCreateProjectModal();
-                    } else {
-                        window.location.href = 'milo-select-project.html';
-                    }
+                    window.location.href = 'milo-select-project.html';
                 }
             });
             return;
@@ -116,18 +112,8 @@ async function setupProjectSelectorEnhanced() {
         // Handle select dropdown change
         selector.addEventListener('change', function() {
             if (this.value === 'create') {
-                // Create new project
-                if (typeof showCreateProjectModal === 'function') {
-                    showCreateProjectModal();
-                    // Reset selector to current project
-                    setTimeout(() => {
-                        if (currentProject) {
-                            this.value = currentProject.id;
-                        }
-                    }, 100);
-                } else {
-                    window.location.href = 'milo-select-project.html';
-                }
+                // Navigate to project selection page (no popups)
+                window.location.href = 'milo-select-project.html';
             } else if (this.value) {
                 const selectedProject = projectSelector.getProjectById(parseInt(this.value));
                 if (selectedProject) {

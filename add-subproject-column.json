@@ -1,0 +1,7 @@
+{
+  "commands": [
+    "docker exec milo_postgres psql -U postgres -d milo -c 'ALTER TABLE tasks ADD COLUMN IF NOT EXISTS sub_project_id INTEGER;'",
+    "docker exec milo_postgres psql -U postgres -d milo -c 'CREATE INDEX IF NOT EXISTS idx_tasks_sub_project_id ON tasks(sub_project_id);'",
+    "docker exec milo_postgres psql -U postgres -d milo -c 'SELECT column_name, data_type FROM information_schema.columns WHERE table_name = \\047tasks\\047 AND column_name = \\047sub_project_id\\047;'"
+  ]
+}

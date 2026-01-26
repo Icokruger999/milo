@@ -1,0 +1,7 @@
+{
+  "commands": [
+    "docker exec milo_postgres psql -U postgres -d milo -c \"UPDATE tasks SET sub_project_id = (SELECT id FROM sub_projects WHERE LOWER(name) = LOWER(tasks.label) AND project_id = tasks.project_id LIMIT 1) WHERE sub_project_id IS NULL AND label IS NOT NULL AND label != '';\"",
+    "docker exec milo_postgres psql -U postgres -d milo -c \"UPDATE tasks SET sub_project_id = (SELECT id FROM sub_projects WHERE LOWER(name) = 'unknown' AND project_id = tasks.project_id LIMIT 1) WHERE sub_project_id IS NULL;\"",
+    "docker exec milo_postgres psql -U postgres -d milo -c \"SELECT COUNT(*) as total_tasks, COUNT(sub_project_id) as assigned_tasks FROM tasks;\""
+  ]
+}

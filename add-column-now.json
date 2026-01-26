@@ -1,0 +1,19 @@
+{
+  "InstanceIds": ["i-06bc5b2218c041802"],
+  "DocumentName": "AWS-RunShellScript",
+  "Parameters": {
+    "commands": [
+      "echo Adding sub_project_id column to tasks table...",
+      "docker exec milo-postgres psql -U postgres -d milo -c 'ALTER TABLE tasks ADD COLUMN sub_project_id INTEGER;'",
+      "echo Creating index...",
+      "docker exec milo-postgres psql -U postgres -d milo -c 'CREATE INDEX idx_tasks_sub_project_id ON tasks(sub_project_id);'",
+      "echo Verifying column was added...",
+      "docker exec milo-postgres psql -U postgres -d milo -c 'SELECT column_name FROM information_schema.columns WHERE table_name = '\"'\"'tasks'\"'\"' AND column_name = '\"'\"'sub_project_id'\"'\"';'",
+      "echo Restarting backend...",
+      "sudo systemctl restart milo-backend",
+      "sleep 8",
+      "echo Testing API...",
+      "curl -s http://localhost:8080/api/tasks?projectId=1 | head -100"
+    ]
+  }
+}
