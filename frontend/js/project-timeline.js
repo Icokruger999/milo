@@ -627,9 +627,9 @@ async function loadExistingTasksForLinking() {
         if (response.ok) {
             const allTasks = await response.json();
             
-            // Filter out tasks already on timeline
-            const timelineTaskIds = new Set(tasks.map(t => t.id));
-            const availableTasks = allTasks.filter(t => !timelineTaskIds.has(t.id));
+            // Show ALL tasks from the board (don't filter out timeline tasks)
+            // Filter out deleted tasks only
+            const availableTasks = allTasks.filter(t => !t.isDeleted);
             
             renderExistingTasksList(availableTasks);
         }
@@ -644,7 +644,7 @@ function renderExistingTasksList(availableTasks) {
     const searchInput = document.getElementById('taskSearchInput');
     
     if (availableTasks.length === 0) {
-        container.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">All tasks are already on the timeline</div>';
+        container.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No tasks found in this project</div>';
         return;
     }
     
