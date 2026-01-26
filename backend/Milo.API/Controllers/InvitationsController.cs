@@ -299,6 +299,93 @@ public class InvitationsController : ControllerBase
         return Ok(new { success = true, message = "Invitation declined" });
     }
 
+    [HttpPost("{id}/resend")]
+    public async Task<IActionResult> ResendInvitation(int id)
+    {
+        var invitation = await _context.ProjectInvitations
+            .Include(i => i.Project)
+            .FirstOrDefaultAsync(i => i.Id == id);
+
+        if (invitation == null)
+        {
+            return NotFound(new { message = "Invitation not found" });
+        }
+
+        if (invitation.Status != "pending")
+        {
+            return BadRequest(new { message = "Can only resend pending invitations" });
+        }
+
+        // Extend expiration
+        invitation.ExpiresAt = DateTime.UtcNow.AddDays(7);
+        await _context.SaveChangesAsync();
+
+        // Resend email
+        try
+        {
+            var emailSent = await _emailService.SendProjectInvitationEmailAsync(
+                invitation.Email,
+                invitation.Name ?? invitation.Email,
+                invitation.Project.Name,
+                invitation.Project.Key ?? invitation.Project.Name,
+                invitation.Token
+            );
+
+            if (emailSent)
+            {
+                _logger.LogInformation($"Resent invitation email to {invitation.Email}");
+                return Ok(new { success = true, message = "Invitation resent successfully" });
+            }
+            else
+            {
+                _logger.LogWarning($"Failed to resend invitation email to {invitation.Email}");
+                return Ok(new { success = true, message = "Invitation updated but email may not have been sent" });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error resending invitation to {invitation.Email}");
+            return Ok(new { success = true, message = "Invitation updated but email failed to send" });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetInvitations([FromQuery] int? projectId, [FromQuery] string? email)
+    {
+        var query = _context.ProjectInvitations
+            .Include(i => i.Project)
+            .Include(i => i.InvitedBy)
+            .AsQueryable();
+
+        if (projectId.HasValue)
+        {
+            query = query.Where(i => i.ProjectId == projectId.Value);
+        }
+
+        if (!string.IsNullOrEmpty(email))
+        {
+            query = query.Where(i => i.Email.ToLower() == email.ToLower());
+        }
+
+        var invitations = await query
+            .Select(i => new
+            {
+                id = i.Id,
+                email = i.Email,
+                name = i.Name,
+                status = i.Status,
+                token = i.Token,
+                projectId = i.ProjectId,
+                project = new { id = i.Project.Id, name = i.Project.Name },
+                invitedBy = i.InvitedBy != null ? new { id = i.InvitedBy.Id, name = i.InvitedBy.Name } : null,
+                createdAt = i.CreatedAt,
+                expiresAt = i.ExpiresAt
+            })
+            .ToListAsync();
+
+        return Ok(invitations);
+    }
+
     private string GenerateInvitationToken()
     {
         using var rng = RandomNumberGenerator.Create();
