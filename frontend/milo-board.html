@@ -1872,11 +1872,7 @@
                     // Handle create option
                     selector.addEventListener('change', function() {
                         if (this.value === 'create') {
-                            if (typeof showCreateProjectModal === 'function') {
-                                showCreateProjectModal();
-                            } else {
-                                window.location.href = 'milo-select-project.html';
-                            }
+                            window.location.href = 'milo-select-project.html';
                         }
                     });
                     return;
