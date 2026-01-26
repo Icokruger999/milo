@@ -174,15 +174,12 @@ async function loadProjectMembers() {
                 return;
             }
             
-            // Show up to 4 members, then +X
-            const displayMembers = members.slice(0, 4);
-            const remainingCount = members.length - 4;
-            
-            avatarsContainer.innerHTML = displayMembers.map((member, index) => {
+            // Show all members (no limit)
+            avatarsContainer.innerHTML = members.map((member, index) => {
                 const initials = (member.name || member.email || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
                 const colors = ['#DE350B', '#36B37E', '#0052CC', '#6554C0', '#FFAB00'];
                 return `<div class="user-avatar-small" style="background: ${colors[index % colors.length]};" title="${member.name || member.email}">${initials}</div>`;
-            }).join('') + (remainingCount > 0 ? `<div class="user-avatar-more">+${remainingCount}</div>` : '');
+            }).join('');
             
             // Also populate assignee filter
             const assigneeFilter = document.getElementById('assigneeFilter');
