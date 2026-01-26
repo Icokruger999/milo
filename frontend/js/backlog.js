@@ -571,7 +571,9 @@ function applyCurrentFilter() {
         backlogTasks = [...allTasks];
         console.log(`Showing all ${backlogTasks.length} tasks`);
     }
-    }
+    
+    renderBacklog();
+}
     
     renderBacklog();
 }
