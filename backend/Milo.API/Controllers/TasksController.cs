@@ -86,6 +86,8 @@ public class TasksController : ControllerBase
                     Product = t.Product != null ? new { t.Product.Id, t.Product.Name } : null,
                     t.ProjectId,
                     Project = t.Project != null ? new { t.Project.Id, t.Project.Name, t.Project.Key } : null,
+                    t.SubProjectId,
+                    SubProject = t.SubProject != null ? new { t.SubProject.Id, t.SubProject.Name } : null,
                     t.Priority,
                     t.DueDate,
                     t.StartDate,
