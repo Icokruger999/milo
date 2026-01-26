@@ -547,6 +547,54 @@ public class TasksController : ControllerBase
         {
             // If empty string, set to null to clear the label
             task.Label = string.IsNullOrWhiteSpace(request.Label) ? null : request.Label;
+            
+            // Auto-assign SubProject based on new label
+            if (task.ProjectId.HasValue)
+            {
+                var subProjects = await _context.SubProjects
+                    .Where(sp => sp.ProjectId == task.ProjectId.Value)
+                    .ToListAsync();
+                
+                if (subProjects.Any())
+                {
+                    if (!string.IsNullOrEmpty(task.Label))
+                    {
+                        // Try to match label to SubProject name
+                        var matchingSubProject = subProjects
+                            .FirstOrDefault(sp => sp.Name.Equals(task.Label, StringComparison.OrdinalIgnoreCase));
+                        
+                        if (matchingSubProject != null)
+                        {
+                            task.SubProjectId = matchingSubProject.Id;
+                            _logger.LogInformation($"[AUTO-ASSIGN UPDATE] Task {id} label changed to '{task.Label}', assigned to SubProject '{matchingSubProject.Name}' (ID: {task.SubProjectId})");
+                        }
+                        else
+                        {
+                            // Label doesn't match any SubProject, assign to "Unknown"
+                            var unknownSubProject = subProjects
+                                .FirstOrDefault(sp => sp.Name.Equals("Unknown", StringComparison.OrdinalIgnoreCase));
+                            
+                            if (unknownSubProject != null)
+                            {
+                                task.SubProjectId = unknownSubProject.Id;
+                                _logger.LogInformation($"[AUTO-ASSIGN UPDATE] Task {id} label changed to '{task.Label}' (no matching SubProject), assigned to 'Unknown' (ID: {task.SubProjectId})");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Label cleared, assign to "Unknown"
+                        var unknownSubProject = subProjects
+                            .FirstOrDefault(sp => sp.Name.Equals("Unknown", StringComparison.OrdinalIgnoreCase));
+                        
+                        if (unknownSubProject != null)
+                        {
+                            task.SubProjectId = unknownSubProject.Id;
+                            _logger.LogInformation($"[AUTO-ASSIGN UPDATE] Task {id} label cleared, assigned to 'Unknown' (ID: {task.SubProjectId})");
+                        }
+                    }
+                }
+            }
         }
         // Handle AssigneeId: always update (including null to clear)
         // Frontend always sends assigneeId (null if unassigned), so we always update
